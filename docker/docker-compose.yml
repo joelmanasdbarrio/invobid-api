@@ -1,0 +1,27 @@
+name: factoring
+services:
+  db:
+    image: postgres:14.19-alpine3.21
+    container_name: factoring_postgres
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: 1234
+      POSTGRES_DB: factoring_db
+    ports:
+      - "5432:5432"
+    hostname: factoring_postgres
+  admin:
+    image: dpage/pgadmin4:snapshot
+    container_name: factoring_pgadmin
+    environment:
+      PGADMIN_DEFAULT_EMAIL: admin@mail.com
+      PGADMIN_DEFAULT_PASSWORD: 1234
+      PGADMIN_CONFIG_SERVER_MODE: "False"
+      PGADMIN_CONFIG_MASTER_PASSWORD_REQUIRED: "False"
+    ports:
+      - "8080:80"
+    volumes:
+      - ./pgadmin/servers.json:/pgadmin4/servers.json:ro
+      - ./pgadmin/pgpass:/var/lib/pgadmin/pgpass:ro
+    depends_on:
+      - db
