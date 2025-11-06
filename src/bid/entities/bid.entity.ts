@@ -3,6 +3,7 @@ import { Investor } from 'src/user/investor/entities/investor.entity';
 import {
   Column,
   CreateDateColumn,
+  DeleteDateColumn,
   Entity,
   ManyToOne,
   PrimaryGeneratedColumn,
@@ -10,8 +11,8 @@ import {
 
 @Entity('bids')
 export class Bid {
-  @PrimaryGeneratedColumn()
-  id: number;
+  @PrimaryGeneratedColumn('uuid')
+  id: string;
 
   @ManyToOne(() => Auction, (auction) => auction.bids, {
     onDelete: 'CASCADE',
@@ -30,4 +31,7 @@ export class Bid {
 
   @CreateDateColumn()
   createdAt: Date;
+
+  @DeleteDateColumn()
+  deletedAt: Date;
 }

@@ -1,6 +1,7 @@
 import {
   Column,
   CreateDateColumn,
+  DeleteDateColumn,
   Entity,
   PrimaryGeneratedColumn,
   TableInheritance,
@@ -10,8 +11,8 @@ import {
 @Entity('users')
 @TableInheritance({ column: { type: 'varchar', name: 'type' } })
 export abstract class User {
-  @PrimaryGeneratedColumn()
-  id: number;
+  @PrimaryGeneratedColumn('uuid')
+  id: string;
 
   @Column({
     unique: true,
@@ -34,6 +35,9 @@ export abstract class User {
 
   @UpdateDateColumn()
   updatedAt: Date;
+
+  @DeleteDateColumn()
+  deletedAt: Date;
 
   @Column()
   type: 'supplier' | 'investor' | 'admin';
