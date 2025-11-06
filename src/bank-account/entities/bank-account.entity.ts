@@ -2,9 +2,9 @@ import { Column, Entity, PrimaryGeneratedColumn } from 'typeorm';
 
 @Entity('bank_accounts')
 export class BankAccount {
-  @PrimaryGeneratedColumn()
-  id: number;
+  @PrimaryGeneratedColumn('uuid')
+  id: string;
 
-  @Column('numeric', { default: 0 })
+  @Column('decimal', { precision: 15, scale: 2, default: 0 })
   balance: number;
 }

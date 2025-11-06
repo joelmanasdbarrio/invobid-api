@@ -5,6 +5,7 @@ import { Supplier } from 'src/user/supplier/entities/supplier.entity';
 import {
   Column,
   CreateDateColumn,
+  DeleteDateColumn,
   Entity,
   JoinColumn,
   ManyToOne,
@@ -38,8 +39,8 @@ export class TransactionFee {
 
 @Entity('invoices')
 export class Invoice {
-  @PrimaryGeneratedColumn()
-  id: number;
+  @PrimaryGeneratedColumn('uuid')
+  id: string;
 
   @ManyToOne(() => Supplier, (supplier) => supplier.invoices, {
     onDelete: 'CASCADE',
@@ -53,15 +54,15 @@ export class Invoice {
   })
   investor: Investor;
 
+  @OneToOne(() => Document, { cascade: true, eager: true })
+  @JoinColumn()
+  document: Document;
+
   @OneToMany(() => Auction, (auction) => auction.invoice, {
     cascade: true,
     eager: true,
   })
   auctions: Auction[];
-
-  @OneToOne(() => Document, { cascade: true, eager: true })
-  @JoinColumn()
-  document: Document;
 
   @Column(() => Debtor)
   debtor: Debtor;
@@ -86,4 +87,7 @@ export class Invoice {
 
   @UpdateDateColumn()
   updatedAt: Date;
+
+  @DeleteDateColumn()
+  deletedAt: Date;
 }
