@@ -3,25 +3,19 @@ import { Invoice } from 'src/invoice/entities/invoice.entity';
 import {
   Column,
   CreateDateColumn,
+  DeleteDateColumn,
   Entity,
   ManyToOne,
   OneToMany,
   PrimaryGeneratedColumn,
   UpdateDateColumn,
 } from 'typeorm';
-
-enum AuctionStatus {
-  PENDING = 'pending',
-  ACTIVE = 'active',
-  PAUSED = 'paused',
-  COMPLETED = 'completed',
-  CANCELLED = 'cancelled',
-}
+import { AuctionStatus } from '../enum/auction-status.enum';
 
 @Entity('auctions')
 export class Auction {
-  @PrimaryGeneratedColumn()
-  id: number;
+  @PrimaryGeneratedColumn('uuid')
+  id: string;
 
   @ManyToOne(() => Invoice, (invoice) => invoice.auctions, {
     onDelete: 'CASCADE',
@@ -60,4 +54,7 @@ export class Auction {
 
   @UpdateDateColumn()
   updatedAt: Date;
+
+  @DeleteDateColumn()
+  deletedAt: Date;
 }

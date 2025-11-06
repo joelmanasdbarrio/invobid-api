@@ -2,16 +2,18 @@ import { BankAccount } from 'src/bank-account/entities/bank-account.entity';
 import { Document } from 'src/document/entities/document.entity';
 import { Invoice } from 'src/invoice/entities/invoice.entity';
 import { User } from 'src/user/common/entities/user.entity';
-import { Column, Entity, JoinColumn, OneToMany, OneToOne } from 'typeorm';
-
-export enum SupplierStatus {
-  PENDING = 'pending',
-  VERIFIED = 'verified',
-  CORRECTION = 'correction',
-  DENIED = 'denied',
-}
+import {
+  ChildEntity,
+  Column,
+  Entity,
+  JoinColumn,
+  OneToMany,
+  OneToOne,
+} from 'typeorm';
+import { SupplierStatus } from '../enums/supplier-status.enum';
 
 @Entity('suppliers')
+@ChildEntity('supplier')
 export class Supplier extends User {
   @Column('numeric', {
     unique: true,
