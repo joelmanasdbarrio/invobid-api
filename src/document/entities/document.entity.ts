@@ -12,10 +12,10 @@ export class Document {
   @PrimaryGeneratedColumn('uuid')
   id: number;
 
-  @Column({ nullable: false })
+  @Column('text', { nullable: false })
   title: string;
 
-  @Column({ nullable: false })
+  @Column('text', { nullable: false })
   path: string;
 
   @CreateDateColumn()
