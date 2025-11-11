@@ -3,18 +3,10 @@ import { Bid } from 'src/bid/entities/bid.entity';
 import { Document } from 'src/document/entities/document.entity';
 import { Invoice } from 'src/invoice/entities/invoice.entity';
 import { User } from 'src/user/common/entities/user.entity';
-import {
-  ChildEntity,
-  Column,
-  Entity,
-  JoinColumn,
-  OneToMany,
-  OneToOne,
-} from 'typeorm';
+import { ChildEntity, Column, JoinColumn, OneToMany, OneToOne } from 'typeorm';
 import { InvestorStatus } from '../enums/investor-status.enum';
 import { InvestorType } from '../enums/investor-type.enum';
 
-@Entity('investors')
 @ChildEntity('investor')
 export class Investor extends User {
   @Column('numeric', {
@@ -27,8 +19,7 @@ export class Investor extends User {
   })
   companyName: string;
 
-  @Column({
-    type: 'enum',
+  @Column('enum', {
     enum: InvestorType,
     nullable: false,
   })
@@ -45,14 +36,10 @@ export class Investor extends User {
   })
   status: InvestorStatus;
 
-  @Column({
-    default: false,
-  })
+  @Column('bool', { default: false })
   isOptedInNotificationsEmail: boolean;
 
-  @Column({
-    default: false,
-  })
+  @Column('bool', { default: false })
   isOptedInNotificationsSMS: boolean;
 
   @OneToMany(() => Invoice, (invoice) => invoice.investor, { cascade: true })

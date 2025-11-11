@@ -26,18 +26,13 @@ export class Auction {
   @Column('decimal', { precision: 5, scale: 2, nullable: false })
   discountRate: number;
 
-  @Column('date', {
-    nullable: true,
-  })
+  @Column('date', { nullable: true })
   auctionDate: Date;
 
-  @Column('date', {
-    nullable: true,
-  })
+  @Column('date', { nullable: true })
   dueDate: Date;
 
-  @Column({
-    type: 'enum',
+  @Column('enum', {
     enum: AuctionStatus,
     default: AuctionStatus.PENDING,
   })
