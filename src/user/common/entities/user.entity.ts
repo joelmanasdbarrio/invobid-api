@@ -1,4 +1,6 @@
 import {
+  BeforeInsert,
+  BeforeUpdate,
   Column,
   CreateDateColumn,
   DeleteDateColumn,
@@ -14,20 +16,16 @@ export abstract class User {
   @PrimaryGeneratedColumn('uuid')
   id: string;
 
-  @Column({
-    unique: true,
-  })
+  @Column('text', { unique: true })
   email: string;
 
-  @Column()
+  @Column('text', { select: false })
   password: string;
 
-  @Column()
+  @Column('text')
   name: string;
 
-  @Column({
-    default: true,
-  })
+  @Column('bool', { default: true, select: false })
   isActive: boolean;
 
   @CreateDateColumn()
@@ -41,4 +39,16 @@ export abstract class User {
 
   @Column()
   type: 'supplier' | 'investor' | 'admin';
+
+  @BeforeInsert()
+  normalizeEmailOnInsert() {
+    this.email = this.email.toLowerCase().trim();
+  }
+
+  @BeforeUpdate()
+  normalizeEmailOnUpdate() {
+    if (this.email) {
+      this.email = this.email.toLowerCase().trim();
+    }
+  }
 }

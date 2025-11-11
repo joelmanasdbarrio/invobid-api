@@ -16,16 +16,16 @@ import {
 } from 'typeorm';
 
 export class Debtor {
-  @Column({ nullable: false })
+  @Column('text', { nullable: false })
   id: string;
 
-  @Column({ nullable: false })
+  @Column('text', { nullable: false })
   companyName: string;
 
-  @Column()
+  @Column('text')
   website: string;
 
-  @Column()
+  @Column('text')
   email: string;
 }
 
@@ -70,10 +70,7 @@ export class Invoice {
   @Column('decimal', { precision: 15, scale: 2, nullable: false })
   amount: number;
 
-  @Column({
-    type: 'date',
-    nullable: false,
-  })
+  @Column('date', { nullable: false })
   dueDate: Date;
 
   @Column(() => TransactionFee)

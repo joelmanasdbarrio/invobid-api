@@ -22,7 +22,7 @@ import { SupplierModule } from './user/supplier/supplier.module';
       username: process.env.DB_USR,
       password: process.env.DB_PWD,
       autoLoadEntities: true,
-      synchronize: true,
+      synchronize: process.env.NODE_ENV !== 'production',
     }),
     UsersModule,
     SupplierModule,
