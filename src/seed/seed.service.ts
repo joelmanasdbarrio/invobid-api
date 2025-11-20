@@ -1,18 +1,18 @@
 import { Injectable } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import * as bcrypt from 'bcrypt';
-import { Auction } from 'src/auction/entities/auction.entity';
-import { AuctionStatus } from 'src/auction/enum/auction-status.enum';
-import { BankAccount } from 'src/bank-account/entities/bank-account.entity';
-import { Bid } from 'src/bid/entities/bid.entity';
-import { Document } from 'src/document/entities/document.entity';
-import { Invoice } from 'src/invoice/entities/invoice.entity';
-import { Admin } from 'src/user/admin/entities/admin.entity';
-import { Investor } from 'src/user/investor/entities/investor.entity';
-import { InvestorStatus } from 'src/user/investor/enums/investor-status.enum';
-import { InvestorType } from 'src/user/investor/enums/investor-type.enum';
-import { Supplier } from 'src/user/supplier/entities/supplier.entity';
-import { SupplierStatus } from 'src/user/supplier/enums/supplier-status.enum';
+import { Auction } from 'src/app/auction/entities/auction.entity';
+import { AuctionStatus } from 'src/app/auction/enum/auction-status.enum';
+import { BankAccount } from 'src/app/bank-account/entities/bank-account.entity';
+import { Bid } from 'src/app/bid/entities/bid.entity';
+import { Document } from 'src/app/document/entities/document.entity';
+import { Invoice } from 'src/app/invoice/entities/invoice.entity';
+import { Admin } from 'src/app/user/admin/entities/admin.entity';
+import { Investor } from 'src/app/user/investor/entities/investor.entity';
+import { InvestorStatus } from 'src/app/user/investor/enums/investor-status.enum';
+import { InvestorType } from 'src/app/user/investor/enums/investor-type.enum';
+import { Supplier } from 'src/app/user/supplier/entities/supplier.entity';
+import { SupplierStatus } from 'src/app/user/supplier/enums/supplier-status.enum';
 import { Repository } from 'typeorm';
 
 @Injectable()
@@ -98,14 +98,14 @@ export class SeedService {
 
     const admins = [
       this.adminRepository.create({
-        email: 'admin1@factoring.com',
+        email: 'admin1@invobid.com',
         password: password,
         name: 'John Administrator',
         isActive: true,
         type: 'admin',
       }),
       this.adminRepository.create({
-        email: 'admin2@factoring.com',
+        email: 'admin2@invobid.com',
         password: password,
         name: 'Jane Admin',
         isActive: true,
@@ -123,7 +123,6 @@ export class SeedService {
 
     const supplier1Document = this.documentRepository.create({
       title: 'TechCorp Business License',
-      path: '/documents/suppliers/techcorp-license.pdf',
     });
 
     const supplier1BankAccount = this.bankAccountRepository.create({
@@ -149,7 +148,6 @@ export class SeedService {
 
     const supplier2Document = this.documentRepository.create({
       title: 'GlobalTrade Business Registration',
-      path: '/documents/suppliers/globaltrade-registration.pdf',
     });
 
     const supplier2BankAccount = this.bankAccountRepository.create({
@@ -184,7 +182,6 @@ export class SeedService {
 
     const investor1Document = this.documentRepository.create({
       title: 'WealthFund Investment License',
-      path: '/documents/investors/wealthfund-license.pdf',
     });
 
     const investor1BankAccount = this.bankAccountRepository.create({
@@ -209,7 +206,6 @@ export class SeedService {
 
     const investor2Document = this.documentRepository.create({
       title: 'Capital Partners Registration',
-      path: '/documents/investors/capitalpartners-registration.pdf',
     });
 
     const investor2BankAccount = this.bankAccountRepository.create({
@@ -244,7 +240,6 @@ export class SeedService {
         const invoiceDocument = await this.documentRepository.save(
           this.documentRepository.create({
             title: `Invoice ${i} - ${supplier.companyName}`,
-            path: `/documents/invoices/${supplier.companyName.toLowerCase().replace(/\s+/g, '-')}-invoice-${i}.pdf`,
           }),
         );
 
