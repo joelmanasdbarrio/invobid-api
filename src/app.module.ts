@@ -1,19 +1,24 @@
 import { Module } from '@nestjs/common';
 import { ConfigModule } from '@nestjs/config';
 import { TypeOrmModule } from '@nestjs/typeorm';
-import { AuctionModule } from './auction/auction.module';
-import { BankAccountModule } from './bank-account/bank-account.module';
-import { BidModule } from './bid/bid.module';
-import { DocumentModule } from './document/document.module';
-import { InvoiceModule } from './invoice/invoice.module';
-import { AdminModule } from './user/admin/admin.module';
-import { UsersModule } from './user/common/users.module';
-import { InvestorModule } from './user/investor/investor.module';
-import { SupplierModule } from './user/supplier/supplier.module';
+import { AuctionModule } from './app/auction/auction.module';
+import { BankAccountModule } from './app/bank-account/bank-account.module';
+import { BidModule } from './app/bid/bid.module';
+import { DocumentModule } from './app/document/document.module';
+import { InvoiceModule } from './app/invoice/invoice.module';
+import { AdminModule } from './app/user/admin/admin.module';
+import { UsersModule } from './app/user/common/users.module';
+import { InvestorModule } from './app/user/investor/investor.module';
+import { SupplierModule } from './app/user/supplier/supplier.module';
+import { EnvConfiguration } from './config/env.config';
+import { EnvConfigSchema } from './config/env.schema';
 
 @Module({
   imports: [
-    ConfigModule.forRoot(),
+    ConfigModule.forRoot({
+      load: [EnvConfiguration],
+      validationSchema: EnvConfigSchema,
+    }),
     TypeOrmModule.forRoot({
       type: 'postgres',
       host: process.env.DB_HOST,

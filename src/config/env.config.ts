@@ -1,0 +1,14 @@
+export const EnvConfiguration = () => ({
+  environment: process.env.NODE_ENV || 'development',
+  port: process.env.PORT || 3000,
+  dbHost: process.env.DB_HOST,
+  dbPort: process.env.DB_PORT,
+  dbName: process.env.DB_NAME,
+  dbUsr: process.env.DB_USR,
+  dbPwd: process.env.DB_PWD,
+  minioUsr: process.env.MINIO_USR,
+  minioPwd: process.env.MINIO_PWD,
+  minioAccessKey: process.env.MINIO_ACCESS_KEY,
+  minioSecretKey: process.env.MINIO_SECRET_KEY,
+  minioBucketName: process.env.MINIO_BUCKET_NAME,
+});
