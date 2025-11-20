@@ -1,18 +1,18 @@
-name: factoring
+name: invobid
 services:
   db:
     image: postgres:14.19-alpine3.21
-    container_name: factoring_postgres
+    container_name: invobid_postgres
     environment:
       POSTGRES_USER: postgres
-      POSTGRES_PASSWORD: 1234
-      POSTGRES_DB: factoring_db
+      POSTGRES_PASSWORD: pass1234
+      POSTGRES_DB: invobid_db
     ports:
       - "5432:5432"
-    hostname: factoring_postgres
-  admin:
+    hostname: invobid_postgres
+  pgadmin:
     image: dpage/pgadmin4:snapshot
-    container_name: factoring_pgadmin
+    container_name: invobid_pgadmin
     environment:
       PGADMIN_DEFAULT_EMAIL: admin@mail.com
       PGADMIN_DEFAULT_PASSWORD: 1234
@@ -21,7 +21,33 @@ services:
     ports:
       - "8080:80"
     volumes:
-      - ./pgadmin/servers.json:/pgadmin4/servers.json:ro
-      - ./pgadmin/pgpass:/var/lib/pgadmin/pgpass:ro
+      - ./data/pgadmin/servers.json:/pgadmin4/servers.json:ro
+      - ./data/pgadmin/pgpass:/var/lib/pgadmin/pgpass:ro
     depends_on:
       - db
+  minio:
+    image: quay.io/minio/minio:RELEASE.2025-02-07T23-21-09Z
+    container_name: invobid_minio
+    ports:
+      - "9000:9000"
+      - "9001:9001"
+    environment:
+      - MINIO_ROOT_USER=minio
+      - MINIO_ROOT_PASSWORD=pass1234
+    volumes:
+      - ./data/minio:/data
+    command: server /data --console-address ":9001"
+  minio-init:
+    image: minio/mc:latest
+    container_name: invobid_minio_init
+    depends_on:
+      - minio
+    entrypoint: ["/bin/sh", "-c"]
+    command: >
+      'until mc --insecure alias set local http://minio:9000 "$${MINIO_ROOT_USER}" "$${MINIO_ROOT_PASSWORD}" >/dev/null 2>&1; do echo "waiting for minio..."; sleep 1; done;
+       mc --insecure mb --ignore-existing local/invobid;
+       echo "minio bucket created (or already existed)";'
+    environment:
+      MINIO_ROOT_USER: minio
+      MINIO_ROOT_PASSWORD: pass1234
+    restart: "no"

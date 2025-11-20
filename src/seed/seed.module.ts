@@ -1,15 +1,15 @@
 import { Module } from '@nestjs/common';
 import { ConfigModule } from '@nestjs/config';
 import { TypeOrmModule } from '@nestjs/typeorm';
-import { Auction } from 'src/auction/entities/auction.entity';
-import { BankAccount } from 'src/bank-account/entities/bank-account.entity';
-import { Bid } from 'src/bid/entities/bid.entity';
-import { Document } from 'src/document/entities/document.entity';
-import { Invoice } from 'src/invoice/entities/invoice.entity';
-import { Admin } from 'src/user/admin/entities/admin.entity';
-import { User } from 'src/user/common/entities/user.entity';
-import { Investor } from 'src/user/investor/entities/investor.entity';
-import { Supplier } from 'src/user/supplier/entities/supplier.entity';
+import { Auction } from 'src/app/auction/entities/auction.entity';
+import { BankAccount } from 'src/app/bank-account/entities/bank-account.entity';
+import { Bid } from 'src/app/bid/entities/bid.entity';
+import { Document } from 'src/app/document/entities/document.entity';
+import { Invoice } from 'src/app/invoice/entities/invoice.entity';
+import { Admin } from 'src/app/user/admin/entities/admin.entity';
+import { User } from 'src/app/user/common/entities/user.entity';
+import { Investor } from 'src/app/user/investor/entities/investor.entity';
+import { Supplier } from 'src/app/user/supplier/entities/supplier.entity';
 import { SeedService } from './seed.service';
 
 @Module({
