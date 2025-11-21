@@ -15,13 +15,16 @@ export class Document {
   @Column('text', { nullable: false })
   title: string;
 
-  @Column('jsonb', { nullable: true })
-  value: object;
+  @Column('text', { nullable: false })
+  filename: string;
 
-  @CreateDateColumn()
+  @Column('text', { nullable: false })
+  value: string;
+
+  @CreateDateColumn({ select: false })
   createdAt: Date;
 
-  @UpdateDateColumn()
+  @UpdateDateColumn({ select: false })
   updatedAt: Date;
 
   @DeleteDateColumn({ select: false })

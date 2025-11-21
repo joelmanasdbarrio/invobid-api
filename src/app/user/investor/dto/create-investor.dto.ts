@@ -1,4 +1,10 @@
-import { IsEmail, IsIn, IsPhoneNumber, IsString } from 'class-validator';
+import {
+  IsEmail,
+  IsIn,
+  IsPhoneNumber,
+  IsString,
+  MinLength,
+} from 'class-validator';
 import { InvestorType } from '../enums/investor-type.enum';
 
 export class CreateInvestorDto {
@@ -6,13 +12,15 @@ export class CreateInvestorDto {
   email: string;
 
   @IsString()
+  @MinLength(6)
   password: string;
 
   @IsString()
+  @MinLength(2)
   name: string;
 
-  @IsPhoneNumber()
-  phoneNumber: number;
+  @IsPhoneNumber('ES')
+  phoneNumber: string;
 
   @IsString()
   companyName: string;

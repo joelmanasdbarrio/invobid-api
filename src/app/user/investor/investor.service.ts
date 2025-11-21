@@ -12,15 +12,15 @@ export class InvestorService {
     return `This action returns all investor`;
   }
 
-  findOne(id: number) {
+  findOne(id: string) {
     return `This action returns a #${id} investor`;
   }
 
-  update(id: number, updateInvestorDto: UpdateInvestorDto) {
+  update(id: string, updateInvestorDto: UpdateInvestorDto) {
     return `This action updates a #${id} investor`;
   }
 
-  remove(id: number) {
+  remove(id: string) {
     return `This action removes a #${id} investor`;
   }
 }

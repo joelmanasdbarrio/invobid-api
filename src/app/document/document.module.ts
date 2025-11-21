@@ -1,11 +1,14 @@
 import { InternalServerErrorException, Module } from '@nestjs/common';
 import { ConfigModule, ConfigService } from '@nestjs/config';
 import { TypeOrmModule } from '@nestjs/typeorm';
+import {
+  BucketType,
+  IStorageService,
+} from '../../storage/interfaces/storage.interface';
+import { MinioStorageService } from '../../storage/services/minio-storage.service';
 import { DocumentController } from './document.controller';
 import { DocumentService } from './document.service';
 import { Document } from './entities/document.entity';
-import { IStorageService } from './interfaces/storage.interface';
-import { MinioStorageService } from './services/minio-storage.service';
 
 @Module({
   imports: [TypeOrmModule.forFeature([Document]), ConfigModule],
@@ -18,7 +21,7 @@ import { MinioStorageService } from './services/minio-storage.service';
         const environment = configService.get<string>('NODE_ENV');
 
         if (environment === 'local') {
-          return new MinioStorageService(configService);
+          return new MinioStorageService(configService, BucketType.DOCUMENTS);
         }
 
         throw new InternalServerErrorException(
@@ -28,5 +31,6 @@ import { MinioStorageService } from './services/minio-storage.service';
       inject: [ConfigService],
     },
   ],
+  exports: [DocumentService],
 })
 export class DocumentModule {}
