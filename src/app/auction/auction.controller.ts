@@ -4,6 +4,7 @@ import {
   Delete,
   Get,
   Param,
+  ParseUUIDPipe,
   Patch,
   Post,
 } from '@nestjs/common';
@@ -26,17 +27,20 @@ export class AuctionController {
   }
 
   @Get(':id')
-  findOne(@Param('id') id: string) {
-    return this.auctionService.findOne(+id);
+  findOne(@Param('id', ParseUUIDPipe) id: string) {
+    return this.auctionService.findOne(id);
   }
 
   @Patch(':id')
-  update(@Param('id') id: string, @Body() updateAuctionDto: UpdateAuctionDto) {
-    return this.auctionService.update(+id, updateAuctionDto);
+  update(
+    @Param('id', ParseUUIDPipe) id: string,
+    @Body() updateAuctionDto: UpdateAuctionDto,
+  ) {
+    return this.auctionService.update(id, updateAuctionDto);
   }
 
   @Delete(':id')
-  remove(@Param('id') id: string) {
-    return this.auctionService.remove(+id);
+  remove(@Param('id', ParseUUIDPipe) id: string) {
+    return this.auctionService.remove(id);
   }
 }

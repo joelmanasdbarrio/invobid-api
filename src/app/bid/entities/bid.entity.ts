@@ -29,9 +29,9 @@ export class Bid {
   @Column('decimal', { precision: 10, scale: 2, nullable: false })
   amount: number;
 
-  @CreateDateColumn()
+  @CreateDateColumn({ select: false })
   createdAt: Date;
 
-  @DeleteDateColumn()
+  @DeleteDateColumn({ select: false })
   deletedAt: Date;
 }

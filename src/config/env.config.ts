@@ -10,5 +10,6 @@ export const EnvConfiguration = () => ({
   minioPwd: process.env.MINIO_PWD,
   minioAccessKey: process.env.MINIO_ACCESS_KEY,
   minioSecretKey: process.env.MINIO_SECRET_KEY,
-  minioBucketName: process.env.MINIO_BUCKET_NAME,
+  minioDocsBucketName: process.env.MINIO_DOCS_BUCKET_NAME,
+  minioPublicBucketName: process.env.MINIO_PUBLIC_BUCKET_NAME,
 });

@@ -4,6 +4,7 @@ import {
   Delete,
   Get,
   Param,
+  ParseUUIDPipe,
   Patch,
   Post,
 } from '@nestjs/common';
@@ -26,20 +27,20 @@ export class InvestorController {
   }
 
   @Get(':id')
-  findOne(@Param('id') id: string) {
-    return this.investorService.findOne(+id);
+  findOne(@Param('id', ParseUUIDPipe) id: string) {
+    return this.investorService.findOne(id);
   }
 
   @Patch(':id')
   update(
-    @Param('id') id: string,
+    @Param('id', ParseUUIDPipe) id: string,
     @Body() updateInvestorDto: UpdateInvestorDto,
   ) {
-    return this.investorService.update(+id, updateInvestorDto);
+    return this.investorService.update(id, updateInvestorDto);
   }
 
   @Delete(':id')
-  remove(@Param('id') id: string) {
-    return this.investorService.remove(+id);
+  remove(@Param('id', ParseUUIDPipe) id: string) {
+    return this.investorService.remove(id);
   }
 }

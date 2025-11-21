@@ -9,14 +9,10 @@ import { InvestorType } from '../enums/investor-type.enum';
 
 @ChildEntity('investor')
 export class Investor extends User {
-  @Column('numeric', {
-    unique: true,
-  })
-  phoneNumber: number;
+  @Column('text', { unique: true })
+  phoneNumber: string;
 
-  @Column({
-    unique: true,
-  })
+  @Column('text', { unique: true })
   companyName: string;
 
   @Column('enum', {

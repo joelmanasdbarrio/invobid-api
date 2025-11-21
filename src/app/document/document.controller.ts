@@ -11,6 +11,7 @@ import {
   UseInterceptors,
 } from '@nestjs/common';
 import { FileInterceptor } from '@nestjs/platform-express';
+import { FileTypePipe } from '../../pipes/file-type.pipe';
 import { DocumentService } from './document.service';
 import { CreateDocumentDto } from './dto/create-document.dto';
 import { UpdateDocumentDto } from './dto/update-document.dto';
@@ -21,11 +22,13 @@ export class DocumentController {
 
   @Post()
   @UseInterceptors(FileInterceptor('file'))
-  create(
+  async create(
     @Body() createDocumentDto: CreateDocumentDto,
-    @UploadedFile() file: Express.Multer.File,
+    @UploadedFile(FileTypePipe) file: Express.Multer.File,
   ) {
-    return this.documentService.create(createDocumentDto, file);
+    const document = await this.documentService.create(createDocumentDto, file);
+    const storedFile = await this.documentService.uploadFile(file, document.id);
+    return { ...document, file: storedFile };
   }
 
   @Get()

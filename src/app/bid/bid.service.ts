@@ -12,15 +12,15 @@ export class BidService {
     return `This action returns all bid`;
   }
 
-  findOne(id: number) {
+  findOne(id: string) {
     return `This action returns a #${id} bid`;
   }
 
-  update(id: number, updateBidDto: UpdateBidDto) {
+  update(id: string, updateBidDto: UpdateBidDto) {
     return `This action updates a #${id} bid`;
   }
 
-  remove(id: number) {
+  remove(id: string) {
     return `This action removes a #${id} bid`;
   }
 }

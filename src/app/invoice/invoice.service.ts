@@ -12,15 +12,15 @@ export class InvoiceService {
     return `This action returns all invoice`;
   }
 
-  findOne(id: number) {
+  findOne(id: string) {
     return `This action returns a #${id} invoice`;
   }
 
-  update(id: number, updateInvoiceDto: UpdateInvoiceDto) {
+  update(id: string, updateInvoiceDto: UpdateInvoiceDto) {
     return `This action updates a #${id} invoice`;
   }
 
-  remove(id: number) {
+  remove(id: string) {
     return `This action removes a #${id} invoice`;
   }
 }

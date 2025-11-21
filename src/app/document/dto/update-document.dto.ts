@@ -1,5 +1,5 @@
 import { PartialType } from '@nestjs/mapped-types';
-import { IsObject, IsOptional, IsString } from 'class-validator';
+import { IsOptional, IsString } from 'class-validator';
 import { CreateDocumentDto } from './create-document.dto';
 
 export class UpdateDocumentDto extends PartialType(CreateDocumentDto) {
@@ -8,6 +8,6 @@ export class UpdateDocumentDto extends PartialType(CreateDocumentDto) {
   title?: string;
 
   @IsOptional()
-  @IsObject()
-  value?: object;
+  @IsString()
+  value?: string;
 }

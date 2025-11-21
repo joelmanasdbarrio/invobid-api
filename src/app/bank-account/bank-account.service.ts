@@ -12,15 +12,15 @@ export class BankAccountService {
     return `This action returns all bankAccount`;
   }
 
-  findOne(id: number) {
+  findOne(id: string) {
     return `This action returns a #${id} bankAccount`;
   }
 
-  update(id: number, updateBankAccountDto: UpdateBankAccountDto) {
+  update(id: string, updateBankAccountDto: UpdateBankAccountDto) {
     return `This action updates a #${id} bankAccount`;
   }
 
-  remove(id: number) {
+  remove(id: string) {
     return `This action removes a #${id} bankAccount`;
   }
 }
