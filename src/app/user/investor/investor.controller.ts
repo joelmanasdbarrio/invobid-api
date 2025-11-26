@@ -7,7 +7,9 @@ import {
   ParseUUIDPipe,
   Patch,
   Post,
+  UploadedFile,
 } from '@nestjs/common';
+import { FileTypePipe } from 'src/pipes/file-type.pipe';
 import { CreateInvestorDto } from './dto/create-investor.dto';
 import { UpdateInvestorDto } from './dto/update-investor.dto';
 import { InvestorService } from './investor.service';
@@ -17,8 +19,11 @@ export class InvestorController {
   constructor(private readonly investorService: InvestorService) {}
 
   @Post()
-  create(@Body() createInvestorDto: CreateInvestorDto) {
-    return this.investorService.create(createInvestorDto);
+  create(
+    @Body() createInvestorDto: CreateInvestorDto,
+    @UploadedFile(FileTypePipe) file: Express.Multer.File,
+  ) {
+    return this.investorService.create(createInvestorDto, file);
   }
 
   @Get()
@@ -35,8 +40,9 @@ export class InvestorController {
   update(
     @Param('id', ParseUUIDPipe) id: string,
     @Body() updateInvestorDto: UpdateInvestorDto,
+    @UploadedFile(FileTypePipe) file: Express.Multer.File,
   ) {
-    return this.investorService.update(id, updateInvestorDto);
+    return this.investorService.update(id, updateInvestorDto, file);
   }
 
   @Delete(':id')

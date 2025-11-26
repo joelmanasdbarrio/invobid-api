@@ -1,5 +1,6 @@
 import { PartialType } from '@nestjs/mapped-types';
 import { IsBoolean, IsIn, IsOptional } from 'class-validator';
+import { IsCifNif } from 'src/validations/is-nif-cif.validator';
 import { InvestorStatus } from '../enums/investor-status.enum';
 import { CreateInvestorDto } from './create-investor.dto';
 
@@ -10,7 +11,11 @@ export class UpdateInvestorDto extends PartialType(CreateInvestorDto) {
 
   @IsOptional()
   @IsIn(Object.values(InvestorStatus))
-  status?: string;
+  status?: InvestorStatus;
+
+  @IsOptional()
+  @IsCifNif()
+  documentValue: string;
 
   @IsOptional()
   @IsBoolean()
