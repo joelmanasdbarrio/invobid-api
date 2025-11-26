@@ -35,11 +35,11 @@ export class Supplier extends User {
   @OneToMany(() => Invoice, (invoice) => invoice.supplier, { cascade: true })
   invoices: Invoice[];
 
-  @OneToOne(() => Document, { cascade: true, eager: true })
+  @OneToOne(() => Document, { cascade: true })
   @JoinColumn()
   document: Document;
 
-  @OneToOne(() => BankAccount, { cascade: true, eager: true })
+  @OneToOne(() => BankAccount, { cascade: true })
   @JoinColumn()
   bankAccount: BankAccount;
 }

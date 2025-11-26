@@ -1,4 +1,5 @@
 import { IsEmail, IsPhoneNumber, IsString, MinLength } from 'class-validator';
+import { IsCifNif } from 'src/validations/is-nif-cif.validator';
 
 export class CreateSupplierDto {
   @IsEmail()
@@ -18,4 +19,7 @@ export class CreateSupplierDto {
   @IsString()
   @MinLength(2)
   companyName: string;
+
+  @IsCifNif()
+  documentValue: string;
 }
