@@ -5,6 +5,7 @@ import {
   IsString,
   MinLength,
 } from 'class-validator';
+import { IsCifNif } from 'src/validations/is-nif-cif.validator';
 import { InvestorType } from '../enums/investor-type.enum';
 
 export class CreateInvestorDto {
@@ -25,9 +26,9 @@ export class CreateInvestorDto {
   @IsString()
   companyName: string;
 
-  @IsIn(Object.values(InvestorType))
-  investorType: string;
+  @IsCifNif()
+  documentValue: string;
 
-  @IsString()
-  documentId: string;
+  @IsIn(Object.values(InvestorType))
+  investorType: InvestorType;
 }
