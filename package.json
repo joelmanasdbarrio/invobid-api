@@ -13,6 +13,7 @@
     "start:debug": "cross-env NODE_ENV=local nest start --debug --watch",
     "start:prod": "node NODE_ENV=production dist/main",
     "seed": "ts-node -r tsconfig-paths/register src/seed.ts",
+    "seed:clear": "ts-node -r tsconfig-paths/register src/seed.ts --clear-only",
     "init-local-dependencies": "docker-compose -f docker/docker-compose.yml up -d",
     "stop-local-dependencies": "docker-compose -f docker/docker-compose.yml down",
     "lint": "eslint \"{src,apps,libs,test}/**/*.ts\" --fix",

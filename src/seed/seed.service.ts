@@ -73,7 +73,7 @@ export class SeedService {
     }
   }
 
-  private async clearDatabase() {
+  async clearDatabase() {
     console.log('🗑️  Clearing existing data...');
 
     try {
