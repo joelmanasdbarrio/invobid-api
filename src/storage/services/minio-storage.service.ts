@@ -53,6 +53,32 @@ export class MinioStorageService implements IStorageService {
     });
   }
 
+  async onModuleInit() {
+    await this.healthCheck();
+  }
+
+  async healthCheck(): Promise<boolean> {
+    try {
+      // Check if bucket exists (this validates credentials and connection)
+      const bucketExists = await this.minioClient.bucketExists(this.bucket);
+
+      if (!bucketExists) {
+        throw new InternalServerErrorException(
+          `MinIO bucket '${this.bucket}' does not exist`,
+        );
+      }
+
+      this.minioClient.listObjects(this.bucket, this.prefix, false);
+
+      return true;
+    } catch (error) {
+      const message = error instanceof Error ? error.message : String(error);
+      throw new InternalServerErrorException(
+        `MinIO health check failed: ${message}. Check your credentials and bucket configuration.`,
+      );
+    }
+  }
+
   async uploadFile(
     file: Express.Multer.File,
     fileName?: string,
