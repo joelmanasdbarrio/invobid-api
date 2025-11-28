@@ -9,6 +9,10 @@ export class CreateAdminDto {
   password: string;
 
   @IsString()
+  @MinLength(6)
+  passwordRepeat: string;
+
+  @IsString()
   @MinLength(2)
   name: string;
 }

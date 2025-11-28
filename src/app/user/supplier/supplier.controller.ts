@@ -10,10 +10,7 @@ import {
   UploadedFiles,
   UseInterceptors,
 } from '@nestjs/common';
-import {
-  FileFieldsInterceptor,
-  FileInterceptor,
-} from '@nestjs/platform-express';
+import { FileFieldsInterceptor } from '@nestjs/platform-express';
 import { FilesTypePipe } from 'src/pipes/file-type.pipe';
 import { CreateSupplierDto } from './dto/create-supplier.dto';
 import { UpdateSupplierDto } from './dto/update-supplier.dto';
@@ -24,7 +21,12 @@ export class SupplierController {
   constructor(private readonly supplierService: SupplierService) {}
 
   @Post()
-  @UseInterceptors(FileInterceptor('document'))
+  @UseInterceptors(
+    FileFieldsInterceptor([
+      { name: 'document', maxCount: 1 },
+      { name: 'logo', maxCount: 1 },
+    ]),
+  )
   create(
     @Body() createSupplierDto: CreateSupplierDto,
     @UploadedFiles(FilesTypePipe)
