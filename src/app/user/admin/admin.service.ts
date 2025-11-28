@@ -18,6 +18,10 @@ export class AdminService {
   ) {}
 
   async create(createAdminDto: CreateAdminDto) {
+    if (createAdminDto.password !== createAdminDto.passwordRepeat) {
+      throw new BadRequestException('Passwords do not match');
+    }
+
     createAdminDto.password = await bcrypt.hash(createAdminDto.password, 10);
 
     try {
@@ -48,6 +52,12 @@ export class AdminService {
   }
 
   async update(id: string, updateAdminDto: UpdateAdminDto) {
+    if (updateAdminDto.password && updateAdminDto.passwordRepeat) {
+      if (updateAdminDto.password !== updateAdminDto.passwordRepeat) {
+        throw new BadRequestException('Passwords do not match');
+      }
+    }
+
     const admin = await this.findOne(id);
 
     try {

@@ -26,6 +26,10 @@ export class InvestorService {
     createInvestorDto: CreateInvestorDto,
     file: Express.Multer.File,
   ) {
+    if (createInvestorDto.password !== createInvestorDto.passwordRepeat) {
+      throw new BadRequestException('Passwords do not match');
+    }
+
     if (!file) {
       throw new Error('Document file is required');
     }
@@ -116,6 +120,12 @@ export class InvestorService {
     updateInvestorDto: UpdateInvestorDto,
     file: Express.Multer.File,
   ) {
+    if (updateInvestorDto.password && updateInvestorDto.passwordRepeat) {
+      if (updateInvestorDto.password !== updateInvestorDto.passwordRepeat) {
+        throw new BadRequestException('Passwords do not match');
+      }
+    }
+
     const investor = await this.findOne(id);
 
     const queryRunner =

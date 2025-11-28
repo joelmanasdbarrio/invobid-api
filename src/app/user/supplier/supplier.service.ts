@@ -30,6 +30,10 @@ export class SupplierService {
     createSupplierDto: CreateSupplierDto,
     files?: { document?: Express.Multer.File[]; logo?: Express.Multer.File[] },
   ) {
+    if (createSupplierDto.password !== createSupplierDto.passwordRepeat) {
+      throw new BadRequestException('Passwords do not match');
+    }
+
     const documentFile = files?.document ? files.document[0] : undefined;
     if (!documentFile) {
       throw new BadRequestException('Document file is required');
@@ -137,6 +141,12 @@ export class SupplierService {
     updateSupplierDto: UpdateSupplierDto,
     files?: { document?: Express.Multer.File[]; logo?: Express.Multer.File[] },
   ) {
+    if (updateSupplierDto.password && updateSupplierDto.passwordRepeat) {
+      if (updateSupplierDto.password !== updateSupplierDto.passwordRepeat) {
+        throw new BadRequestException('Passwords do not match');
+      }
+    }
+
     const supplier = await this.findOne(id);
 
     const queryRunner =

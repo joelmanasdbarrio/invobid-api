@@ -8,17 +8,20 @@ import {
   Patch,
   Post,
   UploadedFile,
+  UseInterceptors,
 } from '@nestjs/common';
+import { FileInterceptor } from '@nestjs/platform-express';
 import { FileTypePipe } from 'src/pipes/file-type.pipe';
 import { CreateInvestorDto } from './dto/create-investor.dto';
 import { UpdateInvestorDto } from './dto/update-investor.dto';
 import { InvestorService } from './investor.service';
 
-@Controller('investor')
+@Controller('investors')
 export class InvestorController {
   constructor(private readonly investorService: InvestorService) {}
 
   @Post()
+  @UseInterceptors(FileInterceptor('document'))
   create(
     @Body() createInvestorDto: CreateInvestorDto,
     @UploadedFile(FileTypePipe) file: Express.Multer.File,
@@ -37,6 +40,7 @@ export class InvestorController {
   }
 
   @Patch(':id')
+  @UseInterceptors(FileInterceptor('document'))
   update(
     @Param('id', ParseUUIDPipe) id: string,
     @Body() updateInvestorDto: UpdateInvestorDto,
