@@ -7,8 +7,8 @@ import { SupplierStatus } from '../enums/supplier-status.enum';
 
 @ChildEntity('supplier')
 export class Supplier extends User {
-  @Column('numeric', { unique: true })
-  phoneNumber: number;
+  @Column('text', { unique: true })
+  phoneNumber: string;
 
   @Column('text', { unique: true })
   companyName: string;
@@ -22,23 +22,24 @@ export class Supplier extends User {
   @Column('enum', {
     enum: SupplierStatus,
     default: SupplierStatus.PENDING,
+    select: false,
   })
   status: SupplierStatus;
 
-  @Column('bool', { default: false })
+  @Column('bool', { default: false, select: false })
   isOptedInNotificationsEmail: boolean;
 
-  @Column('bool', { default: false })
+  @Column('bool', { default: false, select: false })
   isOptedInNotificationsSMS: boolean;
 
   @OneToMany(() => Invoice, (invoice) => invoice.supplier, { cascade: true })
   invoices: Invoice[];
 
-  @OneToOne(() => Document, { cascade: true, eager: true })
+  @OneToOne(() => Document, { cascade: true })
   @JoinColumn()
   document: Document;
 
-  @OneToOne(() => BankAccount, { cascade: true, eager: true })
+  @OneToOne(() => BankAccount, { cascade: true })
   @JoinColumn()
   bankAccount: BankAccount;
 }

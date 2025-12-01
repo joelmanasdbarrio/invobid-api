@@ -28,13 +28,13 @@ export abstract class User {
   @Column('bool', { default: true, select: false })
   isActive: boolean;
 
-  @CreateDateColumn()
+  @CreateDateColumn({ select: false })
   createdAt: Date;
 
-  @UpdateDateColumn()
+  @UpdateDateColumn({ select: false })
   updatedAt: Date;
 
-  @DeleteDateColumn()
+  @DeleteDateColumn({ select: false })
   deletedAt: Date;
 
   @Column()
@@ -45,10 +45,22 @@ export abstract class User {
     this.email = this.email.toLowerCase().trim();
   }
 
+  @BeforeInsert()
+  normalizeNameOnInsert() {
+    this.name = this.name.trim();
+  }
+
   @BeforeUpdate()
   normalizeEmailOnUpdate() {
     if (this.email) {
       this.email = this.email.toLowerCase().trim();
+    }
+  }
+
+  @BeforeUpdate()
+  normalizeNameOnUpdate() {
+    if (this.name) {
+      this.name = this.name.trim();
     }
   }
 }

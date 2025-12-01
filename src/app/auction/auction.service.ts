@@ -12,15 +12,15 @@ export class AuctionService {
     return `This action returns all auction`;
   }
 
-  findOne(id: number) {
+  findOne(id: string) {
     return `This action returns a #${id} auction`;
   }
 
-  update(id: number, updateAuctionDto: UpdateAuctionDto) {
+  update(id: string, updateAuctionDto: UpdateAuctionDto) {
     return `This action updates a #${id} auction`;
   }
 
-  remove(id: number) {
+  remove(id: string) {
     return `This action removes a #${id} auction`;
   }
 }

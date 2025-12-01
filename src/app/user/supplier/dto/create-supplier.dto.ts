@@ -1,21 +1,37 @@
-import { IsEmail, IsPhoneNumber, IsString } from 'class-validator';
+import {
+  IsEmail,
+  IsPhoneNumber,
+  IsString,
+  IsUrl,
+  MinLength,
+} from 'class-validator';
+import { IsCifNif } from 'src/validations/is-nif-cif.validator';
 
 export class CreateSupplierDto {
-  @IsEmail()
-  email: string;
-
   @IsString()
-  password: string;
-
-  @IsString()
+  @MinLength(2)
   name: string;
-
-  @IsPhoneNumber()
-  phoneNumber: number;
 
   @IsString()
   companyName: string;
 
+  @IsEmail()
+  email: string;
+
+  @IsPhoneNumber('ES')
+  phoneNumber: string;
+
   @IsString()
-  documentId: string;
+  @MinLength(6)
+  password: string;
+
+  @IsString()
+  @MinLength(6)
+  passwordRepeat: string;
+
+  @IsCifNif()
+  documentValue: string;
+
+  @IsUrl()
+  website: string;
 }

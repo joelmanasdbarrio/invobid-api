@@ -1,25 +1,38 @@
-import { IsEmail, IsIn, IsPhoneNumber, IsString } from 'class-validator';
+import {
+  IsEmail,
+  IsIn,
+  IsPhoneNumber,
+  IsString,
+  MinLength,
+} from 'class-validator';
+import { IsCifNif } from 'src/validations/is-nif-cif.validator';
 import { InvestorType } from '../enums/investor-type.enum';
 
 export class CreateInvestorDto {
-  @IsEmail()
-  email: string;
+  @IsIn(Object.values(InvestorType))
+  investorType: InvestorType;
 
   @IsString()
-  password: string;
-
-  @IsString()
+  @MinLength(2)
   name: string;
-
-  @IsPhoneNumber()
-  phoneNumber: number;
 
   @IsString()
   companyName: string;
 
-  @IsIn(Object.values(InvestorType))
-  investorType: string;
+  @IsEmail()
+  email: string;
+
+  @IsPhoneNumber('ES')
+  phoneNumber: string;
 
   @IsString()
-  documentId: string;
+  @MinLength(6)
+  password: string;
+
+  @IsString()
+  @MinLength(6)
+  passwordRepeat: string;
+
+  @IsCifNif()
+  documentValue: string;
 }

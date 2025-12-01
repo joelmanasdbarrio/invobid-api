@@ -5,6 +5,7 @@ export class CreateDocumentDto {
   @IsNotEmpty()
   title: string;
 
+  @IsString()
   @IsNotEmpty()
-  file: Express.Multer.File;
+  value: string;
 }
