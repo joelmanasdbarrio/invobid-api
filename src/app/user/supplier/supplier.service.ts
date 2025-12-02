@@ -101,13 +101,13 @@ export class SupplierService {
         // eslint-disable-next-line
         if (error.detail.includes('phoneNumber')) {
           throw new BadRequestException(
-            `Supplier with phone number '${createSupplierDto.phoneNumber}' already exists`,
+            `User with phone number '${createSupplierDto.phoneNumber}' already exists`,
           );
         }
         // eslint-disable-next-line
         if (error.detail.includes('companyName')) {
           throw new BadRequestException(
-            `Supplier with company name '${createSupplierDto.companyName}' already exists`,
+            `User with company name '${createSupplierDto.companyName}' already exists`,
           );
         }
         // eslint-disable-next-line
@@ -158,7 +158,7 @@ export class SupplierService {
     let logoPath: string | null = null;
     try {
       if (updateSupplierDto.password) {
-        updateSupplierDto.password = await bcrypt.hash(
+        updateSupplierDto.password = bcrypt.hashSync(
           updateSupplierDto.password,
           10,
         );

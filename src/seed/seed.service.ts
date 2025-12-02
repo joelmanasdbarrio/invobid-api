@@ -94,7 +94,7 @@ export class SeedService {
   }
 
   private async seedAdmins(): Promise<Admin[]> {
-    const password = await bcrypt.hash('Admin123!', 10);
+    const password = bcrypt.hashSync('Admin123!', 10);
 
     const admins = [
       this.adminRepository.create({
@@ -117,7 +117,7 @@ export class SeedService {
   }
 
   private async seedSuppliers(): Promise<Supplier[]> {
-    const password = await bcrypt.hash('Supplier123!', 10);
+    const password = bcrypt.hashSync('Supplier123!', 10);
 
     const suppliers: Supplier[] = [];
 
@@ -176,7 +176,7 @@ export class SeedService {
   }
 
   private async seedInvestors(): Promise<Investor[]> {
-    const password = await bcrypt.hash('Investor123!', 10);
+    const password = bcrypt.hashSync('Investor123!', 10);
 
     const investors: Investor[] = [];
 

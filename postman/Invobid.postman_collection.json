@@ -1,0 +1,596 @@
+{
+	"info": {
+		"_postman_id": "f4b3c4fc-4a89-42ca-bd80-9b776e4a72cf",
+		"name": "Invobid",
+		"schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json",
+		"_exporter_id": "24297190"
+	},
+	"item": [
+		{
+			"name": "Auth",
+			"item": [
+				{
+					"name": "Login",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"const res = JSON.parse(pm.response.text())\r",
+									"pm.collectionVariables.set(\"token\", res.access_token)"
+								],
+								"type": "text/javascript",
+								"packages": {},
+								"requests": {}
+							}
+						}
+					],
+					"request": {
+						"method": "POST",
+						"header": [],
+						"body": {
+							"mode": "raw",
+							"raw": "{\r\n    \"email\": \"email@mail.com\",\r\n    \"password\": \"pass1234\"\r\n}",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						},
+						"url": {
+							"raw": "{{url}}/auth/login",
+							"host": [
+								"{{url}}"
+							],
+							"path": [
+								"auth",
+								"login"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Create Supplier",
+					"request": {
+						"method": "POST",
+						"header": [],
+						"body": {
+							"mode": "formdata",
+							"formdata": [
+								{
+									"key": "name",
+									"value": "Supplier 1",
+									"type": "text"
+								},
+								{
+									"key": "companyName",
+									"value": "Test Supplier 1 S.L.",
+									"type": "text"
+								},
+								{
+									"key": "email",
+									"value": "supplier1@mail.com",
+									"type": "text"
+								},
+								{
+									"key": "phoneNumber",
+									"value": "654987321",
+									"type": "text"
+								},
+								{
+									"key": "password",
+									"value": "pass1234",
+									"type": "text"
+								},
+								{
+									"key": "passwordRepeat",
+									"value": "pass1234",
+									"type": "text"
+								},
+								{
+									"key": "documentValue",
+									"value": "21706462M",
+									"type": "text",
+									"disabled": true
+								},
+								{
+									"key": "document",
+									"type": "file",
+									"src": "/C:/Users/joelm/Git/Invobid/invobid-api/test/sample_files/dni.jpg"
+								},
+								{
+									"key": "website",
+									"value": "https://www.google.com",
+									"type": "text"
+								},
+								{
+									"key": "logo",
+									"type": "file",
+									"src": "/C:/Users/joelm/Git/Invobid/invobid-api/test/sample_files/dni.jpg"
+								}
+							]
+						},
+						"url": {
+							"raw": "{{url}}/auth/register/supplier",
+							"host": [
+								"{{url}}"
+							],
+							"path": [
+								"auth",
+								"register",
+								"supplier"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Create Administrator",
+					"request": {
+						"method": "POST",
+						"header": [],
+						"body": {
+							"mode": "raw",
+							"raw": "{\r\n    \"email\": \"email@mail.com\",\r\n    \"password\": \"pass1234\",\r\n    \"passwordRepeat\": \"pass1234\",\r\n    \"name\": \"Admin 1\"\r\n}",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						},
+						"url": {
+							"raw": "{{url}}/auth/register/admin",
+							"host": [
+								"{{url}}"
+							],
+							"path": [
+								"auth",
+								"register",
+								"admin"
+							]
+						}
+					},
+					"response": []
+				}
+			]
+		},
+		{
+			"name": "Documents",
+			"item": [
+				{
+					"name": "Upload Document",
+					"request": {
+						"method": "POST",
+						"header": [],
+						"body": {
+							"mode": "formdata",
+							"formdata": [
+								{
+									"key": "title",
+									"value": "my document",
+									"type": "text"
+								},
+								{
+									"key": "file",
+									"type": "file",
+									"src": "/C:/Users/joelm/Downloads/download.svg"
+								}
+							]
+						},
+						"url": {
+							"raw": "{{url}}/documents",
+							"host": [
+								"{{url}}"
+							],
+							"path": [
+								"documents"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Get All Documents",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{url}}/documents",
+							"host": [
+								"{{url}}"
+							],
+							"path": [
+								"documents"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Get Document",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{url}}/documents/:documentId",
+							"host": [
+								"{{url}}"
+							],
+							"path": [
+								"documents",
+								":documentId"
+							],
+							"variable": [
+								{
+									"key": "documentId",
+									"value": "ed8feeb7-3d8a-4a97-ac4b-07335682ead8"
+								}
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Update Document",
+					"request": {
+						"method": "PATCH",
+						"header": [],
+						"body": {
+							"mode": "raw",
+							"raw": "{\r\n    \"title\": \"Title\",\r\n    \"value\": null\r\n}",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						},
+						"url": {
+							"raw": "{{url}}/documents/:documentId",
+							"host": [
+								"{{url}}"
+							],
+							"path": [
+								"documents",
+								":documentId"
+							],
+							"variable": [
+								{
+									"key": "documentId",
+									"value": "ed8feeb7-3d8a-4a97-ac4b-07335682ead8"
+								}
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Delete Document",
+					"request": {
+						"method": "DELETE",
+						"header": [],
+						"url": {
+							"raw": "{{url}}/documents/:documentId",
+							"host": [
+								"{{url}}"
+							],
+							"path": [
+								"documents",
+								":documentId"
+							],
+							"variable": [
+								{
+									"key": "documentId",
+									"value": "9559d8cc-6378-48ff-9aa2-35abcbd1797f"
+								}
+							]
+						}
+					},
+					"response": []
+				}
+			]
+		},
+		{
+			"name": "Users",
+			"item": [
+				{
+					"name": "Administrators",
+					"item": [
+						{
+							"name": "Get All Administrators",
+							"request": {
+								"method": "GET",
+								"header": [],
+								"url": {
+									"raw": "{{url}}/admins",
+									"host": [
+										"{{url}}"
+									],
+									"path": [
+										"admins"
+									]
+								}
+							},
+							"response": []
+						},
+						{
+							"name": "Get Administrator",
+							"request": {
+								"method": "GET",
+								"header": [],
+								"url": {
+									"raw": "{{url}}/admins/:adminId",
+									"host": [
+										"{{url}}"
+									],
+									"path": [
+										"admins",
+										":adminId"
+									],
+									"variable": [
+										{
+											"key": "adminId",
+											"value": "4fb3bfd0-0fb4-4d83-9e45-668b36e18279"
+										}
+									]
+								}
+							},
+							"response": []
+						},
+						{
+							"name": "Update Administrator",
+							"request": {
+								"method": "PATCH",
+								"header": [],
+								"body": {
+									"mode": "raw",
+									"raw": "{\r\n    \"email\": \"email@mail.com\"\r\n}",
+									"options": {
+										"raw": {
+											"language": "json"
+										}
+									}
+								},
+								"url": {
+									"raw": "{{url}}/admins/:adminId",
+									"host": [
+										"{{url}}"
+									],
+									"path": [
+										"admins",
+										":adminId"
+									],
+									"variable": [
+										{
+											"key": "adminId",
+											"value": "4fb3bfd0-0fb4-4d83-9e45-668b36e18279"
+										}
+									]
+								}
+							},
+							"response": []
+						}
+					]
+				},
+				{
+					"name": "Suppliers",
+					"item": [
+						{
+							"name": "Get All Suppliers",
+							"protocolProfileBehavior": {
+								"disableBodyPruning": true
+							},
+							"request": {
+								"auth": {
+									"type": "bearer",
+									"bearer": [
+										{
+											"key": "token",
+											"value": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJlbWFpbCI6ImVtYWlsQG1haWwuY29tIiwiaWF0IjoxNzY0NzA0MjQ5LCJleHAiOjE3NjQ3OTA2NDl9.7CiItlEeOkMWGN6AsjHTxMfv34vtvWjcuWaLufHzMzg",
+											"type": "string"
+										}
+									]
+								},
+								"method": "GET",
+								"header": [],
+								"body": {
+									"mode": "formdata",
+									"formdata": []
+								},
+								"url": {
+									"raw": "{{url}}/suppliers",
+									"host": [
+										"{{url}}"
+									],
+									"path": [
+										"suppliers"
+									]
+								}
+							},
+							"response": []
+						},
+						{
+							"name": "Get Supplier",
+							"protocolProfileBehavior": {
+								"disableBodyPruning": true
+							},
+							"request": {
+								"method": "GET",
+								"header": [],
+								"body": {
+									"mode": "formdata",
+									"formdata": []
+								},
+								"url": {
+									"raw": "{{url}}/suppliers/:supplierId",
+									"host": [
+										"{{url}}"
+									],
+									"path": [
+										"suppliers",
+										":supplierId"
+									],
+									"variable": [
+										{
+											"key": "supplierId",
+											"value": "54fb8bf5-f7ac-4d03-8fe8-05cb57644382"
+										}
+									]
+								}
+							},
+							"response": []
+						},
+						{
+							"name": "Update Supplier",
+							"request": {
+								"method": "PATCH",
+								"header": [],
+								"body": {
+									"mode": "formdata",
+									"formdata": [
+										{
+											"key": "email",
+											"value": "supplier1@mail.com",
+											"type": "text",
+											"disabled": true
+										},
+										{
+											"key": "password",
+											"value": "pass1234",
+											"type": "text",
+											"disabled": true
+										},
+										{
+											"key": "name",
+											"value": "Supplier name",
+											"type": "text",
+											"disabled": true
+										},
+										{
+											"key": "phoneNumber",
+											"value": "654987321",
+											"type": "text",
+											"disabled": true
+										},
+										{
+											"key": "companyName",
+											"value": "Test Supplier 1 S.L.",
+											"type": "text",
+											"disabled": true
+										},
+										{
+											"key": "document",
+											"type": "file",
+											"src": "/C:/Users/joelm/Documents/Git/Invobid/invobid-api/test/sample_files/dni.jpg",
+											"disabled": true
+										},
+										{
+											"key": "website",
+											"value": "website.com",
+											"type": "text"
+										},
+										{
+											"key": "logo",
+											"type": "file",
+											"src": "/C:/Users/joelm/Downloads/IMG_7652.JPEG",
+											"disabled": true
+										}
+									]
+								},
+								"url": {
+									"raw": "{{url}}/suppliers/:supplierId",
+									"host": [
+										"{{url}}"
+									],
+									"path": [
+										"suppliers",
+										":supplierId"
+									],
+									"variable": [
+										{
+											"key": "supplierId",
+											"value": "54fb8bf5-f7ac-4d03-8fe8-05cb57644382"
+										}
+									]
+								}
+							},
+							"response": []
+						},
+						{
+							"name": "Delete Supplier",
+							"request": {
+								"method": "DELETE",
+								"header": [],
+								"body": {
+									"mode": "formdata",
+									"formdata": []
+								},
+								"url": {
+									"raw": "{{url}}/suppliers/:supplierId",
+									"host": [
+										"{{url}}"
+									],
+									"path": [
+										"suppliers",
+										":supplierId"
+									],
+									"variable": [
+										{
+											"key": "supplierId",
+											"value": "71e6dcfa-d92c-41f7-af50-bd3b8337c9e4"
+										}
+									]
+								}
+							},
+							"response": []
+						}
+					]
+				}
+			]
+		}
+	],
+	"auth": {
+		"type": "bearer",
+		"bearer": [
+			{
+				"key": "token",
+				"value": "{{token}}",
+				"type": "string"
+			}
+		]
+	},
+	"event": [
+		{
+			"listen": "prerequest",
+			"script": {
+				"type": "text/javascript",
+				"packages": {},
+				"requests": {},
+				"exec": [
+					""
+				]
+			}
+		},
+		{
+			"listen": "test",
+			"script": {
+				"type": "text/javascript",
+				"packages": {},
+				"requests": {},
+				"exec": [
+					""
+				]
+			}
+		}
+	],
+	"variable": [
+		{
+			"key": "url-local",
+			"value": ""
+		},
+		{
+			"key": "token",
+			"value": ""
+		}
+	]
+}
