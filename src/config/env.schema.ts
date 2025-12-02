@@ -5,6 +5,7 @@ export const EnvConfigSchema = Joi.object({
     .valid('development', 'production', 'local')
     .default('development'),
   PORT: Joi.number().default(3000),
+  JWT_SECRET: Joi.string().required(),
   DB_HOST: Joi.string().required(),
   DB_PORT: Joi.number().required(),
   DB_NAME: Joi.string().required(),

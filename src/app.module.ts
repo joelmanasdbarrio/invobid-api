@@ -12,6 +12,7 @@ import { InvestorModule } from './app/user/investor/investor.module';
 import { SupplierModule } from './app/user/supplier/supplier.module';
 import { EnvConfiguration } from './config/env.config';
 import { EnvConfigSchema } from './config/env.schema';
+import { AuthModule } from './app/user/auth/auth.module';
 
 @Module({
   imports: [
@@ -38,6 +39,7 @@ import { EnvConfigSchema } from './config/env.schema';
     DocumentModule,
     BidModule,
     BankAccountModule,
+    AuthModule,
   ],
 })
 export class AppModule {}

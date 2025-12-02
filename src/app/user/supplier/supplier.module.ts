@@ -1,10 +1,15 @@
-import { InternalServerErrorException, Module } from '@nestjs/common';
+import {
+  forwardRef,
+  InternalServerErrorException,
+  Module,
+} from '@nestjs/common';
 import { ConfigModule, ConfigService } from '@nestjs/config';
 import { TypeOrmModule } from '@nestjs/typeorm';
 import { BankAccountModule } from 'src/app/bank-account/bank-account.module';
 import { DocumentModule } from 'src/app/document/document.module';
 import { BucketType } from 'src/storage/interfaces/storage.interface';
 import { MinioStorageService } from 'src/storage/services/minio-storage.service';
+import { AuthModule } from '../auth/auth.module';
 import { Supplier } from './entities/supplier.entity';
 import { SupplierController } from './supplier.controller';
 import { SupplierService } from './supplier.service';
@@ -15,6 +20,7 @@ import { SupplierService } from './supplier.service';
     BankAccountModule,
     DocumentModule,
     ConfigModule,
+    forwardRef(() => AuthModule),
   ],
   controllers: [SupplierController],
   providers: [
@@ -35,5 +41,6 @@ import { SupplierService } from './supplier.service';
       inject: [ConfigService],
     },
   ],
+  exports: [SupplierService],
 })
 export class SupplierModule {}

@@ -31,7 +31,7 @@ export class InvestorService {
     }
 
     if (!file) {
-      throw new Error('Document file is required');
+      throw new BadRequestException('Document file is required');
     }
 
     const queryRunner =
@@ -79,13 +79,13 @@ export class InvestorService {
         // eslint-disable-next-line
         if (error.detail.includes('phoneNumber')) {
           throw new BadRequestException(
-            `Investor with phone number '${createInvestorDto.phoneNumber}' already exists`,
+            `User with phone number '${createInvestorDto.phoneNumber}' already exists`,
           );
         }
         // eslint-disable-next-line
         if (error.detail.includes('companyName')) {
           throw new BadRequestException(
-            `Investor with company name '${createInvestorDto.companyName}' already exists`,
+            `User with company name '${createInvestorDto.companyName}' already exists`,
           );
         }
         // eslint-disable-next-line

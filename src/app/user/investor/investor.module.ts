@@ -16,5 +16,6 @@ import { InvestorService } from './investor.service';
   ],
   controllers: [InvestorController],
   providers: [InvestorService],
+  exports: [InvestorService],
 })
 export class InvestorModule {}

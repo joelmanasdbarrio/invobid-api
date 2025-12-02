@@ -5,6 +5,7 @@ import {
 } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import * as bcrypt from 'bcrypt';
+import 'src/utils/object.extensions';
 import { Repository } from 'typeorm';
 import { CreateAdminDto } from './dto/create-admin.dto';
 import { UpdateAdminDto } from './dto/update-admin.dto';
@@ -56,12 +57,18 @@ export class AdminService {
       if (updateAdminDto.password !== updateAdminDto.passwordRepeat) {
         throw new BadRequestException('Passwords do not match');
       }
+      updateAdminDto.password = await bcrypt.hash(updateAdminDto.password, 10);
     }
 
     const admin = await this.findOne(id);
 
+    const updatedAdmin = this.adminRepository.merge(
+      admin,
+      updateAdminDto.removeUndefined(),
+    );
+
     try {
-      await this.adminRepository.update(id, updateAdminDto);
+      await this.adminRepository.save(updatedAdmin);
     } catch (error) {
       console.error(error);
       // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access

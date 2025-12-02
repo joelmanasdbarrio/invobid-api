@@ -6,13 +6,11 @@ import {
   Param,
   ParseUUIDPipe,
   Patch,
-  Post,
   UploadedFiles,
   UseInterceptors,
 } from '@nestjs/common';
 import { FileFieldsInterceptor } from '@nestjs/platform-express';
 import { FilesTypePipe } from 'src/pipes/file-type.pipe';
-import { CreateSupplierDto } from './dto/create-supplier.dto';
 import { UpdateSupplierDto } from './dto/update-supplier.dto';
 import { SupplierService } from './supplier.service';
 
@@ -20,29 +18,22 @@ import { SupplierService } from './supplier.service';
 export class SupplierController {
   constructor(private readonly supplierService: SupplierService) {}
 
-  @Post()
-  @UseInterceptors(
-    FileFieldsInterceptor([
-      { name: 'document', maxCount: 1 },
-      { name: 'logo', maxCount: 1 },
-    ]),
-  )
-  create(
-    @Body() createSupplierDto: CreateSupplierDto,
-    @UploadedFiles(FilesTypePipe)
-    files: { document: Express.Multer.File[]; logo: Express.Multer.File[] },
-  ) {
-    return this.supplierService.create(createSupplierDto, files);
-  }
-
   @Get()
-  findAll() {
-    return this.supplierService.findAll();
+  async findAll() {
+    const res = await this.supplierService.findAll();
+    return {
+      status: 'success',
+      data: res,
+    };
   }
 
   @Get(':id')
-  findOne(@Param('id', ParseUUIDPipe) id: string) {
-    return this.supplierService.findOne(id);
+  async findOne(@Param('id', ParseUUIDPipe) id: string) {
+    const res = await this.supplierService.findOne(id);
+    return {
+      status: 'success',
+      data: res,
+    };
   }
 
   @Patch(':id')
@@ -52,17 +43,32 @@ export class SupplierController {
       { name: 'logo', maxCount: 1 },
     ]),
   )
-  update(
+  async update(
     @Param('id', ParseUUIDPipe) id: string,
     @Body() updateSupplierDto: UpdateSupplierDto,
     @UploadedFiles(FilesTypePipe)
     files?: { document?: Express.Multer.File[]; logo?: Express.Multer.File[] },
   ) {
-    return this.supplierService.update(id, updateSupplierDto, files);
+    const supplier = await this.supplierService.update(
+      id,
+      updateSupplierDto,
+      files,
+    );
+
+    // eslint-disable-next-line @typescript-eslint/no-unused-vars
+    const { password, ...safeUser } = supplier;
+
+    return {
+      status: 'success',
+      data: safeUser,
+    };
   }
 
   @Delete(':id')
-  remove(@Param('id', ParseUUIDPipe) id: string) {
-    return this.supplierService.remove(id);
+  async remove(@Param('id', ParseUUIDPipe) id: string) {
+    await this.supplierService.remove(id);
+    return {
+      status: 'success',
+    };
   }
 }
