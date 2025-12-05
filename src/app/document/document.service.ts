@@ -8,10 +8,10 @@ import { ConfigService } from '@nestjs/config';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import { v4 as uuidv4 } from 'uuid';
-import { type IStorageService } from '../../storage/interfaces/storage.interface';
 import { CreateDocumentDto } from './dto/create-document.dto';
 import { UpdateDocumentDto } from './dto/update-document.dto';
 import { Document } from './entities/document.entity';
+import { type IStorageService } from './interfaces/storage.interface';
 
 @Injectable()
 export class DocumentService {
@@ -51,7 +51,7 @@ export class DocumentService {
     documentId: string,
   ): Promise<string | null> {
     const storedFile = await this.documentStorageService.uploadFile(
-      file,
+      file.buffer,
       this.getFilename(file, documentId),
     );
 

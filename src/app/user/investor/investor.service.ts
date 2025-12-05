@@ -24,13 +24,13 @@ export class InvestorService {
 
   async create(
     createInvestorDto: CreateInvestorDto,
-    file: Express.Multer.File,
+    documentFile: Express.Multer.File,
   ) {
     if (createInvestorDto.password !== createInvestorDto.passwordRepeat) {
       throw new BadRequestException('Passwords do not match');
     }
 
-    if (!file) {
+    if (!documentFile) {
       throw new BadRequestException('Document file is required');
     }
 
@@ -51,7 +51,7 @@ export class InvestorService {
           title: `${createInvestorDto.companyName}'s ID document`,
           value: createInvestorDto.documentValue,
         },
-        file,
+        documentFile,
       );
 
       const bankAccount = await this.bankAccountService.create({});
@@ -63,7 +63,10 @@ export class InvestorService {
       });
 
       const savedInvestor = await queryRunner.manager.save(investor);
-      documentPath = await this.documentService.uploadFile(file, document.id);
+      documentPath = await this.documentService.uploadFile(
+        documentFile,
+        document.id,
+      );
 
       await queryRunner.commitTransaction();
       return savedInvestor;
@@ -142,11 +145,16 @@ export class InvestorService {
         );
       }
 
-      if (file) {
+      if (file && !investor.document)
+        throw new BadRequestException(
+          'Document value is required when uploading a new document file',
+        );
+
+      if (file && investor.document) {
         investor.document = await this.documentService.create(
           {
             title: `${investor.companyName}'s ID document`,
-            value: updateInvestorDto.documentValue,
+            value: updateInvestorDto.documentValue!,
           },
           file,
         );

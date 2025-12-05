@@ -21,10 +21,6 @@ export class Investor extends User {
   })
   investorType: InvestorType;
 
-  @OneToOne(() => Document, { cascade: true, eager: true })
-  @JoinColumn()
-  document: Document;
-
   @Column({
     type: 'enum',
     enum: InvestorStatus,
@@ -38,8 +34,19 @@ export class Investor extends User {
   @Column('bool', { default: false })
   isOptedInNotificationsSMS: boolean;
 
-  @OneToMany(() => Invoice, (invoice) => invoice.investor, { cascade: true })
-  invoices: Invoice[];
+  @OneToOne(() => Document, { cascade: true, eager: true })
+  @JoinColumn()
+  document: Document;
+
+  @OneToMany(() => Invoice, (invoice) => invoice.sellerInvestor, {
+    cascade: true,
+  })
+  listedInvoices: Invoice[];
+
+  @OneToMany(() => Invoice, (invoice) => invoice.buyerInvestor, {
+    cascade: true,
+  })
+  purchasedInvoices: Invoice[];
 
   @OneToMany(() => Bid, (bid) => bid.investor)
   bids: Bid[];

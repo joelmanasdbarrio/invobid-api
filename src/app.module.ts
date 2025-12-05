@@ -7,12 +7,11 @@ import { BidModule } from './app/bid/bid.module';
 import { DocumentModule } from './app/document/document.module';
 import { InvoiceModule } from './app/invoice/invoice.module';
 import { AdminModule } from './app/user/admin/admin.module';
+import { AuthModule } from './app/user/auth/auth.module';
 import { UsersModule } from './app/user/common/users.module';
 import { InvestorModule } from './app/user/investor/investor.module';
-import { SupplierModule } from './app/user/supplier/supplier.module';
 import { EnvConfiguration } from './config/env.config';
 import { EnvConfigSchema } from './config/env.schema';
-import { AuthModule } from './app/user/auth/auth.module';
 
 @Module({
   imports: [
@@ -31,7 +30,6 @@ import { AuthModule } from './app/user/auth/auth.module';
       synchronize: process.env.NODE_ENV !== 'production',
     }),
     UsersModule,
-    SupplierModule,
     InvestorModule,
     AdminModule,
     InvoiceModule,
