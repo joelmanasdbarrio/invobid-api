@@ -11,8 +11,6 @@ import { Admin } from 'src/app/user/admin/entities/admin.entity';
 import { Investor } from 'src/app/user/investor/entities/investor.entity';
 import { InvestorStatus } from 'src/app/user/investor/enums/investor-status.enum';
 import { InvestorType } from 'src/app/user/investor/enums/investor-type.enum';
-import { Supplier } from 'src/app/user/supplier/entities/supplier.entity';
-import { SupplierStatus } from 'src/app/user/supplier/enums/supplier-status.enum';
 import { Repository } from 'typeorm';
 
 @Injectable()
@@ -20,8 +18,6 @@ export class SeedService {
   constructor(
     @InjectRepository(Admin)
     private readonly adminRepository: Repository<Admin>,
-    @InjectRepository(Supplier)
-    private readonly supplierRepository: Repository<Supplier>,
     @InjectRepository(Investor)
     private readonly investorRepository: Repository<Investor>,
     @InjectRepository(Document)
@@ -45,14 +41,11 @@ export class SeedService {
       console.log('👤 Seeding admins...');
       const admins = await this.seedAdmins();
 
-      console.log('🏭 Seeding suppliers...');
-      const suppliers = await this.seedSuppliers();
-
       console.log('💼 Seeding investors...');
       const investors = await this.seedInvestors();
 
       console.log('📄 Seeding invoices...');
-      const invoices = await this.seedInvoices(suppliers);
+      const invoices = await this.seedInvoices(investors);
 
       console.log('🔨 Seeding auctions...');
       const auctions = await this.seedAuctions(invoices);
@@ -62,7 +55,6 @@ export class SeedService {
 
       console.log('✅ Database seeding completed successfully!');
       console.log(`\t - ${admins.length} admins created`);
-      console.log(`\t - ${suppliers.length} suppliers created`);
       console.log(`\t - ${investors.length} investors created`);
       console.log(`\t - ${invoices.length} invoices created`);
       console.log(`\t - ${auctions.length} auctions created`);
@@ -77,14 +69,13 @@ export class SeedService {
     console.log('🗑️  Clearing existing data...');
 
     try {
-      await this.supplierRepository.deleteAll();
-      await this.investorRepository.deleteAll();
-      await this.auctionRepository.deleteAll();
-      await this.bidRepository.deleteAll();
-      await this.invoiceRepository.deleteAll();
-      await this.documentRepository.deleteAll();
-      await this.bankAccountRepository.deleteAll();
-      await this.adminRepository.deleteAll();
+      await this.investorRepository.delete({});
+      await this.auctionRepository.delete({});
+      await this.bidRepository.delete({});
+      await this.invoiceRepository.delete({});
+      await this.documentRepository.delete({});
+      await this.bankAccountRepository.delete({});
+      await this.adminRepository.delete({});
     } catch (err) {
       console.log(
         '⚠️  Warning: Could not clear all tables. This might be okay on first run:\n',
@@ -94,7 +85,7 @@ export class SeedService {
   }
 
   private async seedAdmins(): Promise<Admin[]> {
-    const password = await bcrypt.hash('Admin123!', 10);
+    const password = bcrypt.hashSync('Admin123!', 10);
 
     const admins = [
       this.adminRepository.create({
@@ -116,80 +107,71 @@ export class SeedService {
     return await this.adminRepository.save(admins);
   }
 
-  private async seedSuppliers(): Promise<Supplier[]> {
-    const password = await bcrypt.hash('Supplier123!', 10);
-
-    const suppliers: Supplier[] = [];
-
-    const supplier1Document = this.documentRepository.create({
-      title: 'TechCorp Business License',
-    });
-
-    const supplier1BankAccount = this.bankAccountRepository.create({
-      balance: 50000.0,
-    });
-
-    const supplier1 = this.supplierRepository.create({
-      email: 'supplier1@techcorp.com',
-      password: password,
-      name: 'Robert Tech',
-      isActive: true,
-      type: 'supplier',
-      phoneNumber: '1234567890',
-      companyName: 'TechCorp Solutions',
-      logo: '/logos/techcorp.png',
-      website: 'https://techcorp.com',
-      status: SupplierStatus.VERIFIED,
-      isOptedInNotificationsEmail: true,
-      isOptedInNotificationsSMS: false,
-      document: supplier1Document,
-      bankAccount: supplier1BankAccount,
-    });
-
-    const supplier2Document = this.documentRepository.create({
-      title: 'GlobalTrade Business Registration',
-    });
-
-    const supplier2BankAccount = this.bankAccountRepository.create({
-      balance: 75000.0,
-    });
-
-    const supplier2 = this.supplierRepository.create({
-      email: 'supplier2@globaltrade.com',
-      password: password,
-      name: 'Sarah Global',
-      isActive: true,
-      type: 'supplier',
-      phoneNumber: '9876543210',
-      companyName: 'GlobalTrade Industries',
-      logo: '/logos/globaltrade.png',
-      website: 'https://globaltrade.com',
-      status: SupplierStatus.VERIFIED,
-      isOptedInNotificationsEmail: true,
-      isOptedInNotificationsSMS: true,
-      document: supplier2Document,
-      bankAccount: supplier2BankAccount,
-    });
-
-    suppliers.push(supplier1, supplier2);
-    return await this.supplierRepository.save(suppliers);
-  }
-
   private async seedInvestors(): Promise<Investor[]> {
-    const password = await bcrypt.hash('Investor123!', 10);
+    const password = bcrypt.hashSync('Investor123!', 10);
 
     const investors: Investor[] = [];
 
-    const investor1Document = this.documentRepository.create({
+    // Seller investors (individual type - small businesses)
+    const seller1Document = this.documentRepository.create({
+      title: 'TechCorp Business License',
+    });
+
+    const seller1BankAccount = this.bankAccountRepository.create({
+      balance: 50000.0,
+    });
+
+    const seller1 = this.investorRepository.create({
+      email: 'seller1@techcorp.com',
+      password: password,
+      name: 'Robert Tech',
+      isActive: true,
+      type: 'investor',
+      phoneNumber: '1234567890',
+      companyName: 'TechCorp Solutions',
+      investorType: InvestorType.INDIVIDUAL,
+      status: InvestorStatus.VERIFIED,
+      isOptedInNotificationsEmail: true,
+      isOptedInNotificationsSMS: false,
+      document: seller1Document,
+      bankAccount: seller1BankAccount,
+    });
+
+    const seller2Document = this.documentRepository.create({
+      title: 'GlobalTrade Business Registration',
+    });
+
+    const seller2BankAccount = this.bankAccountRepository.create({
+      balance: 75000.0,
+    });
+
+    const seller2 = this.investorRepository.create({
+      email: 'seller2@globaltrade.com',
+      password: password,
+      name: 'Sarah Global',
+      isActive: true,
+      type: 'investor',
+      phoneNumber: '9876543210',
+      companyName: 'GlobalTrade Industries',
+      investorType: InvestorType.INDIVIDUAL,
+      status: InvestorStatus.VERIFIED,
+      isOptedInNotificationsEmail: true,
+      isOptedInNotificationsSMS: true,
+      document: seller2Document,
+      bankAccount: seller2BankAccount,
+    });
+
+    // Buyer investors (company type - investment funds)
+    const buyer1Document = this.documentRepository.create({
       title: 'WealthFund Investment License',
     });
 
-    const investor1BankAccount = this.bankAccountRepository.create({
+    const buyer1BankAccount = this.bankAccountRepository.create({
       balance: 500000.0,
     });
 
-    const investor1 = this.investorRepository.create({
-      email: 'investor1@wealthfund.com',
+    const buyer1 = this.investorRepository.create({
+      email: 'buyer1@wealthfund.com',
       password: password,
       name: 'Michael Wealth',
       isActive: true,
@@ -200,46 +182,51 @@ export class SeedService {
       status: InvestorStatus.VERIFIED,
       isOptedInNotificationsEmail: true,
       isOptedInNotificationsSMS: true,
-      document: investor1Document,
-      bankAccount: investor1BankAccount,
+      document: buyer1Document,
+      bankAccount: buyer1BankAccount,
     });
 
-    const investor2Document = this.documentRepository.create({
+    const buyer2Document = this.documentRepository.create({
       title: 'Capital Partners Registration',
     });
 
-    const investor2BankAccount = this.bankAccountRepository.create({
+    const buyer2BankAccount = this.bankAccountRepository.create({
       balance: 350000.0,
     });
 
-    const investor2 = this.investorRepository.create({
-      email: 'investor2@capitalpartners.com',
+    const buyer2 = this.investorRepository.create({
+      email: 'buyer2@capitalpartners.com',
       password: password,
-      name: 'Emily Capital',
+      name: 'John Doe',
       isActive: true,
       type: 'investor',
       phoneNumber: '5559876543',
-      companyName: 'Capital Partners LLC',
+      companyName: 'John Doe',
       investorType: InvestorType.INDIVIDUAL,
       status: InvestorStatus.VERIFIED,
       isOptedInNotificationsEmail: true,
       isOptedInNotificationsSMS: false,
-      document: investor2Document,
-      bankAccount: investor2BankAccount,
+      document: buyer2Document,
+      bankAccount: buyer2BankAccount,
     });
 
-    investors.push(investor1, investor2);
+    investors.push(seller1, seller2, buyer1, buyer2);
     return await this.investorRepository.save(investors);
   }
 
-  private async seedInvoices(suppliers: Supplier[]): Promise<Invoice[]> {
+  private async seedInvoices(investors: Investor[]): Promise<Invoice[]> {
     const invoices: Invoice[] = [];
 
-    for (const supplier of suppliers) {
+    // Get only seller investors (individual type) for creating invoices
+    const sellerInvestors = investors.filter(
+      (inv) => inv.investorType === InvestorType.INDIVIDUAL,
+    );
+
+    for (const seller of sellerInvestors) {
       for (let i = 1; i <= 3; i++) {
         const invoiceDocument = await this.documentRepository.save(
           this.documentRepository.create({
-            title: `Invoice ${i} - ${supplier.companyName}`,
+            title: `Invoice ${i} - ${seller.companyName}`,
           }),
         );
 
@@ -247,7 +234,7 @@ export class SeedService {
         dueDate.setDate(dueDate.getDate() + 30 * i);
 
         const invoice = this.invoiceRepository.create({
-          supplier: supplier,
+          sellerInvestor: seller,
           document: invoiceDocument,
           debtor: {
             id: `DEBTOR-${Math.floor(Math.random() * 10000)}`,
@@ -258,8 +245,8 @@ export class SeedService {
           amount: 10000 + i * 5000,
           dueDate: dueDate,
           transactionFee: {
-            supplierPercentage: 2.5,
-            investorPercentage: 1.5,
+            sellerPercentage: 2.5,
+            buyerPercentage: 1.5,
           },
           rating: 4.0 + i * 0.3,
         });
@@ -311,9 +298,14 @@ export class SeedService {
   ): Promise<Bid[]> {
     const bids: Bid[] = [];
 
+    // Get only buyer investors (company type) for creating bids
+    const buyerInvestors = investors.filter(
+      (inv) => inv.investorType === InvestorType.COMPANY,
+    );
+
     for (const auction of auctions) {
       for (let i = 1; i <= 5; i++) {
-        const investor = investors[i % investors.length];
+        const investor = buyerInvestors[i % buyerInvestors.length];
 
         const bid = this.bidRepository.create({
           auction: auction,

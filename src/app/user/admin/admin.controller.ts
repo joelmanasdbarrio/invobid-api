@@ -6,41 +6,53 @@ import {
   Param,
   ParseUUIDPipe,
   Patch,
-  Post,
 } from '@nestjs/common';
 import { AdminService } from './admin.service';
-import { CreateAdminDto } from './dto/create-admin.dto';
 import { UpdateAdminDto } from './dto/update-admin.dto';
 
 @Controller('admins')
 export class AdminController {
   constructor(private readonly adminService: AdminService) {}
 
-  @Post()
-  create(@Body() createAdminDto: CreateAdminDto) {
-    return this.adminService.create(createAdminDto);
-  }
-
   @Get()
-  findAll() {
-    return this.adminService.findAll();
+  async findAll() {
+    const res = await this.adminService.findAll();
+    return {
+      status: 'success',
+      data: res,
+    };
   }
 
   @Get(':id')
-  findOne(@Param('id', ParseUUIDPipe) id: string) {
-    return this.adminService.findOne(id);
+  async findOne(@Param('id', ParseUUIDPipe) id: string) {
+    const res = await this.adminService.findOne(id);
+    return {
+      status: 'success',
+      data: res,
+    };
   }
 
   @Patch(':id')
-  update(
+  async update(
     @Param('id', ParseUUIDPipe) id: string,
     @Body() updateAdminDto: UpdateAdminDto,
   ) {
-    return this.adminService.update(id, updateAdminDto);
+    const admin = await this.adminService.update(id, updateAdminDto);
+
+    // eslint-disable-next-line @typescript-eslint/no-unused-vars
+    const { password, ...safeUser } = admin;
+
+    return {
+      status: 'success',
+      data: safeUser,
+    };
   }
 
   @Delete(':id')
-  remove(@Param('id', ParseUUIDPipe) id: string) {
-    return this.adminService.remove(id);
+  async remove(@Param('id', ParseUUIDPipe) id: string) {
+    await this.adminService.remove(id);
+    return {
+      status: 'success',
+    };
   }
 }

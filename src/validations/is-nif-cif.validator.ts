@@ -9,7 +9,7 @@ import {
  * Spanish NIF/CIF Validator
  * - NIF (Número de Identidad Fiscal): Personal tax identification
  *   Format: 8 digits + 1 letter (e.g., 12345678Z)
- * - CIF (Código de Identificación Fiscal): Company tax identification
+ * - CIF (Código de Identificación Fiscal): Investor tax identification
  *   Format: 1 letter + 7 digits + 1 character (digit or letter) (e.g., A12345678)
  */
 @ValidatorConstraint({ name: 'isCifNif', async: false })

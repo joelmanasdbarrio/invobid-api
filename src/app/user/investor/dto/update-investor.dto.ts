@@ -15,7 +15,7 @@ export class UpdateInvestorDto extends PartialType(CreateInvestorDto) {
 
   @IsOptional()
   @IsCifNif()
-  documentValue: string;
+  documentValue?: string;
 
   @IsOptional()
   @IsBoolean()

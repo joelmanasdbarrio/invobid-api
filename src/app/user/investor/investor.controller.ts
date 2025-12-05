@@ -6,13 +6,11 @@ import {
   Param,
   ParseUUIDPipe,
   Patch,
-  Post,
   UploadedFile,
   UseInterceptors,
 } from '@nestjs/common';
 import { FileInterceptor } from '@nestjs/platform-express';
 import { FileTypePipe } from 'src/pipes/file-type.pipe';
-import { CreateInvestorDto } from './dto/create-investor.dto';
 import { UpdateInvestorDto } from './dto/update-investor.dto';
 import { InvestorService } from './investor.service';
 
@@ -20,37 +18,51 @@ import { InvestorService } from './investor.service';
 export class InvestorController {
   constructor(private readonly investorService: InvestorService) {}
 
-  @Post()
-  @UseInterceptors(FileInterceptor('document'))
-  create(
-    @Body() createInvestorDto: CreateInvestorDto,
-    @UploadedFile(FileTypePipe) file: Express.Multer.File,
-  ) {
-    return this.investorService.create(createInvestorDto, file);
-  }
-
   @Get()
-  findAll() {
-    return this.investorService.findAll();
+  async findAll() {
+    const res = await this.investorService.findAll();
+    return {
+      status: 'success',
+      data: res,
+    };
   }
 
   @Get(':id')
-  findOne(@Param('id', ParseUUIDPipe) id: string) {
-    return this.investorService.findOne(id);
+  async findOne(@Param('id', ParseUUIDPipe) id: string) {
+    const res = await this.investorService.findOne(id);
+    return {
+      status: 'success',
+      data: res,
+    };
   }
 
   @Patch(':id')
   @UseInterceptors(FileInterceptor('document'))
-  update(
+  async update(
     @Param('id', ParseUUIDPipe) id: string,
     @Body() updateInvestorDto: UpdateInvestorDto,
     @UploadedFile(FileTypePipe) file: Express.Multer.File,
   ) {
-    return this.investorService.update(id, updateInvestorDto, file);
+    const investor = await this.investorService.update(
+      id,
+      updateInvestorDto,
+      file,
+    );
+
+    // eslint-disable-next-line @typescript-eslint/no-unused-vars
+    const { password, ...safeUser } = investor;
+
+    return {
+      status: 'success',
+      data: safeUser,
+    };
   }
 
   @Delete(':id')
-  remove(@Param('id', ParseUUIDPipe) id: string) {
-    return this.investorService.remove(id);
+  async remove(@Param('id', ParseUUIDPipe) id: string) {
+    await this.investorService.remove(id);
+    return {
+      status: 'success',
+    };
   }
 }

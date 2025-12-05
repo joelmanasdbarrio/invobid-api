@@ -38,7 +38,7 @@ export abstract class User {
   deletedAt: Date;
 
   @Column()
-  type: 'supplier' | 'investor' | 'admin';
+  type: 'admin' | 'investor';
 
   @BeforeInsert()
   normalizeEmailOnInsert() {
