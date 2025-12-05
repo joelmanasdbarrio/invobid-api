@@ -6,7 +6,6 @@ import { TypeOrmModule } from '@nestjs/typeorm';
 import { AdminModule } from '../admin/admin.module';
 import { User } from '../common/entities/user.entity';
 import { InvestorModule } from '../investor/investor.module';
-import { SupplierModule } from '../supplier/supplier.module';
 import { AuthController } from './auth.controller';
 import { AuthService } from './auth.service';
 import { JwtStrategy } from './strategies/jwt.strategy';
@@ -19,7 +18,7 @@ import { JwtStrategy } from './strategies/jwt.strategy';
     TypeOrmModule.forFeature([User]),
     AdminModule,
     InvestorModule,
-    forwardRef(() => SupplierModule),
+    forwardRef(() => InvestorModule),
     PassportModule.register({ defaultStrategy: 'jwt' }),
     JwtModule.registerAsync({
       imports: [ConfigModule],

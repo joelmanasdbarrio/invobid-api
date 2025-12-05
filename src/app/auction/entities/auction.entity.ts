@@ -27,10 +27,10 @@ export class Auction {
   discountRate: number;
 
   @Column('date', { nullable: true })
-  auctionDate: Date;
+  auctionDate?: Date | null;
 
   @Column('date', { nullable: true })
-  dueDate: Date;
+  dueDate?: Date | null;
 
   @Column('enum', {
     enum: AuctionStatus,

@@ -14,9 +14,6 @@ import { User } from '../common/entities/user.entity';
 import { CreateInvestorDto } from '../investor/dto/create-investor.dto';
 import { Investor } from '../investor/entities/investor.entity';
 import { InvestorService } from '../investor/investor.service';
-import { CreateSupplierDto } from '../supplier/dto/create-supplier.dto';
-import { Supplier } from '../supplier/entities/supplier.entity';
-import { SupplierService } from '../supplier/supplier.service';
 import { LoginUserDto } from './dto/login-user.dto';
 
 @Injectable()
@@ -26,7 +23,6 @@ export class AuthService {
     private readonly userRepository: Repository<User>,
 
     private readonly adminService: AdminService,
-    private readonly supplierService: SupplierService,
     private readonly investorService: InvestorService,
     private readonly jwtService: JwtService,
   ) {}
@@ -59,21 +55,6 @@ export class AuthService {
     return {
       admin,
       access_token: this.jwtService.sign({ email: admin.email }),
-    };
-  }
-
-  async registerSupplier(
-    registerSupplierDto: CreateSupplierDto,
-    files: { document: Express.Multer.File[]; logo: Express.Multer.File[] },
-  ): Promise<{ supplier: Supplier; access_token: string }> {
-    const supplier = await this.supplierService.create(
-      registerSupplierDto,
-      files,
-    );
-
-    return {
-      supplier,
-      access_token: this.jwtService.sign({ email: supplier.email }),
     };
   }
 

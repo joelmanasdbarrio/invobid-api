@@ -9,20 +9,13 @@ import {
 
 export class CreateInvoiceDto {
   @IsUUID()
-  supplierId: string;
-
-  @IsUUID()
-  @IsOptional()
-  investorId: string;
-
-  @IsUUID()
   documentId: string;
 
   @IsString()
   debtorId: string;
 
   @IsString()
-  debtorCompanyName: string;
+  debtorcompanyName: string;
 
   @IsString()
   @IsOptional()
@@ -41,11 +34,11 @@ export class CreateInvoiceDto {
 
   @IsNumber()
   @IsPositive()
-  supplierTransactionFeePercentage: number;
+  transactionFeeSellerPercentage: number;
 
   @IsNumber()
   @IsPositive()
-  investorTransactionFeePercentage: number;
+  transactionFeeBuyerPercentage: number;
 
   @IsNumber()
   @IsPositive()

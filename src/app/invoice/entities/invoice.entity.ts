@@ -1,7 +1,6 @@
 import { Auction } from 'src/app/auction/entities/auction.entity';
 import { Document } from 'src/app/document/entities/document.entity';
 import { Investor } from 'src/app/user/investor/entities/investor.entity';
-import { Supplier } from 'src/app/user/supplier/entities/supplier.entity';
 import {
   Column,
   CreateDateColumn,
@@ -31,10 +30,10 @@ export class Debtor {
 
 export class TransactionFee {
   @Column('decimal', { precision: 5, scale: 2 })
-  supplierPercentage: number;
+  sellerPercentage: number;
 
   @Column('decimal', { precision: 5, scale: 2 })
-  investorPercentage: number;
+  buyerPercentage: number;
 }
 
 @Entity('invoices')
@@ -42,17 +41,17 @@ export class Invoice {
   @PrimaryGeneratedColumn('uuid')
   id: string;
 
-  @ManyToOne(() => Supplier, (supplier) => supplier.invoices, {
+  @ManyToOne(() => Investor, (investor) => investor.listedInvoices, {
     onDelete: 'CASCADE',
     nullable: false,
   })
-  supplier: Supplier;
+  sellerInvestor: Investor;
 
-  @ManyToOne(() => Investor, (investor) => investor.invoices, {
+  @ManyToOne(() => Investor, (investor) => investor.purchasedInvoices, {
     onDelete: 'CASCADE',
     nullable: true,
   })
-  investor: Investor;
+  buyerInvestor: Investor;
 
   @OneToOne(() => Document, { cascade: true, eager: true })
   @JoinColumn()

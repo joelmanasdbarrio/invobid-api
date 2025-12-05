@@ -5,12 +5,10 @@ import {
   Get,
   Param,
   ParseUUIDPipe,
-  Patch,
   Post,
 } from '@nestjs/common';
 import { BidService } from './bid.service';
 import { CreateBidDto } from './dto/create-bid.dto';
-import { UpdateBidDto } from './dto/update-bid.dto';
 
 @Controller('bid')
 export class BidController {
@@ -29,14 +27,6 @@ export class BidController {
   @Get(':id')
   findOne(@Param('id', ParseUUIDPipe) id: string) {
     return this.bidService.findOne(id);
-  }
-
-  @Patch(':id')
-  update(
-    @Param('id', ParseUUIDPipe) id: string,
-    @Body() updateBidDto: UpdateBidDto,
-  ) {
-    return this.bidService.update(id, updateBidDto);
   }
 
   @Delete(':id')

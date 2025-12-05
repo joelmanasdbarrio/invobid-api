@@ -37,6 +37,7 @@ services:
     volumes:
       - ./data/minio:/data
     command: server /data --console-address ":9001"
+    hostname: invobid_minio
   minio-init:
     image: minio/mc:latest
     container_name: invobid_minio_init
@@ -45,8 +46,7 @@ services:
     entrypoint: ["/bin/sh", "-c"]
     command: >
       'until mc --insecure alias set local http://minio:9000 "$${MINIO_ROOT_USER}" "$${MINIO_ROOT_PASSWORD}" >/dev/null 2>&1; do echo "waiting for minio..."; sleep 1; done;
-       mc --insecure mb --ignore-existing local/invobid/documents;
-       mc --insecure mb --ignore-existing local/invobid/public;
+       mc --insecure mb --ignore-existing local/invobid;
        echo "minio bucket created (or already existed)";'
     environment:
       MINIO_ROOT_USER: minio

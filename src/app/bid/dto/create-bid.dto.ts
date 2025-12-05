@@ -4,9 +4,6 @@ export class CreateBidDto {
   @IsUUID()
   auctionId: string;
 
-  @IsUUID()
-  investorId: string;
-
   @IsNumber()
   @IsPositive()
   amount: number;

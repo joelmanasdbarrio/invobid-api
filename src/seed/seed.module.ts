@@ -9,7 +9,6 @@ import { Invoice } from 'src/app/invoice/entities/invoice.entity';
 import { Admin } from 'src/app/user/admin/entities/admin.entity';
 import { User } from 'src/app/user/common/entities/user.entity';
 import { Investor } from 'src/app/user/investor/entities/investor.entity';
-import { Supplier } from 'src/app/user/supplier/entities/supplier.entity';
 import { SeedService } from './seed.service';
 
 @Module({
@@ -25,7 +24,6 @@ import { SeedService } from './seed.service';
       entities: [
         User,
         Admin,
-        Supplier,
         Investor,
         Document,
         BankAccount,
@@ -37,7 +35,6 @@ import { SeedService } from './seed.service';
     }),
     TypeOrmModule.forFeature([
       Admin,
-      Supplier,
       Investor,
       Document,
       BankAccount,
