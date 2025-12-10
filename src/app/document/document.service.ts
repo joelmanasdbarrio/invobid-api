@@ -8,6 +8,9 @@ import { ConfigService } from '@nestjs/config';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import { v4 as uuidv4 } from 'uuid';
+import { User } from '../user/common/entities/user.entity';
+import { UserType } from '../user/common/enums/user-type.enum';
+import { Investor } from '../user/investor/entities/investor.entity';
 import { CreateDocumentDto } from './dto/create-document.dto';
 import { UpdateDocumentDto } from './dto/update-document.dto';
 import { Document } from './entities/document.entity';
@@ -26,6 +29,7 @@ export class DocumentService {
   async create(
     createDocumentDto: CreateDocumentDto,
     file: Express.Multer.File,
+    user: User,
   ): Promise<Document> {
     try {
       const documentId = uuidv4();
@@ -34,6 +38,7 @@ export class DocumentService {
         ...createDocumentDto,
         filename: this.getFilename(file, documentId),
         id: documentId,
+        investor: user as Investor,
       });
 
       return await this.documentRepository.save(document);
@@ -61,12 +66,28 @@ export class DocumentService {
     return storedFile;
   }
 
-  findAll(): Promise<Document[]> {
-    return this.documentRepository.find();
+  async findAll(user: User): Promise<Document[]> {
+    return user.type === UserType.ADMIN
+      ? await this.documentRepository.find({
+          relations: ['investor'],
+        })
+      : await this.documentRepository.find({
+          where: { investor: user as Investor },
+          relations: ['investor'],
+        });
   }
 
-  async findOne(id: string): Promise<Document> {
-    const document = await this.documentRepository.findOne({ where: { id } });
+  async findOne(id: string, user: User): Promise<Document> {
+    const document =
+      user.type === UserType.ADMIN
+        ? await this.documentRepository.findOne({
+            where: { id },
+            relations: ['investor'],
+          })
+        : await this.documentRepository.findOne({
+            where: { id, investor: user as Investor },
+            relations: ['investor'],
+          });
 
     if (!document)
       throw new NotFoundException(`Document with ID '${id}' not found`);
@@ -77,16 +98,17 @@ export class DocumentService {
   async update(
     id: string,
     updateDocumentDto: UpdateDocumentDto,
+    user: User,
   ): Promise<Document> {
-    const document = await this.findOne(id);
+    const document = await this.findOne(id, user);
 
     await this.documentRepository.update(id, updateDocumentDto);
 
     return { ...document, ...updateDocumentDto.removeUndefined() };
   }
 
-  async remove(id: string): Promise<void> {
-    await this.findOne(id);
+  async remove(id: string, user: User): Promise<void> {
+    await this.findOne(id, user);
 
     await this.documentRepository.softDelete(id);
   }

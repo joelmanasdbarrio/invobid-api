@@ -5,6 +5,9 @@ import { InjectRepository } from '@nestjs/typeorm';
 import { ExtractJwt, Strategy } from 'passport-jwt';
 import { Repository } from 'typeorm';
 import { User } from '../../common/entities/user.entity';
+import { UserType } from '../../common/enums/user-type.enum';
+import { Investor } from '../../investor/entities/investor.entity';
+import { InvestorService } from '../../investor/investor.service';
 import { JwtPayload } from '../interfaces/jwt-payload.interface';
 
 @Injectable()
@@ -13,15 +16,16 @@ export class JwtStrategy extends PassportStrategy(Strategy) {
     @InjectRepository(User)
     private readonly userRepository: Repository<User>,
     private readonly configService: ConfigService,
+    private readonly investorService: InvestorService,
   ) {
     super({
       secretOrKey: configService.get<string>('JWT_SECRET')!,
       jwtFromRequest: ExtractJwt.fromAuthHeaderAsBearerToken(),
     });
   }
-  async validate(payload: JwtPayload): Promise<User> {
+  async validate(payload: JwtPayload): Promise<User | Investor> {
     const { email } = payload;
-    const user = await this.userRepository.findOne({
+    let user = await this.userRepository.findOne({
       where: { email },
       select: {
         id: true,
@@ -42,6 +46,10 @@ export class JwtStrategy extends PassportStrategy(Strategy) {
 
     if (!user.isActive) {
       throw new UnauthorizedException('User has been disabled');
+    }
+
+    if (user.type === UserType.INVESTOR) {
+      user = await this.investorService.findOne(user.id);
     }
 
     return user;
