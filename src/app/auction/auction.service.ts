@@ -1,10 +1,11 @@
 import { Injectable } from '@nestjs/common';
+import { User } from '../user/common/entities/user.entity';
 import { CreateAuctionDto } from './dto/create-auction.dto';
 import { UpdateAuctionDto } from './dto/update-auction.dto';
 
 @Injectable()
 export class AuctionService {
-  create(createAuctionDto: CreateAuctionDto) {
+  create(createAuctionDto: CreateAuctionDto, user: User) {
     return 'This action adds a new auction';
   }
 
@@ -16,11 +17,11 @@ export class AuctionService {
     return `This action returns a #${id} auction`;
   }
 
-  update(id: string, updateAuctionDto: UpdateAuctionDto) {
+  update(id: string, updateAuctionDto: UpdateAuctionDto, user: User) {
     return `This action updates a #${id} auction`;
   }
 
-  remove(id: string) {
+  remove(id: string, user: User) {
     return `This action removes a #${id} auction`;
   }
 }

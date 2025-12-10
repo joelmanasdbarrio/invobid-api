@@ -11,6 +11,7 @@ import { AdminService } from '../admin/admin.service';
 import { CreateAdminDto } from '../admin/dto/create-admin.dto';
 import { Admin } from '../admin/entities/admin.entity';
 import { User } from '../common/entities/user.entity';
+import { UserType } from '../common/enums/user-type.enum';
 import { CreateInvestorDto } from '../investor/dto/create-investor.dto';
 import { Investor } from '../investor/entities/investor.entity';
 import { InvestorService } from '../investor/investor.service';
@@ -28,9 +29,9 @@ export class AuthService {
   ) {}
 
   async login(login: LoginUserDto): Promise<{ access_token: string }> {
-    const user = await this.userRepository.findOne({
+    let user = await this.userRepository.findOne({
       where: { email: login.email },
-      select: { email: true, password: true, id: true },
+      select: { email: true, password: true, id: true, name: true, type: true },
     });
 
     if (!user) throw new UnauthorizedException('Invalid credentials');
@@ -40,7 +41,25 @@ export class AuthService {
     if (!isPasswordValid)
       throw new UnauthorizedException('Invalid credentials');
 
-    return { access_token: this.jwtService.sign({ email: user.email }) };
+    if (user.type === UserType.INVESTOR) {
+      user = await this.investorService.findOne(user.id);
+    }
+
+    return {
+      access_token: this.jwtService.sign(
+        {
+          id: user.id,
+          email: user.email,
+          name: user.name,
+          type: user.type,
+          investorType:
+            user.type === UserType.INVESTOR && (user as Investor).investorType,
+        },
+        {
+          expiresIn: login.rememberMe ? '30d' : '1d',
+        },
+      ),
+    };
   }
 
   async registerAdmin(
@@ -54,7 +73,15 @@ export class AuthService {
 
     return {
       admin,
-      access_token: this.jwtService.sign({ email: admin.email }),
+      access_token: this.jwtService.sign(
+        {
+          id: admin.id,
+          email: admin.email,
+          name: admin.name,
+          type: 'admin',
+        },
+        { expiresIn: '1d' },
+      ),
     };
   }
 
@@ -69,7 +96,15 @@ export class AuthService {
 
     return {
       investor,
-      access_token: this.jwtService.sign({ email: investor.email }),
+      access_token: this.jwtService.sign(
+        {
+          id: investor.id,
+          email: investor.email,
+          name: investor.name,
+          type: 'investor',
+        },
+        { expiresIn: '1d' },
+      ),
     };
   }
 }

@@ -3,12 +3,15 @@ import {
   Injectable,
   InternalServerErrorException,
   NotFoundException,
+  UnauthorizedException,
 } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import * as bcrypt from 'bcrypt';
 import { BankAccountService } from 'src/app/bank-account/bank-account.service';
 import { DocumentService } from 'src/app/document/document.service';
 import { Repository } from 'typeorm';
+import { User } from '../common/entities/user.entity';
+import { UserType } from '../common/enums/user-type.enum';
 import { CreateInvestorDto } from './dto/create-investor.dto';
 import { UpdateInvestorDto } from './dto/update-investor.dto';
 import { Investor } from './entities/investor.entity';
@@ -46,21 +49,21 @@ export class InvestorService {
         10,
       );
 
+      const bankAccount = await this.bankAccountService.create({});
+
+      const investor = queryRunner.manager.create(Investor, {
+        ...createInvestorDto,
+        bankAccount: bankAccount,
+      });
+
       const document = await this.documentService.create(
         {
           title: `${createInvestorDto.companyName}'s ID document`,
           value: createInvestorDto.documentValue,
         },
         documentFile,
+        investor,
       );
-
-      const bankAccount = await this.bankAccountService.create({});
-
-      const investor = queryRunner.manager.create(Investor, {
-        ...createInvestorDto,
-        document: document,
-        bankAccount: bankAccount,
-      });
 
       const savedInvestor = await queryRunner.manager.save(investor);
       documentPath = await this.documentService.uploadFile(
@@ -122,6 +125,7 @@ export class InvestorService {
     id: string,
     updateInvestorDto: UpdateInvestorDto,
     file: Express.Multer.File,
+    user: User,
   ) {
     if (updateInvestorDto.password && updateInvestorDto.passwordRepeat) {
       if (updateInvestorDto.password !== updateInvestorDto.passwordRepeat) {
@@ -130,6 +134,12 @@ export class InvestorService {
     }
 
     const investor = await this.findOne(id);
+
+    if (user.type !== UserType.ADMIN && user.id !== investor.id) {
+      throw new UnauthorizedException(
+        "You don't have permissions to perform this action",
+      );
+    }
 
     const queryRunner =
       this.investorRepository.manager.connection.createQueryRunner();
@@ -145,23 +155,29 @@ export class InvestorService {
         );
       }
 
-      if (file && !investor.document)
+      if (file && !updateInvestorDto.documentValue)
         throw new BadRequestException(
           'Document value is required when uploading a new document file',
         );
 
-      if (file && investor.document) {
-        investor.document = await this.documentService.create(
+      if (file && updateInvestorDto.documentValue) {
+        const newDocument = await this.documentService.create(
           {
             title: `${investor.companyName}'s ID document`,
-            value: updateInvestorDto.documentValue!,
+            value: updateInvestorDto.documentValue,
           },
           file,
+          investor,
         );
+
+        if (!investor.documents) {
+          investor.documents = [];
+        }
+        investor.documents.push(newDocument);
 
         documentPath = await this.documentService.uploadFile(
           file,
-          investor.document.id,
+          newDocument.id,
         );
       }
 
@@ -209,9 +225,15 @@ export class InvestorService {
     }
   }
 
-  async remove(id: string) {
-    await this.findOne(id);
+  async remove(id: string, user: User) {
+    const investor = await this.findOne(id);
 
-    return this.investorRepository.softDelete(id);
+    if (user.type !== UserType.ADMIN && user.id !== investor.id) {
+      throw new UnauthorizedException(
+        "You don't have permissions to perform this action",
+      );
+    }
+
+    return await this.investorRepository.softDelete(id);
   }
 }

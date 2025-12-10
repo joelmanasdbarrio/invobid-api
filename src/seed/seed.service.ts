@@ -8,6 +8,7 @@ import { Bid } from 'src/app/bid/entities/bid.entity';
 import { Document } from 'src/app/document/entities/document.entity';
 import { Invoice } from 'src/app/invoice/entities/invoice.entity';
 import { Admin } from 'src/app/user/admin/entities/admin.entity';
+import { UserType } from 'src/app/user/common/enums/user-type.enum';
 import { Investor } from 'src/app/user/investor/entities/investor.entity';
 import { InvestorStatus } from 'src/app/user/investor/enums/investor-status.enum';
 import { InvestorType } from 'src/app/user/investor/enums/investor-type.enum';
@@ -69,13 +70,14 @@ export class SeedService {
     console.log('🗑️  Clearing existing data...');
 
     try {
-      await this.investorRepository.delete({});
-      await this.auctionRepository.delete({});
-      await this.bidRepository.delete({});
-      await this.invoiceRepository.delete({});
-      await this.documentRepository.delete({});
-      await this.bankAccountRepository.delete({});
-      await this.adminRepository.delete({});
+      await this.bidRepository.query('TRUNCATE TABLE "bids" CASCADE');
+      await this.auctionRepository.query('TRUNCATE TABLE "auctions" CASCADE');
+      await this.invoiceRepository.query('TRUNCATE TABLE "invoices" CASCADE');
+      await this.documentRepository.query('TRUNCATE TABLE "documents" CASCADE');
+      await this.bankAccountRepository.query(
+        'TRUNCATE TABLE "bank_accounts" CASCADE',
+      );
+      await this.adminRepository.query('TRUNCATE TABLE "users" CASCADE');
     } catch (err) {
       console.log(
         '⚠️  Warning: Could not clear all tables. This might be okay on first run:\n',
@@ -93,14 +95,14 @@ export class SeedService {
         password: password,
         name: 'John Administrator',
         isActive: true,
-        type: 'admin',
+        type: UserType.ADMIN,
       }),
       this.adminRepository.create({
         email: 'admin2@invobid.com',
         password: password,
         name: 'Jane Admin',
         isActive: true,
-        type: 'admin',
+        type: UserType.ADMIN,
       }),
     ];
 
@@ -112,13 +114,14 @@ export class SeedService {
 
     const investors: Investor[] = [];
 
-    // Seller investors (individual type - small businesses)
-    const seller1Document = this.documentRepository.create({
-      title: 'TechCorp Business License',
-    });
-
     const seller1BankAccount = this.bankAccountRepository.create({
       balance: 50000.0,
+    });
+
+    const seller1Document = this.documentRepository.create({
+      title: 'TechCorp Business License',
+      filename: 'techcorp-license.pdf',
+      value: 'documents/techcorp-license.pdf',
     });
 
     const seller1 = this.investorRepository.create({
@@ -126,23 +129,25 @@ export class SeedService {
       password: password,
       name: 'Robert Tech',
       isActive: true,
-      type: 'investor',
+      type: UserType.INVESTOR,
       phoneNumber: '1234567890',
       companyName: 'TechCorp Solutions',
       investorType: InvestorType.INDIVIDUAL,
       status: InvestorStatus.VERIFIED,
       isOptedInNotificationsEmail: true,
       isOptedInNotificationsSMS: false,
-      document: seller1Document,
+      documents: [seller1Document],
       bankAccount: seller1BankAccount,
-    });
-
-    const seller2Document = this.documentRepository.create({
-      title: 'GlobalTrade Business Registration',
     });
 
     const seller2BankAccount = this.bankAccountRepository.create({
       balance: 75000.0,
+    });
+
+    const seller2Document = this.documentRepository.create({
+      title: 'GlobalTrade Business Registration',
+      filename: 'globaltrade-registration.pdf',
+      value: 'documents/globaltrade-registration.pdf',
     });
 
     const seller2 = this.investorRepository.create({
@@ -150,24 +155,25 @@ export class SeedService {
       password: password,
       name: 'Sarah Global',
       isActive: true,
-      type: 'investor',
+      type: UserType.INVESTOR,
       phoneNumber: '9876543210',
       companyName: 'GlobalTrade Industries',
       investorType: InvestorType.INDIVIDUAL,
       status: InvestorStatus.VERIFIED,
       isOptedInNotificationsEmail: true,
       isOptedInNotificationsSMS: true,
-      document: seller2Document,
+      documents: [seller2Document],
       bankAccount: seller2BankAccount,
-    });
-
-    // Buyer investors (company type - investment funds)
-    const buyer1Document = this.documentRepository.create({
-      title: 'WealthFund Investment License',
     });
 
     const buyer1BankAccount = this.bankAccountRepository.create({
       balance: 500000.0,
+    });
+
+    const buyer1Document = this.documentRepository.create({
+      title: 'WealthFund Investment License',
+      filename: 'wealthfund-license.pdf',
+      value: 'documents/wealthfund-license.pdf',
     });
 
     const buyer1 = this.investorRepository.create({
@@ -175,23 +181,25 @@ export class SeedService {
       password: password,
       name: 'Michael Wealth',
       isActive: true,
-      type: 'investor',
+      type: UserType.INVESTOR,
       phoneNumber: '5551234567',
       companyName: 'WealthFund Capital',
       investorType: InvestorType.COMPANY,
       status: InvestorStatus.VERIFIED,
       isOptedInNotificationsEmail: true,
       isOptedInNotificationsSMS: true,
-      document: buyer1Document,
+      documents: [buyer1Document],
       bankAccount: buyer1BankAccount,
-    });
-
-    const buyer2Document = this.documentRepository.create({
-      title: 'Capital Partners Registration',
     });
 
     const buyer2BankAccount = this.bankAccountRepository.create({
       balance: 350000.0,
+    });
+
+    const buyer2Document = this.documentRepository.create({
+      title: 'Capital Partners Registration',
+      filename: 'capitalpartners-registration.pdf',
+      value: 'documents/capitalpartners-registration.pdf',
     });
 
     const buyer2 = this.investorRepository.create({
@@ -199,14 +207,14 @@ export class SeedService {
       password: password,
       name: 'John Doe',
       isActive: true,
-      type: 'investor',
+      type: UserType.INVESTOR,
       phoneNumber: '5559876543',
       companyName: 'John Doe',
       investorType: InvestorType.INDIVIDUAL,
       status: InvestorStatus.VERIFIED,
       isOptedInNotificationsEmail: true,
       isOptedInNotificationsSMS: false,
-      document: buyer2Document,
+      documents: [buyer2Document],
       bankAccount: buyer2BankAccount,
     });
 
@@ -224,11 +232,12 @@ export class SeedService {
 
     for (const seller of sellerInvestors) {
       for (let i = 1; i <= 3; i++) {
-        const invoiceDocument = await this.documentRepository.save(
-          this.documentRepository.create({
-            title: `Invoice ${i} - ${seller.companyName}`,
-          }),
-        );
+        const invoiceDocument = this.documentRepository.create({
+          title: `Invoice ${i} - ${seller.companyName}`,
+          filename: `invoice-${i}-${seller.companyName.toLowerCase().replace(/\s+/g, '-')}.pdf`,
+          value: `documents/invoice-${i}-${seller.companyName.toLowerCase().replace(/\s+/g, '-')}.pdf`,
+          investor: seller,
+        });
 
         const dueDate = new Date();
         dueDate.setDate(dueDate.getDate() + 30 * i);
