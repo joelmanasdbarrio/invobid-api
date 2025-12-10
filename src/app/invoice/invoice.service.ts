@@ -1,4 +1,5 @@
 import { Injectable } from '@nestjs/common';
+import { User } from '../user/common/entities/user.entity';
 import { CreateInvoiceDto } from './dto/create-invoice.dto';
 import { UpdateInvoiceDto } from './dto/update-invoice.dto';
 
@@ -8,19 +9,19 @@ export class InvoiceService {
     return 'This action adds a new invoice';
   }
 
-  findAll() {
+  findAll(user: User) {
     return `This action returns all invoice`;
   }
 
-  findOne(id: string) {
+  findOne(id: string, user: User) {
     return `This action returns a #${id} invoice`;
   }
 
-  update(id: string, updateInvoiceDto: UpdateInvoiceDto) {
+  update(id: string, updateInvoiceDto: UpdateInvoiceDto, user: User) {
     return `This action updates a #${id} invoice`;
   }
 
-  remove(id: string) {
+  remove(id: string, user: User) {
     return `This action removes a #${id} invoice`;
   }
 }

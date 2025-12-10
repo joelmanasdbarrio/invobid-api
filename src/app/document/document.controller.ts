@@ -12,6 +12,10 @@ import {
 } from '@nestjs/common';
 import { FileInterceptor } from '@nestjs/platform-express';
 import { FileTypePipe } from '../../pipes/file-type.pipe';
+import { Auth } from '../user/auth/decorators/auth.decorator';
+import { GetUser } from '../user/auth/decorators/get-user.decorator';
+import { User } from '../user/common/entities/user.entity';
+import { UserType } from '../user/common/enums/user-type.enum';
 import { DocumentService } from './document.service';
 import { CreateDocumentDto } from './dto/create-document.dto';
 import { UpdateDocumentDto } from './dto/update-document.dto';
@@ -21,36 +25,47 @@ export class DocumentController {
   constructor(private readonly documentService: DocumentService) {}
 
   @Post()
+  @Auth([UserType.INVESTOR])
   @UseInterceptors(FileInterceptor('file'))
   async create(
     @Body() createDocumentDto: CreateDocumentDto,
     @UploadedFile(FileTypePipe) file: Express.Multer.File,
+    @GetUser() user: User,
   ) {
-    const document = await this.documentService.create(createDocumentDto, file);
+    const document = await this.documentService.create(
+      createDocumentDto,
+      file,
+      user,
+    );
     const storedFile = await this.documentService.uploadFile(file, document.id);
     return { ...document, file: storedFile };
   }
 
   @Get()
-  findAll() {
-    return this.documentService.findAll();
+  @Auth()
+  findAll(@GetUser() user: User) {
+    return this.documentService.findAll(user);
   }
 
   @Get(':id')
-  findOne(@Param('id', ParseUUIDPipe) id: string) {
-    return this.documentService.findOne(id);
+  @Auth()
+  findOne(@Param('id', ParseUUIDPipe) id: string, @GetUser() user: User) {
+    return this.documentService.findOne(id, user);
   }
 
   @Patch(':id')
+  @Auth()
   update(
     @Param('id', ParseUUIDPipe) id: string,
     @Body() updateDocumentDto: UpdateDocumentDto,
+    @GetUser() user: User,
   ) {
-    return this.documentService.update(id, updateDocumentDto);
+    return this.documentService.update(id, updateDocumentDto, user);
   }
 
   @Delete(':id')
-  remove(@Param('id', ParseUUIDPipe) id: string) {
-    return this.documentService.remove(id);
+  @Auth([UserType.ADMIN])
+  remove(@Param('id', ParseUUIDPipe) id: string, @GetUser() user: User) {
+    return this.documentService.remove(id, user);
   }
 }

@@ -9,6 +9,7 @@ import {
   TableInheritance,
   UpdateDateColumn,
 } from 'typeorm';
+import { UserType } from '../enums/user-type.enum';
 
 @Entity('users')
 @TableInheritance({ column: { type: 'varchar', name: 'type' } })
@@ -38,7 +39,7 @@ export abstract class User {
   deletedAt: Date;
 
   @Column()
-  type: 'admin' | 'investor';
+  type: UserType;
 
   @BeforeInsert()
   normalizeEmailOnInsert() {

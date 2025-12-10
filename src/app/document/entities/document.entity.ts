@@ -1,8 +1,10 @@
+import { Investor } from 'src/app/user/investor/entities/investor.entity';
 import {
   Column,
   CreateDateColumn,
   DeleteDateColumn,
   Entity,
+  ManyToOne,
   PrimaryGeneratedColumn,
   UpdateDateColumn,
 } from 'typeorm';
@@ -29,4 +31,9 @@ export class Document {
 
   @DeleteDateColumn({ select: false })
   deletedAt: Date;
+
+  @ManyToOne(() => Investor, (investor) => investor.documents, {
+    nullable: false,
+  })
+  investor: Investor;
 }

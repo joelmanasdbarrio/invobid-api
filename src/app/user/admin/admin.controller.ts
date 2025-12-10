@@ -7,6 +7,8 @@ import {
   ParseUUIDPipe,
   Patch,
 } from '@nestjs/common';
+import { Auth } from '../auth/decorators/auth.decorator';
+import { UserType } from '../common/enums/user-type.enum';
 import { AdminService } from './admin.service';
 import { UpdateAdminDto } from './dto/update-admin.dto';
 
@@ -15,6 +17,7 @@ export class AdminController {
   constructor(private readonly adminService: AdminService) {}
 
   @Get()
+  @Auth([UserType.ADMIN])
   async findAll() {
     const res = await this.adminService.findAll();
     return {
@@ -24,6 +27,7 @@ export class AdminController {
   }
 
   @Get(':id')
+  @Auth([UserType.ADMIN])
   async findOne(@Param('id', ParseUUIDPipe) id: string) {
     const res = await this.adminService.findOne(id);
     return {
@@ -33,6 +37,7 @@ export class AdminController {
   }
 
   @Patch(':id')
+  @Auth([UserType.ADMIN])
   async update(
     @Param('id', ParseUUIDPipe) id: string,
     @Body() updateAdminDto: UpdateAdminDto,
@@ -49,6 +54,7 @@ export class AdminController {
   }
 
   @Delete(':id')
+  @Auth([UserType.ADMIN])
   async remove(@Param('id', ParseUUIDPipe) id: string) {
     await this.adminService.remove(id);
     return {

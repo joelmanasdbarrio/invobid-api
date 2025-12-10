@@ -34,9 +34,10 @@ export class Investor extends User {
   @Column('bool', { default: false })
   isOptedInNotificationsSMS: boolean;
 
-  @OneToOne(() => Document, { cascade: true, eager: true })
-  @JoinColumn()
-  document: Document;
+  @OneToMany(() => Document, (document) => document.investor, {
+    cascade: true,
+  })
+  documents: Document[];
 
   @OneToMany(() => Invoice, (invoice) => invoice.sellerInvestor, {
     cascade: true,
