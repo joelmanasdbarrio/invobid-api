@@ -45,20 +45,22 @@ export class AuthService {
       user = await this.investorService.findOne(user.id);
     }
 
+    const access_token = this.jwtService.sign(
+      {
+        id: user.id,
+        email: user.email,
+        name: user.name,
+        type: user.type,
+        investorType:
+          user.type === UserType.INVESTOR && (user as Investor).investorType,
+      },
+      {
+        expiresIn: login.rememberMe ? '30d' : '1d',
+      },
+    );
+
     return {
-      access_token: this.jwtService.sign(
-        {
-          id: user.id,
-          email: user.email,
-          name: user.name,
-          type: user.type,
-          investorType:
-            user.type === UserType.INVESTOR && (user as Investor).investorType,
-        },
-        {
-          expiresIn: login.rememberMe ? '30d' : '1d',
-        },
-      ),
+      access_token,
     };
   }
 
