@@ -2,10 +2,12 @@ import {
   Body,
   Controller,
   Post,
+  Res,
   UploadedFile,
   UseInterceptors,
 } from '@nestjs/common';
 import { FileInterceptor } from '@nestjs/platform-express';
+import { Response } from 'express';
 import { FileTypePipe } from 'src/pipes/file-type.pipe';
 import { CreateAdminDto } from '../admin/dto/create-admin.dto';
 import { CreateInvestorDto } from '../investor/dto/create-investor.dto';
@@ -17,8 +19,20 @@ export class AuthController {
   constructor(private readonly authService: AuthService) {}
 
   @Post('login')
-  async login(@Body() login: LoginUserDto) {
+  async login(
+    @Body() login: LoginUserDto,
+    @Res({ passthrough: true }) res: Response,
+  ) {
     const { access_token } = await this.authService.login(login);
+
+    res.cookie('access_token', access_token, {
+      httpOnly: true,
+      secure: process.env.NODE_ENV === 'production',
+      maxAge: login.rememberMe ? 30 * 24 * 60 * 60 * 1000 : 24 * 60 * 60 * 1000, // 30 days or 1 day
+      sameSite: 'lax',
+    });
+    res.status(200);
+
     return {
       status: 'success',
       access_token,
@@ -26,12 +40,22 @@ export class AuthController {
   }
 
   @Post('register/admin')
-  async registerAdmin(@Body() registerAdminDto: CreateAdminDto) {
+  async registerAdmin(
+    @Body() registerAdminDto: CreateAdminDto,
+    @Res({ passthrough: true }) res: Response,
+  ) {
     const { admin, access_token } =
       await this.authService.registerAdmin(registerAdminDto);
 
     // eslint-disable-next-line @typescript-eslint/no-unused-vars
     const { password, ...safeUser } = admin;
+
+    res.cookie('access_token', access_token, {
+      httpOnly: true,
+      secure: process.env.NODE_ENV === 'production',
+      maxAge: 24 * 60 * 60 * 1000, // 1 day
+      sameSite: 'lax',
+    });
 
     return {
       status: 'success',
@@ -46,6 +70,7 @@ export class AuthController {
     @Body() registerInvestorDto: CreateInvestorDto,
     @UploadedFile(FileTypePipe)
     file: Express.Multer.File,
+    @Res({ passthrough: true }) res: Response,
   ) {
     const { investor, access_token } = await this.authService.registerInvestor(
       registerInvestorDto,
@@ -54,6 +79,13 @@ export class AuthController {
 
     // eslint-disable-next-line @typescript-eslint/no-unused-vars
     const { password, ...safeUser } = investor;
+
+    res.cookie('access_token', access_token, {
+      httpOnly: true,
+      secure: process.env.NODE_ENV === 'production',
+      maxAge: 24 * 60 * 60 * 1000, // 1 day
+      sameSite: 'lax',
+    });
 
     return {
       status: 'success',

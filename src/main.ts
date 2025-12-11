@@ -1,5 +1,6 @@
 import { ValidationPipe } from '@nestjs/common';
 import { NestFactory } from '@nestjs/core';
+import cookieParser from 'cookie-parser';
 import { AppModule } from './app.module';
 import './utils/object.extensions';
 
@@ -12,6 +13,7 @@ async function bootstrap() {
   });
 
   app.setGlobalPrefix('api/v1');
+  app.use(cookieParser());
 
   app.useGlobalPipes(
     new ValidationPipe({
