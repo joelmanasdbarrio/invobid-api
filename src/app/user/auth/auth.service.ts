@@ -28,7 +28,9 @@ export class AuthService {
     private readonly jwtService: JwtService,
   ) {}
 
-  async login(login: LoginUserDto): Promise<{ access_token: string }> {
+  async login(
+    login: LoginUserDto,
+  ): Promise<{ user: User; access_token: string }> {
     let user = await this.userRepository.findOne({
       where: { email: login.email },
       select: { email: true, password: true, id: true, name: true, type: true },
@@ -60,6 +62,7 @@ export class AuthService {
     );
 
     return {
+      user,
       access_token,
     };
   }
@@ -73,17 +76,19 @@ export class AuthService {
       throw new InternalServerErrorException('Failed to create user account');
     }
 
+    const access_token = this.jwtService.sign(
+      {
+        id: admin.id,
+        email: admin.email,
+        name: admin.name,
+        type: 'admin',
+      },
+      { expiresIn: '1d' },
+    );
+
     return {
       admin,
-      access_token: this.jwtService.sign(
-        {
-          id: admin.id,
-          email: admin.email,
-          name: admin.name,
-          type: 'admin',
-        },
-        { expiresIn: '1d' },
-      ),
+      access_token,
     };
   }
 
@@ -96,17 +101,19 @@ export class AuthService {
       file,
     );
 
+    const access_token = this.jwtService.sign(
+      {
+        id: investor.id,
+        email: investor.email,
+        name: investor.name,
+        type: 'investor',
+      },
+      { expiresIn: '1d' },
+    );
+
     return {
       investor,
-      access_token: this.jwtService.sign(
-        {
-          id: investor.id,
-          email: investor.email,
-          name: investor.name,
-          type: 'investor',
-        },
-        { expiresIn: '1d' },
-      ),
+      access_token,
     };
   }
 }
