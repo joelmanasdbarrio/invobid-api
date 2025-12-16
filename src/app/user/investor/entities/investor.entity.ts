@@ -36,6 +36,7 @@ export class Investor extends User {
 
   @OneToMany(() => Document, (document) => document.investor, {
     cascade: true,
+    eager: true,
   })
   documents: Document[];
 

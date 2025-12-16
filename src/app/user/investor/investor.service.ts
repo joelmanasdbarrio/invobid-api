@@ -15,6 +15,7 @@ import { UserType } from '../common/enums/user-type.enum';
 import { CreateInvestorDto } from './dto/create-investor.dto';
 import { UpdateInvestorDto } from './dto/update-investor.dto';
 import { Investor } from './entities/investor.entity';
+import { GetInvestorsDto } from 'src/app/user/investor/dto/get-investors.dto';
 
 @Injectable()
 export class InvestorService {
@@ -107,8 +108,62 @@ export class InvestorService {
     }
   }
 
-  async findAll() {
-    return await this.investorRepository.find();
+  async findAll(query: GetInvestorsDto) {
+    const queryBuilder = this.investorRepository.createQueryBuilder('investor');
+
+    queryBuilder.leftJoinAndSelect('investor.documents', 'document');
+    queryBuilder.leftJoinAndSelect('investor.bankAccount', 'bankAccount');
+
+    if (query.email) {
+      queryBuilder.andWhere('investor.email = :email', { email: query.email });
+    }
+
+    if (query.name) {
+      queryBuilder.andWhere('investor.name ILIKE :name', {
+        name: `%${query.name}%`,
+      });
+    }
+
+    if (query.companyName) {
+      queryBuilder.andWhere('investor.companyName ILIKE :companyName', {
+        companyName: `%${query.companyName}%`,
+      });
+    }
+
+    if (query.phoneNumber) {
+      queryBuilder.andWhere('investor.phoneNumber = :phoneNumber', {
+        phoneNumber: query.phoneNumber,
+      });
+    }
+
+    if (query.documentValue) {
+      queryBuilder.andWhere('document.value = :documentValue', {
+        documentValue: query.documentValue,
+      });
+    }
+
+    if (query.investorType) {
+      queryBuilder.andWhere('investor.investorType = :investorType', {
+        investorType: query.investorType,
+      });
+    }
+
+    if (query.status) {
+      queryBuilder.andWhere('investor.status = :status', {
+        status: query.status,
+      });
+    }
+
+    const total = await queryBuilder.getCount();
+
+    if (query.page && query.limit) {
+      const skip = (query.page - 1) * query.limit;
+      queryBuilder.skip(skip).take(query.limit);
+    }
+
+    const data = await queryBuilder.getMany();
+
+    return { data, total, page: query.page, limit: query.limit };
   }
 
   async findOne(id: string) {
