@@ -6,6 +6,7 @@ import {
   Param,
   ParseUUIDPipe,
   Patch,
+  Query,
   UploadedFile,
   UseInterceptors,
 } from '@nestjs/common';
@@ -16,6 +17,7 @@ import { GetUser } from '../auth/decorators/get-user.decorator';
 import { User } from '../common/entities/user.entity';
 import { UpdateInvestorDto } from './dto/update-investor.dto';
 import { InvestorService } from './investor.service';
+import { GetInvestorsDto } from 'src/app/user/investor/dto/get-investors.dto';
 
 @Controller('investors')
 export class InvestorController {
@@ -23,11 +25,22 @@ export class InvestorController {
 
   @Get()
   @Auth()
-  async findAll() {
-    const res = await this.investorService.findAll();
+  async findAll(@Query() query: GetInvestorsDto) {
+    const { data, total, page, limit } = await this.investorService.findAll({
+      ...query,
+      page: query.page || 1,
+      limit: query.limit || 10,
+    });
+
     return {
       status: 'success',
-      data: res,
+      data,
+      _metadata: {
+        total,
+        length: data.length,
+        page,
+        limit,
+      },
     };
   }
 
