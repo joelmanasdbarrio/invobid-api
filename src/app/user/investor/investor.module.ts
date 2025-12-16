@@ -6,6 +6,8 @@ import { DocumentModule } from 'src/app/document/document.module';
 import { Investor } from './entities/investor.entity';
 import { InvestorController } from './investor.controller';
 import { InvestorService } from './investor.service';
+import { InvestorLookupService } from 'src/app/user/investor/investor-lookup.service';
+import { InvestorLookupController } from 'src/app/user/investor/investor-lookup.controller';
 
 @Module({
   imports: [
@@ -14,8 +16,8 @@ import { InvestorService } from './investor.service';
     DocumentModule,
     ConfigModule,
   ],
-  controllers: [InvestorController],
-  providers: [InvestorService],
-  exports: [InvestorService],
+  controllers: [InvestorController, InvestorLookupController],
+  providers: [InvestorService, InvestorLookupService],
+  exports: [InvestorService, InvestorLookupService],
 })
 export class InvestorModule {}
