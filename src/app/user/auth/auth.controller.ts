@@ -23,7 +23,7 @@ export class AuthController {
     @Body() login: LoginUserDto,
     @Res({ passthrough: true }) res: Response,
   ) {
-    const { access_token } = await this.authService.login(login);
+    const { user, access_token } = await this.authService.login(login);
 
     res.cookie('access_token', access_token, {
       httpOnly: true,
@@ -35,6 +35,7 @@ export class AuthController {
 
     return {
       status: 'success',
+      data: user,
       access_token,
     };
   }

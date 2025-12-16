@@ -36,7 +36,6 @@ export class Investor extends User {
 
   @OneToMany(() => Document, (document) => document.investor, {
     cascade: true,
-    eager: true,
   })
   documents: Document[];
 
@@ -53,7 +52,7 @@ export class Investor extends User {
   @OneToMany(() => Bid, (bid) => bid.investor)
   bids: Bid[];
 
-  @OneToOne(() => BankAccount, { cascade: true, eager: true })
+  @OneToOne(() => BankAccount, { cascade: true })
   @JoinColumn()
   bankAccount: BankAccount;
 }
