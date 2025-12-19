@@ -108,14 +108,20 @@ export class InvestorService {
     }
   }
 
-  async findAll(query: GetInvestorsDto) {
+  async findAll(query: GetInvestorsDto, user: User) {
     const queryBuilder = this.investorRepository.createQueryBuilder('investor');
 
-    queryBuilder.leftJoinAndSelect('investor.documents', 'document');
-    queryBuilder.leftJoinAndSelect('investor.bankAccount', 'bankAccount');
+    if (user.type === UserType.ADMIN) {
+      queryBuilder.leftJoinAndSelect('investor.documents', 'document');
+      queryBuilder.leftJoinAndSelect('investor.bankAccount', 'bankAccount');
+    } else {
+      queryBuilder.leftJoin('investor.documents', 'document');
+    }
 
     if (query.email) {
-      queryBuilder.andWhere('investor.email = :email', { email: query.email });
+      queryBuilder.andWhere('investor.email ILIKE :email', {
+        email: `%${query.email}%`,
+      });
     }
 
     if (query.name) {
@@ -166,8 +172,19 @@ export class InvestorService {
     return { data, total, page: query.page, limit: query.limit };
   }
 
-  async findOne(id: string) {
-    const investor = await this.investorRepository.findOne({ where: { id } });
+  async findOne(id: string, user?: User) {
+    const investor = await (async () => {
+      if (user && user.type === UserType.ADMIN) {
+        return await this.investorRepository.findOne({
+          where: { id },
+          relations: ['documents', 'bankAccount'],
+        });
+      } else {
+        return await this.investorRepository.findOne({
+          where: { id },
+        });
+      }
+    })();
 
     if (!investor) {
       throw new NotFoundException(`Investor with id '${id}' not found`);
@@ -188,7 +205,7 @@ export class InvestorService {
       }
     }
 
-    const investor = await this.findOne(id);
+    const investor = await this.findOne(id, user);
 
     if (user.type !== UserType.ADMIN && user.id !== investor.id) {
       throw new UnauthorizedException(
@@ -281,7 +298,7 @@ export class InvestorService {
   }
 
   async remove(id: string, user: User) {
-    const investor = await this.findOne(id);
+    const investor = await this.findOne(id, user);
 
     if (user.type !== UserType.ADMIN && user.id !== investor.id) {
       throw new UnauthorizedException(

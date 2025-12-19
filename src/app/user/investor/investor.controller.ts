@@ -25,12 +25,15 @@ export class InvestorController {
 
   @Get()
   @Auth()
-  async findAll(@Query() query: GetInvestorsDto) {
-    const { data, total, page, limit } = await this.investorService.findAll({
-      ...query,
-      page: query.page || 1,
-      limit: query.limit || 10,
-    });
+  async findAll(@Query() query: GetInvestorsDto, @GetUser() user: User) {
+    const { data, total, page, limit } = await this.investorService.findAll(
+      {
+        ...query,
+        page: query.page || 1,
+        limit: query.limit || 10,
+      },
+      user,
+    );
 
     return {
       status: 'success',
@@ -46,8 +49,8 @@ export class InvestorController {
 
   @Get(':id')
   @Auth()
-  async findOne(@Param('id', ParseUUIDPipe) id: string) {
-    const res = await this.investorService.findOne(id);
+  async findOne(@Param('id', ParseUUIDPipe) id: string, @GetUser() user: User) {
+    const res = await this.investorService.findOne(id, user);
     return {
       status: 'success',
       data: res,
