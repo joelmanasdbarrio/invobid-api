@@ -1,17 +1,11 @@
-import {
-  IsEmail,
-  IsIn,
-  IsOptional,
-  IsPhoneNumber,
-  IsString,
-} from 'class-validator';
+import { IsIn, IsOptional, IsPhoneNumber, IsString } from 'class-validator';
 import { InvestorType } from 'src/app/user/investor/enums/investor-type.enum';
 import { IsCifNif } from 'src/validations/is-nif-cif.validator';
 import { InvestorStatus } from 'src/app/user/investor/enums/investor-status.enum';
 import { PaginationDto } from 'src/dto/pagination.dto';
 
 export class GetInvestorsDto extends PaginationDto {
-  @IsEmail()
+  @IsString()
   @IsOptional()
   email?: string;
 
