@@ -9,13 +9,14 @@ import { InjectRepository } from '@nestjs/typeorm';
 import * as bcrypt from 'bcrypt';
 import { BankAccountService } from 'src/app/bank-account/bank-account.service';
 import { DocumentService } from 'src/app/document/document.service';
+import { DocumentType } from 'src/app/document/enums/document-type.enum';
+import { GetInvestorsDto } from 'src/app/user/investor/dto/get-investors.dto';
 import { Repository } from 'typeorm';
 import { User } from '../common/entities/user.entity';
 import { UserType } from '../common/enums/user-type.enum';
 import { CreateInvestorDto } from './dto/create-investor.dto';
 import { UpdateInvestorDto } from './dto/update-investor.dto';
 import { Investor } from './entities/investor.entity';
-import { GetInvestorsDto } from 'src/app/user/investor/dto/get-investors.dto';
 
 @Injectable()
 export class InvestorService {
@@ -61,6 +62,7 @@ export class InvestorService {
         {
           title: `${createInvestorDto.companyName}'s ID document`,
           value: createInvestorDto.documentValue,
+          type: DocumentType.IDENTIFICATION,
         },
         documentFile,
         investor,
@@ -114,6 +116,9 @@ export class InvestorService {
     if (user.type === UserType.ADMIN) {
       queryBuilder.leftJoinAndSelect('investor.documents', 'document');
       queryBuilder.leftJoinAndSelect('investor.bankAccount', 'bankAccount');
+      queryBuilder.andWhere('document.type = :documentType', {
+        documentType: DocumentType.IDENTIFICATION,
+      });
     } else {
       queryBuilder.leftJoin('investor.documents', 'document');
     }
@@ -237,6 +242,7 @@ export class InvestorService {
           {
             title: `${investor.companyName}'s ID document`,
             value: updateInvestorDto.documentValue,
+            type: DocumentType.IDENTIFICATION,
           },
           file,
           investor,

@@ -39,6 +39,7 @@ export class DocumentService {
         filename: this.getFilename(file, documentId),
         id: documentId,
         investor: user as Investor,
+        type: createDocumentDto.type,
       });
 
       return await this.documentRepository.save(document);

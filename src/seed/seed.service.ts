@@ -6,6 +6,7 @@ import { AuctionStatus } from 'src/app/auction/enum/auction-status.enum';
 import { BankAccount } from 'src/app/bank-account/entities/bank-account.entity';
 import { Bid } from 'src/app/bid/entities/bid.entity';
 import { Document } from 'src/app/document/entities/document.entity';
+import { DocumentType } from 'src/app/document/enums/document-type.enum';
 import { Invoice } from 'src/app/invoice/entities/invoice.entity';
 import { Admin } from 'src/app/user/admin/entities/admin.entity';
 import { UserType } from 'src/app/user/common/enums/user-type.enum';
@@ -13,6 +14,7 @@ import { Investor } from 'src/app/user/investor/entities/investor.entity';
 import { InvestorStatus } from 'src/app/user/investor/enums/investor-status.enum';
 import { InvestorType } from 'src/app/user/investor/enums/investor-type.enum';
 import { Repository } from 'typeorm';
+import { v4 as uuidv4 } from 'uuid';
 
 @Injectable()
 export class SeedService {
@@ -391,10 +393,13 @@ export class SeedService {
         balance: data.balance,
       });
 
+      const documentId = uuidv4();
       const document = this.documentRepository.create({
+        id: documentId,
         title: `${data.company} NIF/CIF Document`,
-        filename: `${data.documentValue.toLowerCase()}-document.pdf`,
+        filename: `${documentId}.pdf`,
         value: data.documentValue,
+        type: DocumentType.IDENTIFICATION,
       });
 
       const investor = this.investorRepository.create({
@@ -429,11 +434,14 @@ export class SeedService {
 
     for (const seller of sellerInvestors) {
       for (let i = 1; i <= 3; i++) {
+        const documentId = uuidv4();
         const invoiceDocument = this.documentRepository.create({
+          id: documentId,
           title: `Invoice ${i} - ${seller.companyName}`,
-          filename: `invoice-${i}-${seller.companyName.toLowerCase().replace(/\s+/g, '-')}.pdf`,
+          filename: `${documentId}.pdf`,
           value: `documents/invoice-${i}-${seller.companyName.toLowerCase().replace(/\s+/g, '-')}.pdf`,
           investor: seller,
+          type: DocumentType.INVOICE,
         });
 
         const dueDate = new Date();
