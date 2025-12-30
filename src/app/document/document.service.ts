@@ -6,6 +6,7 @@ import {
 } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { InjectRepository } from '@nestjs/typeorm';
+import { GetDocumentsDto } from 'src/app/document/dto/get-documents.dto';
 import { Repository } from 'typeorm';
 import { v4 as uuidv4 } from 'uuid';
 import { User } from '../user/common/entities/user.entity';
@@ -67,15 +68,57 @@ export class DocumentService {
     return storedFile;
   }
 
-  async findAll(user: User): Promise<Document[]> {
-    return user.type === UserType.ADMIN
-      ? await this.documentRepository.find({
-          relations: ['investor'],
-        })
-      : await this.documentRepository.find({
-          where: { investor: user as Investor },
-          relations: ['investor'],
+  async findAll(query: GetDocumentsDto, user: User) {
+    const queryBuilder = this.documentRepository
+      .createQueryBuilder('document')
+      .leftJoinAndSelect('document.investor', 'investor');
+
+    if (user.type !== UserType.ADMIN) {
+      queryBuilder.where('document.investorId = :investorId', {
+        investorId: user.id,
+      });
+    } else {
+      if (query.investorId) {
+        queryBuilder.andWhere('document.investorId = :investorId', {
+          investorId: query.investorId,
         });
+      }
+    }
+
+    if (query.title) {
+      queryBuilder.andWhere('document.title LIKE :title', {
+        title: `%${query.title}%`,
+      });
+    }
+
+    if (query.filename) {
+      queryBuilder.andWhere('document.filename LIKE :filename', {
+        filename: `%${query.filename}%`,
+      });
+    }
+
+    if (query.value) {
+      queryBuilder.andWhere('document.value LIKE :value', {
+        value: `%${query.value}%`,
+      });
+    }
+
+    if (query.type) {
+      queryBuilder.andWhere('document.type = :type', {
+        type: query.type,
+      });
+    }
+
+    const total = await queryBuilder.getCount();
+
+    if (query.page && query.limit) {
+      const skip = (query.page - 1) * query.limit;
+      queryBuilder.skip(skip).take(query.limit);
+    }
+
+    const data = await queryBuilder.getMany();
+
+    return { data, total, page: query.page, limit: query.limit };
   }
 
   async findOne(id: string, user: User): Promise<Document> {
