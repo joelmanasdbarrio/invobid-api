@@ -75,6 +75,39 @@ export class DocumentController {
     return this.documentService.findOne(id, user);
   }
 
+  @Get(':id/download')
+  @Auth()
+  async downloadOne(
+    @Param('id', ParseUUIDPipe) id: string,
+    @GetUser() user: User,
+    @Res() res: Response,
+  ): Promise<void> {
+    const result = await this.documentService.downloadOne(id, user);
+    const buffer = result.buffer;
+    const doc = result.document;
+
+    const parts = doc.filename.split('.');
+    const extension = parts.length > 0 ? parts[parts.length - 1] : '';
+    const mimetypeMap: Record<string, string> = {
+      pdf: 'application/pdf',
+      jpg: 'image/jpeg',
+      jpeg: 'image/jpeg',
+      png: 'image/png',
+    };
+    const mimetype =
+      (mimetypeMap[extension.toLowerCase()] as string | undefined) ||
+      'application/octet-stream';
+
+    res.setHeader('Content-Type', mimetype);
+    res.setHeader(
+      'Content-Disposition',
+      `attachment; filename="${doc.title}.${extension}"`,
+    );
+    res.setHeader('Content-Length', String(buffer.length));
+
+    res.send(buffer);
+  }
+
   @Patch(':id')
   @Auth()
   update(

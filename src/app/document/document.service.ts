@@ -139,6 +139,24 @@ export class DocumentService {
     return document;
   }
 
+  async downloadOne(
+    id: string,
+    user: User,
+  ): Promise<{ buffer: Buffer; document: Document }> {
+    const document = await this.findOne(id, user);
+
+    const fileBuffer = await this.documentStorageService.getFile(
+      document.filename,
+    );
+
+    if (!fileBuffer)
+      throw new NotFoundException(
+        `File for document with ID '${id}' not found`,
+      );
+
+    return { buffer: fileBuffer, document };
+  }
+
   async update(
     id: string,
     updateDocumentDto: UpdateDocumentDto,
