@@ -397,7 +397,10 @@ export class SeedService {
       const document = this.documentRepository.create({
         id: documentId,
         title: `${data.company} NIF/CIF Document`,
-        filename: `${documentId}.pdf`,
+        filename:
+          data.type === InvestorType.INDIVIDUAL
+            ? `020062c1-7a09-48b2-a3aa-fa23f0435322.jpg`
+            : `e3d07179-a2d1-4326-8415-0cedfe6a5073.jpg`,
         value: data.documentValue,
         type: DocumentType.IDENTIFICATION,
       });

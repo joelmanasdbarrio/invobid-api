@@ -7,10 +7,14 @@ import {
   ParseUUIDPipe,
   Patch,
   Post,
+  Query,
+  Res,
   UploadedFile,
   UseInterceptors,
 } from '@nestjs/common';
 import { FileInterceptor } from '@nestjs/platform-express';
+import { Response } from 'express';
+import { GetDocumentsDto } from 'src/app/document/dto/get-documents.dto';
 import { FileTypePipe } from '../../pipes/file-type.pipe';
 import { Auth } from '../user/auth/decorators/auth.decorator';
 import { GetUser } from '../user/auth/decorators/get-user.decorator';
@@ -43,8 +47,26 @@ export class DocumentController {
 
   @Get()
   @Auth()
-  findAll(@GetUser() user: User) {
-    return this.documentService.findAll(user);
+  async findAll(@Query() query: GetDocumentsDto, @GetUser() user: User) {
+    const { data, total, page, limit } = await this.documentService.findAll(
+      {
+        ...query,
+        page: query.page || 1,
+        limit: query.limit || 10,
+      },
+      user,
+    );
+
+    return {
+      status: 'success',
+      data,
+      _metadata: {
+        total,
+        length: data.length,
+        page,
+        limit,
+      },
+    };
   }
 
   @Get(':id')
