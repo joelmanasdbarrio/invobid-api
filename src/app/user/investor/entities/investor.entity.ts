@@ -21,12 +21,14 @@ export class Investor extends User {
   })
   investorType: InvestorType;
 
-  @Column({
-    type: 'enum',
+  @Column('enum', {
     enum: InvestorStatus,
     default: InvestorStatus.PENDING,
   })
   status: InvestorStatus;
+
+  @Column('text', { nullable: true })
+  lastCommunication?: string;
 
   @Column('bool', { default: false })
   isOptedInNotificationsEmail: boolean;

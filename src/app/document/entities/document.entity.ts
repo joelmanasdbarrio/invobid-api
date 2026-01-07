@@ -27,10 +27,10 @@ export class Document {
   @Column('text', { nullable: false })
   type: DocumentType;
 
-  @CreateDateColumn({ select: false })
+  @CreateDateColumn()
   createdAt: Date;
 
-  @UpdateDateColumn({ select: false })
+  @UpdateDateColumn()
   updatedAt: Date;
 
   @DeleteDateColumn({ select: false })

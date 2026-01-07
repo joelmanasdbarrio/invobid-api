@@ -1,13 +1,18 @@
-import { Injectable, UnauthorizedException } from '@nestjs/common';
+import {
+  HttpException,
+  Injectable,
+  PreconditionFailedException,
+  UnauthorizedException,
+} from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { PassportStrategy } from '@nestjs/passport';
 import { InjectRepository } from '@nestjs/typeorm';
-import { Strategy } from 'passport-jwt';
-import { Repository } from 'typeorm';
 import { Request } from 'express';
+import { Strategy } from 'passport-jwt';
+import { Investor } from 'src/app/user/investor/entities/investor.entity';
+import { Repository } from 'typeorm';
 import { User } from '../../common/entities/user.entity';
 import { UserType } from '../../common/enums/user-type.enum';
-import { Investor } from 'src/app/user/investor/entities/investor.entity';
 import { InvestorService } from '../../investor/investor.service';
 import { JwtPayload } from '../interfaces/jwt-payload.interface';
 
@@ -43,20 +48,20 @@ export class JwtStrategy extends PassportStrategy(Strategy) {
         email: true,
         password: false,
         name: true,
-        isActive: true,
         createdAt: true,
         updatedAt: true,
         deletedAt: true,
         type: true,
       },
+      withDeleted: true,
     });
 
     if (!user) {
       throw new UnauthorizedException('Token is not valid');
     }
 
-    if (!user.isActive) {
-      throw new UnauthorizedException('User has been disabled');
+    if (user.deletedAt) {
+      throw new HttpException('User has been disabled', 423);
     }
 
     if (user.type === UserType.INVESTOR) {

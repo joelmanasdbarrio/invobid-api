@@ -26,17 +26,14 @@ export abstract class User {
   @Column('text')
   name: string;
 
-  @Column('bool', { default: true, select: false })
-  isActive: boolean;
-
-  @CreateDateColumn({ select: false })
+  @CreateDateColumn()
   createdAt: Date;
 
-  @UpdateDateColumn({ select: false })
+  @UpdateDateColumn()
   updatedAt: Date;
 
-  @DeleteDateColumn({ select: false })
-  deletedAt: Date;
+  @DeleteDateColumn({ nullable: true })
+  deletedAt: Date | null;
 
   @Column()
   type: UserType;

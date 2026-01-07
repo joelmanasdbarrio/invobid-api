@@ -18,6 +18,7 @@ import { User } from '../common/entities/user.entity';
 import { UpdateInvestorDto } from './dto/update-investor.dto';
 import { InvestorService } from './investor.service';
 import { GetInvestorsDto } from 'src/app/user/investor/dto/get-investors.dto';
+import { InvestorStatus } from 'src/app/user/investor/enums/investor-status.enum';
 
 @Controller('investors')
 export class InvestorController {
@@ -58,7 +59,7 @@ export class InvestorController {
   }
 
   @Patch(':id')
-  @Auth()
+  @Auth([], [InvestorStatus.CORRECTION, InvestorStatus.VERIFIED])
   @UseInterceptors(FileInterceptor('document'))
   async update(
     @Param('id', ParseUUIDPipe) id: string,
