@@ -10,6 +10,7 @@ import { Repository } from 'typeorm';
 import { CreateAdminDto } from './dto/create-admin.dto';
 import { UpdateAdminDto } from './dto/update-admin.dto';
 import { Admin } from './entities/admin.entity';
+import { UserType } from 'src/app/user/common/enums/user-type.enum';
 
 @Injectable()
 export class AdminService {
@@ -26,7 +27,10 @@ export class AdminService {
     createAdminDto.password = await bcrypt.hash(createAdminDto.password, 10);
 
     try {
-      const admin = this.adminRepository.create(createAdminDto);
+      const admin = this.adminRepository.create({
+        ...createAdminDto,
+        type: UserType.ADMIN,
+      });
 
       return await this.adminRepository.save(admin);
     } catch (error) {

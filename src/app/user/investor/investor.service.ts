@@ -176,7 +176,21 @@ export class InvestorService {
 
   async findOne(id: string, user?: User) {
     const investor = await (async () => {
-      if (user && user.type !== UserType.ADMIN && user.id !== id) {
+      if (user && (user.type === UserType.ADMIN || user.id === id)) {
+        return await this.investorRepository.findOne({
+          where: { id },
+          relations: ['documents', 'bankAccount'],
+        });
+      } else if (
+        user &&
+        user.type !== UserType.ADMIN &&
+        user.id !== id &&
+        (user as Investor).status === InvestorStatus.PENDING
+      ) {
+        throw new UnauthorizedException(
+          `You don't have permissions to perform this action`,
+        );
+      } else {
         return await this.investorRepository.findOne({
           where: { id },
           select: {
@@ -185,11 +199,6 @@ export class InvestorService {
             updatedAt: false,
             deletedAt: false,
           },
-        });
-      } else {
-        return await this.investorRepository.findOne({
-          where: { id },
-          relations: ['documents', 'bankAccount'],
         });
       }
     })();
@@ -212,15 +221,23 @@ export class InvestorService {
     this.checkIsPending(investor, user);
     this.checkIsDenied(investor, user);
 
-    if (user.type !== UserType.ADMIN) {
-      updateInvestorDto.status = investor.status;
-      updateInvestorDto.lastCommunication = investor.lastCommunication;
-
-      if (investor.status !== InvestorStatus.VERIFIED) {
-        updateInvestorDto.status = InvestorStatus.PENDING;
-        updateInvestorDto.lastCommunication =
-          'Pendiente de revisión por usuario administrador';
-      }
+    if (
+      user.type !== UserType.ADMIN &&
+      investor.status === InvestorStatus.CORRECTION &&
+      updateInvestorDto.status === InvestorStatus.PENDING
+    ) {
+      updateInvestorDto.status = InvestorStatus.PENDING;
+      updateInvestorDto.lastCommunication =
+        'Pendiente de revisión por usuario administrador';
+    } else if (
+      user.type !== UserType.ADMIN &&
+      updateInvestorDto.status &&
+      (investor.status !== InvestorStatus.CORRECTION ||
+        updateInvestorDto.status !== InvestorStatus.PENDING)
+    ) {
+      throw new UnauthorizedException(
+        "You don't have permissions to perform this action",
+      );
     }
 
     if (updateInvestorDto.password && updateInvestorDto.passwordRepeat) {
