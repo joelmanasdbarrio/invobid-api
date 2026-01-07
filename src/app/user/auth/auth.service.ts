@@ -7,7 +7,7 @@ import {
 import { JwtService } from '@nestjs/jwt';
 import { InjectRepository } from '@nestjs/typeorm';
 import * as bcrypt from 'bcrypt';
-import { Repository } from 'typeorm';
+import { DeepPartial, Repository } from 'typeorm';
 import { AdminService } from '../admin/admin.service';
 import { CreateAdminDto } from '../admin/dto/create-admin.dto';
 import { Admin } from '../admin/entities/admin.entity';
@@ -36,10 +36,10 @@ export class AuthService {
     let user = await this.userRepository.findOne({
       where: { email: login.email },
       select: {
-        email: true,
-        password: true,
         id: true,
+        email: true,
         name: true,
+        password: true,
         type: true,
         deletedAt: true,
       },
@@ -70,10 +70,7 @@ export class AuthService {
       {
         id: user.id,
         email: user.email,
-        name: user.name,
         type: user.type,
-        investorType:
-          user.type === UserType.INVESTOR && (user as Investor).investorType,
       },
       {
         expiresIn: login.rememberMe ? '30d' : '1d',
@@ -88,7 +85,7 @@ export class AuthService {
 
   async registerAdmin(
     registerAdminDto: CreateAdminDto,
-  ): Promise<{ admin: Admin; access_token: string }> {
+  ): Promise<{ admin: DeepPartial<Admin>; access_token: string }> {
     const admin = await this.adminService.create(registerAdminDto);
 
     if (!admin) {
@@ -99,8 +96,7 @@ export class AuthService {
       {
         id: admin.id,
         email: admin.email,
-        name: admin.name,
-        type: 'admin',
+        type: UserType.ADMIN,
       },
       { expiresIn: '1d' },
     );
@@ -114,7 +110,7 @@ export class AuthService {
   async registerInvestor(
     registerInvestorDto: CreateInvestorDto,
     file: Express.Multer.File,
-  ): Promise<{ investor: Investor; access_token: string }> {
+  ): Promise<{ investor: DeepPartial<Investor>; access_token: string }> {
     const investor = await this.investorService.create(
       registerInvestorDto,
       file,
@@ -124,14 +120,23 @@ export class AuthService {
       {
         id: investor.id,
         email: investor.email,
-        name: investor.name,
-        type: 'investor',
+        type: UserType.INVESTOR,
       },
       { expiresIn: '1d' },
     );
 
     return {
-      investor,
+      investor: {
+        id: investor.id,
+        email: investor.email,
+        name: investor.name,
+        companyName: investor.companyName,
+        phoneNumber: investor.phoneNumber,
+        type: UserType.INVESTOR,
+        investorType: investor.investorType,
+        status: investor.status,
+        lastCommunication: investor.lastCommunication,
+      },
       access_token,
     };
   }

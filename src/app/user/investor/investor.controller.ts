@@ -49,7 +49,7 @@ export class InvestorController {
   }
 
   @Get(':id')
-  @Auth()
+  @Auth([], [])
   async findOne(@Param('id', ParseUUIDPipe) id: string, @GetUser() user: User) {
     const res = await this.investorService.findOne(id, user);
     return {
@@ -84,7 +84,14 @@ export class InvestorController {
   }
 
   @Delete(':id')
-  @Auth()
+  @Auth(
+    [],
+    [
+      InvestorStatus.CORRECTION,
+      InvestorStatus.PENDING,
+      InvestorStatus.VERIFIED,
+    ],
+  )
   async remove(@Param('id', ParseUUIDPipe) id: string, @GetUser() user: User) {
     await this.investorService.remove(id, user);
     return {
