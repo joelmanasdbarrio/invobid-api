@@ -96,14 +96,12 @@ export class SeedService {
         email: 'admin1@invobid.com',
         password: password,
         name: 'John Administrator',
-        isActive: true,
         type: UserType.ADMIN,
       }),
       this.adminRepository.create({
         email: 'admin2@invobid.com',
         password: password,
         name: 'Jane Admin',
-        isActive: true,
         type: UserType.ADMIN,
       }),
     ];
@@ -143,8 +141,10 @@ export class SeedService {
         company: 'WealthFund Capital',
         type: InvestorType.COMPANY,
         balance: 500000,
-        status: InvestorStatus.VERIFIED,
+        status: InvestorStatus.CORRECTION,
         documentValue: 'A12345674',
+        lastCommunication:
+          'El documento de identificación es incorrecto o no es legible',
       },
       {
         name: 'John Doe',
@@ -183,8 +183,10 @@ export class SeedService {
         company: 'Capital Venture Group',
         type: InvestorType.COMPANY,
         balance: 600000,
-        status: InvestorStatus.VERIFIED,
+        status: InvestorStatus.CORRECTION,
         documentValue: 'C12345690',
+        lastCommunication:
+          'No se ha podido verificar la razón social de la empresa',
       },
       {
         name: 'James Wilson',
@@ -263,8 +265,9 @@ export class SeedService {
         company: 'Capital Plus Ventures',
         type: InvestorType.COMPANY,
         balance: 550000,
-        status: InvestorStatus.VERIFIED,
+        status: InvestorStatus.DENIED,
         documentValue: 'G12345732',
+        lastCommunication: 'La cuenta ha sido denegada por insolvencia',
       },
       {
         name: 'Steven Harris',
@@ -397,10 +400,7 @@ export class SeedService {
       const document = this.documentRepository.create({
         id: documentId,
         title: `${data.company} NIF/CIF Document`,
-        filename:
-          data.type === InvestorType.INDIVIDUAL
-            ? `020062c1-7a09-48b2-a3aa-fa23f0435322.jpg`
-            : `e3d07179-a2d1-4326-8415-0cedfe6a5073.jpg`,
+        filename: data.type === InvestorType.INDIVIDUAL ? `dni.jpg` : `cif.jpg`,
         value: data.documentValue,
         type: DocumentType.IDENTIFICATION,
       });
@@ -409,7 +409,6 @@ export class SeedService {
         email: data.email,
         password: password,
         name: data.name,
-        isActive: true,
         type: UserType.INVESTOR,
         phoneNumber: data.phone,
         companyName: data.company,
@@ -417,6 +416,7 @@ export class SeedService {
         status: data.status,
         isOptedInNotificationsEmail: true,
         isOptedInNotificationsSMS: Math.random() > 0.5,
+        lastCommunication: data.lastCommunication || undefined,
         documents: [document],
         bankAccount: bankAccount,
       });

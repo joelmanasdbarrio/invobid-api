@@ -1,4 +1,5 @@
 import {
+  HttpException,
   Injectable,
   InternalServerErrorException,
   UnauthorizedException,
@@ -30,10 +31,19 @@ export class AuthService {
 
   async login(
     login: LoginUserDto,
+    activateAccount: boolean = false,
   ): Promise<{ user: User; access_token: string }> {
     let user = await this.userRepository.findOne({
       where: { email: login.email },
-      select: { email: true, password: true, id: true, name: true, type: true },
+      select: {
+        email: true,
+        password: true,
+        id: true,
+        name: true,
+        type: true,
+        deletedAt: true,
+      },
+      withDeleted: true,
     });
 
     if (!user) throw new UnauthorizedException('Invalid credentials');
@@ -42,6 +52,15 @@ export class AuthService {
 
     if (!isPasswordValid)
       throw new UnauthorizedException('Invalid credentials');
+
+    if (user.deletedAt) {
+      if (activateAccount) {
+        user.deletedAt = null;
+        await this.userRepository.save(user);
+      } else {
+        throw new HttpException('User account is locked', 423);
+      }
+    }
 
     if (user.type === UserType.INVESTOR) {
       user = await this.investorService.findOne(user.id);

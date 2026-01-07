@@ -1,8 +1,14 @@
-import { IsIn, IsOptional, IsPhoneNumber, IsString } from 'class-validator';
-import { InvestorType } from 'src/app/user/investor/enums/investor-type.enum';
-import { IsCifNif } from 'src/validations/is-nif-cif.validator';
+import {
+  IsBoolean,
+  IsIn,
+  IsOptional,
+  IsPhoneNumber,
+  IsString,
+} from 'class-validator';
 import { InvestorStatus } from 'src/app/user/investor/enums/investor-status.enum';
+import { InvestorType } from 'src/app/user/investor/enums/investor-type.enum';
 import { PaginationDto } from 'src/dto/pagination.dto';
+import { IsCifNif } from 'src/validations/is-nif-cif.validator';
 
 export class GetInvestorsDto extends PaginationDto {
   @IsString()
@@ -32,4 +38,8 @@ export class GetInvestorsDto extends PaginationDto {
   @IsOptional()
   @IsIn(Object.values(InvestorStatus))
   status?: InvestorStatus;
+
+  @IsOptional()
+  @IsBoolean()
+  includeDeleted?: boolean;
 }
