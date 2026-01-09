@@ -121,7 +121,7 @@ export class SeedService {
         company: 'TechCorp Solutions',
         type: InvestorType.INDIVIDUAL,
         balance: 50000,
-        status: InvestorStatus.VERIFIED,
+        status: InvestorStatus.PENDING,
         documentValue: '12345678Z',
       },
       {
