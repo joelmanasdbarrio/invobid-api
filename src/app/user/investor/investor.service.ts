@@ -213,7 +213,7 @@ export class InvestorService {
   async update(
     id: string,
     updateInvestorDto: UpdateInvestorDto,
-    file: Express.Multer.File,
+    file: Express.Multer.File | undefined,
     user: User,
   ) {
     const investor = await this.findOne(id, user);
@@ -223,21 +223,38 @@ export class InvestorService {
 
     if (
       user.type !== UserType.ADMIN &&
-      investor.status === InvestorStatus.CORRECTION &&
-      updateInvestorDto.status === InvestorStatus.PENDING
+      investor.status === InvestorStatus.CORRECTION
     ) {
-      updateInvestorDto.status = InvestorStatus.PENDING;
-      updateInvestorDto.lastCommunication =
-        'Pendiente de revisión por usuario administrador';
+      if (
+        updateInvestorDto.status &&
+        updateInvestorDto.status.toLowerCase() ===
+          InvestorStatus.PENDING.toLocaleLowerCase()
+      ) {
+        updateInvestorDto.status = InvestorStatus.PENDING;
+        updateInvestorDto.lastCommunication =
+          'Pendiente de revisión por usuario administrador';
+      } else {
+        updateInvestorDto.status = investor.status;
+        updateInvestorDto.lastCommunication = investor.lastCommunication;
+      }
     } else if (
       user.type !== UserType.ADMIN &&
-      updateInvestorDto.status &&
+      updateInvestorDto.status !== investor.status &&
       (investor.status !== InvestorStatus.CORRECTION ||
         updateInvestorDto.status !== InvestorStatus.PENDING)
     ) {
       throw new UnauthorizedException(
         "You don't have permissions to perform this action",
       );
+    } else if (
+      user.type !== UserType.ADMIN &&
+      investor.status === InvestorStatus.VERIFIED
+    ) {
+      updateInvestorDto.name = investor.name;
+      updateInvestorDto.companyName = investor.companyName;
+      updateInvestorDto.investorType = investor.investorType;
+      updateInvestorDto.documentValue = undefined;
+      file = undefined;
     }
 
     if (updateInvestorDto.password && updateInvestorDto.passwordRepeat) {
@@ -345,9 +362,7 @@ export class InvestorService {
       user.type !== UserType.ADMIN &&
       investor.status === InvestorStatus.DENIED
     ) {
-      throw new BadRequestException(
-        `Investor user has been ${InvestorStatus.DENIED}`,
-      );
+      throw new BadRequestException(`Investor user has been denied`);
     }
   }
 
@@ -356,9 +371,7 @@ export class InvestorService {
       user.type !== UserType.ADMIN &&
       investor.status === InvestorStatus.PENDING
     ) {
-      throw new BadRequestException(
-        `Investor user is ${InvestorStatus.PENDING}`,
-      );
+      throw new BadRequestException(`Investor user is pending`);
     }
   }
 }
