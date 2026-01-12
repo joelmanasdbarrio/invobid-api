@@ -6,6 +6,7 @@ import {
   Param,
   ParseUUIDPipe,
   Patch,
+  Query,
   UploadedFile,
   UseInterceptors,
 } from '@nestjs/common';
@@ -16,6 +17,8 @@ import { GetUser } from '../auth/decorators/get-user.decorator';
 import { User } from '../common/entities/user.entity';
 import { UpdateInvestorDto } from './dto/update-investor.dto';
 import { InvestorService } from './investor.service';
+import { GetInvestorsDto } from 'src/app/user/investor/dto/get-investors.dto';
+import { InvestorStatus } from 'src/app/user/investor/enums/investor-status.enum';
 
 @Controller('investors')
 export class InvestorController {
@@ -23,18 +26,32 @@ export class InvestorController {
 
   @Get()
   @Auth()
-  async findAll() {
-    const res = await this.investorService.findAll();
+  async findAll(@Query() query: GetInvestorsDto, @GetUser() user: User) {
+    const { data, total, page, limit } = await this.investorService.findAll(
+      {
+        ...query,
+        page: query.page || 1,
+        limit: query.limit || 10,
+      },
+      user,
+    );
+
     return {
       status: 'success',
-      data: res,
+      data,
+      _metadata: {
+        total,
+        length: data.length,
+        page,
+        limit,
+      },
     };
   }
 
   @Get(':id')
-  @Auth()
-  async findOne(@Param('id', ParseUUIDPipe) id: string) {
-    const res = await this.investorService.findOne(id);
+  @Auth([], [])
+  async findOne(@Param('id', ParseUUIDPipe) id: string, @GetUser() user: User) {
+    const res = await this.investorService.findOne(id, user);
     return {
       status: 'success',
       data: res,
@@ -42,7 +59,7 @@ export class InvestorController {
   }
 
   @Patch(':id')
-  @Auth()
+  @Auth([], [InvestorStatus.CORRECTION, InvestorStatus.VERIFIED])
   @UseInterceptors(FileInterceptor('document'))
   async update(
     @Param('id', ParseUUIDPipe) id: string,
@@ -67,7 +84,14 @@ export class InvestorController {
   }
 
   @Delete(':id')
-  @Auth()
+  @Auth(
+    [],
+    [
+      InvestorStatus.CORRECTION,
+      InvestorStatus.PENDING,
+      InvestorStatus.VERIFIED,
+    ],
+  )
   async remove(@Param('id', ParseUUIDPipe) id: string, @GetUser() user: User) {
     await this.investorService.remove(id, user);
     return {

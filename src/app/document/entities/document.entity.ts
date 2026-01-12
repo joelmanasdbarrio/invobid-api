@@ -8,6 +8,7 @@ import {
   PrimaryGeneratedColumn,
   UpdateDateColumn,
 } from 'typeorm';
+import { DocumentType } from '../enums/document-type.enum';
 
 @Entity('documents')
 export class Document {
@@ -23,10 +24,13 @@ export class Document {
   @Column('text', { nullable: false })
   value: string;
 
-  @CreateDateColumn({ select: false })
+  @Column('text', { nullable: false })
+  type: DocumentType;
+
+  @CreateDateColumn()
   createdAt: Date;
 
-  @UpdateDateColumn({ select: false })
+  @UpdateDateColumn()
   updatedAt: Date;
 
   @DeleteDateColumn({ select: false })

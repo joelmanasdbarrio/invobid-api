@@ -1,4 +1,5 @@
 import {
+  HttpException,
   Injectable,
   InternalServerErrorException,
   UnauthorizedException,
@@ -6,7 +7,7 @@ import {
 import { JwtService } from '@nestjs/jwt';
 import { InjectRepository } from '@nestjs/typeorm';
 import * as bcrypt from 'bcrypt';
-import { Repository } from 'typeorm';
+import { DeepPartial, Repository } from 'typeorm';
 import { AdminService } from '../admin/admin.service';
 import { CreateAdminDto } from '../admin/dto/create-admin.dto';
 import { Admin } from '../admin/entities/admin.entity';
@@ -28,10 +29,21 @@ export class AuthService {
     private readonly jwtService: JwtService,
   ) {}
 
-  async login(login: LoginUserDto): Promise<{ access_token: string }> {
+  async login(
+    login: LoginUserDto,
+    activateAccount: boolean = false,
+  ): Promise<{ user: User; access_token: string }> {
     let user = await this.userRepository.findOne({
       where: { email: login.email },
-      select: { email: true, password: true, id: true, name: true, type: true },
+      select: {
+        id: true,
+        email: true,
+        name: true,
+        password: true,
+        type: true,
+        deletedAt: true,
+      },
+      withDeleted: true,
     });
 
     if (!user) throw new UnauthorizedException('Invalid credentials');
@@ -41,6 +53,15 @@ export class AuthService {
     if (!isPasswordValid)
       throw new UnauthorizedException('Invalid credentials');
 
+    if (user.deletedAt) {
+      if (activateAccount) {
+        user.deletedAt = null;
+        await this.userRepository.save(user);
+      } else {
+        throw new HttpException('User account is locked', 423);
+      }
+    }
+
     if (user.type === UserType.INVESTOR) {
       user = await this.investorService.findOne(user.id);
     }
@@ -49,10 +70,7 @@ export class AuthService {
       {
         id: user.id,
         email: user.email,
-        name: user.name,
         type: user.type,
-        investorType:
-          user.type === UserType.INVESTOR && (user as Investor).investorType,
       },
       {
         expiresIn: login.rememberMe ? '30d' : '1d',
@@ -60,53 +78,66 @@ export class AuthService {
     );
 
     return {
+      user,
       access_token,
     };
   }
 
   async registerAdmin(
     registerAdminDto: CreateAdminDto,
-  ): Promise<{ admin: Admin; access_token: string }> {
+  ): Promise<{ admin: DeepPartial<Admin>; access_token: string }> {
     const admin = await this.adminService.create(registerAdminDto);
 
     if (!admin) {
       throw new InternalServerErrorException('Failed to create user account');
     }
 
+    const access_token = this.jwtService.sign(
+      {
+        id: admin.id,
+        email: admin.email,
+        type: UserType.ADMIN,
+      },
+      { expiresIn: '1d' },
+    );
+
     return {
       admin,
-      access_token: this.jwtService.sign(
-        {
-          id: admin.id,
-          email: admin.email,
-          name: admin.name,
-          type: 'admin',
-        },
-        { expiresIn: '1d' },
-      ),
+      access_token,
     };
   }
 
   async registerInvestor(
     registerInvestorDto: CreateInvestorDto,
     file: Express.Multer.File,
-  ): Promise<{ investor: Investor; access_token: string }> {
+  ): Promise<{ investor: DeepPartial<Investor>; access_token: string }> {
     const investor = await this.investorService.create(
       registerInvestorDto,
       file,
     );
 
+    const access_token = this.jwtService.sign(
+      {
+        id: investor.id,
+        email: investor.email,
+        type: UserType.INVESTOR,
+      },
+      { expiresIn: '1d' },
+    );
+
     return {
-      investor,
-      access_token: this.jwtService.sign(
-        {
-          id: investor.id,
-          email: investor.email,
-          name: investor.name,
-          type: 'investor',
-        },
-        { expiresIn: '1d' },
-      ),
+      investor: {
+        id: investor.id,
+        email: investor.email,
+        name: investor.name,
+        companyName: investor.companyName,
+        phoneNumber: investor.phoneNumber,
+        type: UserType.INVESTOR,
+        investorType: investor.investorType,
+        status: investor.status,
+        lastCommunication: investor.lastCommunication,
+      },
+      access_token,
     };
   }
 }

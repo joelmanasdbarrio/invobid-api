@@ -1,6 +1,7 @@
 import {
   Body,
   Controller,
+  Headers,
   Post,
   Res,
   UploadedFile,
@@ -21,9 +22,13 @@ export class AuthController {
   @Post('login')
   async login(
     @Body() login: LoginUserDto,
+    @Headers('x-activate-account') activateAccount: string,
     @Res({ passthrough: true }) res: Response,
   ) {
-    const { access_token } = await this.authService.login(login);
+    const { user, access_token } = await this.authService.login(
+      login,
+      activateAccount === 'true',
+    );
 
     res.cookie('access_token', access_token, {
       httpOnly: true,
@@ -35,6 +40,7 @@ export class AuthController {
 
     return {
       status: 'success',
+      data: user,
       access_token,
     };
   }

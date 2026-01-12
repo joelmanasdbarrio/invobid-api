@@ -21,12 +21,14 @@ export class Investor extends User {
   })
   investorType: InvestorType;
 
-  @Column({
-    type: 'enum',
+  @Column('enum', {
     enum: InvestorStatus,
     default: InvestorStatus.PENDING,
   })
   status: InvestorStatus;
+
+  @Column('text', { nullable: true })
+  lastCommunication?: string;
 
   @Column('bool', { default: false })
   isOptedInNotificationsEmail: boolean;
@@ -52,7 +54,7 @@ export class Investor extends User {
   @OneToMany(() => Bid, (bid) => bid.investor)
   bids: Bid[];
 
-  @OneToOne(() => BankAccount, { cascade: true, eager: true })
+  @OneToOne(() => BankAccount, { cascade: true })
   @JoinColumn()
   bankAccount: BankAccount;
 }

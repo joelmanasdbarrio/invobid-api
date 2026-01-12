@@ -6,6 +6,7 @@ import { AuctionStatus } from 'src/app/auction/enum/auction-status.enum';
 import { BankAccount } from 'src/app/bank-account/entities/bank-account.entity';
 import { Bid } from 'src/app/bid/entities/bid.entity';
 import { Document } from 'src/app/document/entities/document.entity';
+import { DocumentType } from 'src/app/document/enums/document-type.enum';
 import { Invoice } from 'src/app/invoice/entities/invoice.entity';
 import { Admin } from 'src/app/user/admin/entities/admin.entity';
 import { UserType } from 'src/app/user/common/enums/user-type.enum';
@@ -13,6 +14,7 @@ import { Investor } from 'src/app/user/investor/entities/investor.entity';
 import { InvestorStatus } from 'src/app/user/investor/enums/investor-status.enum';
 import { InvestorType } from 'src/app/user/investor/enums/investor-type.enum';
 import { Repository } from 'typeorm';
+import { v4 as uuidv4 } from 'uuid';
 
 @Injectable()
 export class SeedService {
@@ -94,14 +96,12 @@ export class SeedService {
         email: 'admin1@invobid.com',
         password: password,
         name: 'John Administrator',
-        isActive: true,
         type: UserType.ADMIN,
       }),
       this.adminRepository.create({
         email: 'admin2@invobid.com',
         password: password,
         name: 'Jane Admin',
-        isActive: true,
         type: UserType.ADMIN,
       }),
     ];
@@ -111,114 +111,319 @@ export class SeedService {
 
   private async seedInvestors(): Promise<Investor[]> {
     const password = bcrypt.hashSync('Investor123!', 10);
-
     const investors: Investor[] = [];
 
-    const seller1BankAccount = this.bankAccountRepository.create({
-      balance: 50000.0,
-    });
+    const investorData = [
+      {
+        name: 'Robert Tech',
+        email: 'seller1@techcorp.com',
+        phone: '34912345678',
+        company: 'TechCorp Solutions',
+        type: InvestorType.INDIVIDUAL,
+        balance: 50000,
+        status: InvestorStatus.PENDING,
+        documentValue: '12345678Z',
+      },
+      {
+        name: 'Sarah Global',
+        email: 'seller2@globaltrade.com',
+        phone: '34923456789',
+        company: 'GlobalTrade Industries',
+        type: InvestorType.INDIVIDUAL,
+        balance: 75000,
+        status: InvestorStatus.VERIFIED,
+        documentValue: '23456780T',
+      },
+      {
+        name: 'Michael Wealth',
+        email: 'buyer1@wealthfund.com',
+        phone: '34934567890',
+        company: 'WealthFund Capital',
+        type: InvestorType.COMPANY,
+        balance: 500000,
+        status: InvestorStatus.CORRECTION,
+        documentValue: 'A12345674',
+        lastCommunication:
+          'El documento de identificación es incorrecto o no es legible',
+      },
+      {
+        name: 'John Doe',
+        email: 'buyer2@capitalpartners.com',
+        phone: '34945678901',
+        company: 'Capital Partners',
+        type: InvestorType.INDIVIDUAL,
+        balance: 350000,
+        status: InvestorStatus.VERIFIED,
+        documentValue: '34567890V',
+      },
+      {
+        name: 'Emma Johnson',
+        email: 'investor3@financeplus.com',
+        phone: '34956789012',
+        company: 'Finance Plus Ltd',
+        type: InvestorType.COMPANY,
+        balance: 250000,
+        status: InvestorStatus.VERIFIED,
+        documentValue: 'B12345682',
+      },
+      {
+        name: 'David Smith',
+        email: 'investor4@tradeflow.com',
+        phone: '34967890123',
+        company: 'TradeFlow Inc',
+        type: InvestorType.INDIVIDUAL,
+        balance: 120000,
+        status: InvestorStatus.PENDING,
+        documentValue: '45678901G',
+      },
+      {
+        name: 'Lisa Anderson',
+        email: 'investor5@capitalventure.com',
+        phone: '34978901234',
+        company: 'Capital Venture Group',
+        type: InvestorType.COMPANY,
+        balance: 600000,
+        status: InvestorStatus.CORRECTION,
+        documentValue: 'C12345690',
+        lastCommunication:
+          'No se ha podido verificar la razón social de la empresa',
+      },
+      {
+        name: 'James Wilson',
+        email: 'investor6@investpro.com',
+        phone: '34989012345',
+        company: 'InvestPro Solutions',
+        type: InvestorType.INDIVIDUAL,
+        balance: 85000,
+        status: InvestorStatus.VERIFIED,
+        documentValue: '56789012B',
+      },
+      {
+        name: 'Rachel Brown',
+        email: 'investor7@financecore.com',
+        phone: '34912345679',
+        company: 'FinanceCore Partners',
+        type: InvestorType.COMPANY,
+        balance: 450000,
+        status: InvestorStatus.VERIFIED,
+        documentValue: 'D12345708',
+      },
+      {
+        name: 'Christopher Lee',
+        email: 'investor8@tradehub.com',
+        phone: '34923456780',
+        company: 'TradeHub Solutions',
+        type: InvestorType.INDIVIDUAL,
+        balance: 95000,
+        status: InvestorStatus.PENDING,
+        documentValue: 'X1234567L',
+      },
+      {
+        name: 'Patricia Martinez',
+        email: 'investor9@wealthmanage.com',
+        phone: '34934567891',
+        company: 'Wealth Management Corp',
+        type: InvestorType.COMPANY,
+        balance: 780000,
+        status: InvestorStatus.VERIFIED,
+        documentValue: 'E12345716',
+      },
+      {
+        name: 'Mark Taylor',
+        email: 'investor10@finventure.com',
+        phone: '34945678902',
+        company: 'FinVenture Ltd',
+        type: InvestorType.INDIVIDUAL,
+        balance: 110000,
+        status: InvestorStatus.VERIFIED,
+        documentValue: '78901234X',
+      },
+      {
+        name: 'Jennifer Garcia',
+        email: 'investor11@investflow.com',
+        phone: '34956789013',
+        company: 'InvestFlow Capital',
+        type: InvestorType.COMPANY,
+        balance: 320000,
+        status: InvestorStatus.VERIFIED,
+        documentValue: 'F12345724',
+      },
+      {
+        name: 'Anthony Rodriguez',
+        email: 'investor12@tradepro.com',
+        phone: '34967890124',
+        company: 'TradePro Holdings',
+        type: InvestorType.INDIVIDUAL,
+        balance: 75000,
+        status: InvestorStatus.PENDING,
+        documentValue: 'Y1234567X',
+      },
+      {
+        name: 'Nancy White',
+        email: 'investor13@capitalplus.com',
+        phone: '34978901235',
+        company: 'Capital Plus Ventures',
+        type: InvestorType.COMPANY,
+        balance: 550000,
+        status: InvestorStatus.DENIED,
+        documentValue: 'G12345732',
+        lastCommunication: 'La cuenta ha sido denegada por insolvencia',
+      },
+      {
+        name: 'Steven Harris',
+        email: 'investor14@financepro.com',
+        phone: '34989012346',
+        company: 'FinancePro Advisory',
+        type: InvestorType.INDIVIDUAL,
+        balance: 130000,
+        status: InvestorStatus.VERIFIED,
+        documentValue: '90123456A',
+      },
+      {
+        name: 'Dorothy Clark',
+        email: 'investor15@wealthplus.com',
+        phone: '34912345680',
+        company: 'WealthPlus Group',
+        type: InvestorType.COMPANY,
+        balance: 420000,
+        status: InvestorStatus.VERIFIED,
+        documentValue: 'H12345740',
+      },
+      {
+        name: 'Paul Lewis',
+        email: 'investor16@investcore.com',
+        phone: '34923456781',
+        company: 'InvestCore Ltd',
+        type: InvestorType.INDIVIDUAL,
+        balance: 88000,
+        status: InvestorStatus.PENDING,
+        documentValue: '01234567L',
+      },
+      {
+        name: 'Susan Walker',
+        email: 'investor17@tradefin.com',
+        phone: '34934567892',
+        company: 'TradeFin Solutions',
+        type: InvestorType.COMPANY,
+        balance: 670000,
+        status: InvestorStatus.VERIFIED,
+        documentValue: 'J12345757',
+      },
+      {
+        name: 'Andrew Hall',
+        email: 'investor18@capitalfin.com',
+        phone: '34945678903',
+        company: 'CapitalFin Partners',
+        type: InvestorType.INDIVIDUAL,
+        balance: 105000,
+        status: InvestorStatus.VERIFIED,
+        documentValue: '12345679S',
+      },
+      {
+        name: 'Karen Allen',
+        email: 'investor19@wealthcore.com',
+        phone: '34956789014',
+        company: 'WealthCore Advisors',
+        type: InvestorType.COMPANY,
+        balance: 380000,
+        status: InvestorStatus.VERIFIED,
+        documentValue: 'U12345765',
+      },
+      {
+        name: 'Daniel Young',
+        email: 'investor20@fintech.com',
+        phone: '34967890125',
+        company: 'FinTech Ventures',
+        type: InvestorType.INDIVIDUAL,
+        balance: 92000,
+        status: InvestorStatus.PENDING,
+        documentValue: 'Z1234567R',
+      },
+      {
+        name: 'Betty King',
+        email: 'investor21@investplus.com',
+        phone: '34978901236',
+        company: 'InvestPlus Global',
+        type: InvestorType.COMPANY,
+        balance: 510000,
+        status: InvestorStatus.VERIFIED,
+        documentValue: 'V12345773',
+      },
+      {
+        name: 'Edward Wright',
+        email: 'investor22@tradecap.com',
+        phone: '34989012347',
+        company: 'TradeCapital Group',
+        type: InvestorType.INDIVIDUAL,
+        balance: 115000,
+        status: InvestorStatus.VERIFIED,
+        documentValue: '34567891H',
+      },
+      {
+        name: 'Sandra Lopez',
+        email: 'investor23@wealthtrade.com',
+        phone: '34912345681',
+        company: 'WealthTrade Partners',
+        type: InvestorType.COMPANY,
+        balance: 690000,
+        status: InvestorStatus.VERIFIED,
+        documentValue: 'W12345781',
+      },
+      {
+        name: 'Thomas Hill',
+        email: 'investor24@financeway.com',
+        phone: '34923456782',
+        company: 'FinanceWay Solutions',
+        type: InvestorType.INDIVIDUAL,
+        balance: 78000,
+        status: InvestorStatus.PENDING,
+        documentValue: '45678902M',
+      },
+      {
+        name: 'Angela Scott',
+        email: 'investor25@investglobal.com',
+        phone: '34934567893',
+        company: 'InvestGlobal Corp',
+        type: InvestorType.COMPANY,
+        balance: 720000,
+        status: InvestorStatus.VERIFIED,
+        documentValue: 'N12345799',
+      },
+    ];
 
-    const seller1Document = this.documentRepository.create({
-      title: 'TechCorp Business License',
-      filename: 'techcorp-license.pdf',
-      value: 'documents/techcorp-license.pdf',
-    });
+    for (const data of investorData) {
+      const bankAccount = this.bankAccountRepository.create({
+        balance: data.balance,
+      });
 
-    const seller1 = this.investorRepository.create({
-      email: 'seller1@techcorp.com',
-      password: password,
-      name: 'Robert Tech',
-      isActive: true,
-      type: UserType.INVESTOR,
-      phoneNumber: '1234567890',
-      companyName: 'TechCorp Solutions',
-      investorType: InvestorType.INDIVIDUAL,
-      status: InvestorStatus.VERIFIED,
-      isOptedInNotificationsEmail: true,
-      isOptedInNotificationsSMS: false,
-      documents: [seller1Document],
-      bankAccount: seller1BankAccount,
-    });
+      const documentId = uuidv4();
+      const document = this.documentRepository.create({
+        id: documentId,
+        title: `${data.company} NIF/CIF Document`,
+        filename: data.type === InvestorType.INDIVIDUAL ? `dni.jpg` : `cif.jpg`,
+        value: data.documentValue,
+        type: DocumentType.IDENTIFICATION,
+      });
 
-    const seller2BankAccount = this.bankAccountRepository.create({
-      balance: 75000.0,
-    });
+      const investor = this.investorRepository.create({
+        email: data.email,
+        password: password,
+        name: data.name,
+        type: UserType.INVESTOR,
+        phoneNumber: data.phone,
+        companyName: data.company,
+        investorType: data.type,
+        status: data.status,
+        isOptedInNotificationsEmail: true,
+        isOptedInNotificationsSMS: Math.random() > 0.5,
+        lastCommunication: data.lastCommunication || undefined,
+        documents: [document],
+        bankAccount: bankAccount,
+      });
 
-    const seller2Document = this.documentRepository.create({
-      title: 'GlobalTrade Business Registration',
-      filename: 'globaltrade-registration.pdf',
-      value: 'documents/globaltrade-registration.pdf',
-    });
+      investors.push(investor);
+    }
 
-    const seller2 = this.investorRepository.create({
-      email: 'seller2@globaltrade.com',
-      password: password,
-      name: 'Sarah Global',
-      isActive: true,
-      type: UserType.INVESTOR,
-      phoneNumber: '9876543210',
-      companyName: 'GlobalTrade Industries',
-      investorType: InvestorType.INDIVIDUAL,
-      status: InvestorStatus.VERIFIED,
-      isOptedInNotificationsEmail: true,
-      isOptedInNotificationsSMS: true,
-      documents: [seller2Document],
-      bankAccount: seller2BankAccount,
-    });
-
-    const buyer1BankAccount = this.bankAccountRepository.create({
-      balance: 500000.0,
-    });
-
-    const buyer1Document = this.documentRepository.create({
-      title: 'WealthFund Investment License',
-      filename: 'wealthfund-license.pdf',
-      value: 'documents/wealthfund-license.pdf',
-    });
-
-    const buyer1 = this.investorRepository.create({
-      email: 'buyer1@wealthfund.com',
-      password: password,
-      name: 'Michael Wealth',
-      isActive: true,
-      type: UserType.INVESTOR,
-      phoneNumber: '5551234567',
-      companyName: 'WealthFund Capital',
-      investorType: InvestorType.COMPANY,
-      status: InvestorStatus.VERIFIED,
-      isOptedInNotificationsEmail: true,
-      isOptedInNotificationsSMS: true,
-      documents: [buyer1Document],
-      bankAccount: buyer1BankAccount,
-    });
-
-    const buyer2BankAccount = this.bankAccountRepository.create({
-      balance: 350000.0,
-    });
-
-    const buyer2Document = this.documentRepository.create({
-      title: 'Capital Partners Registration',
-      filename: 'capitalpartners-registration.pdf',
-      value: 'documents/capitalpartners-registration.pdf',
-    });
-
-    const buyer2 = this.investorRepository.create({
-      email: 'buyer2@capitalpartners.com',
-      password: password,
-      name: 'John Doe',
-      isActive: true,
-      type: UserType.INVESTOR,
-      phoneNumber: '5559876543',
-      companyName: 'John Doe',
-      investorType: InvestorType.INDIVIDUAL,
-      status: InvestorStatus.VERIFIED,
-      isOptedInNotificationsEmail: true,
-      isOptedInNotificationsSMS: false,
-      documents: [buyer2Document],
-      bankAccount: buyer2BankAccount,
-    });
-
-    investors.push(seller1, seller2, buyer1, buyer2);
     return await this.investorRepository.save(investors);
   }
 
@@ -232,11 +437,14 @@ export class SeedService {
 
     for (const seller of sellerInvestors) {
       for (let i = 1; i <= 3; i++) {
+        const documentId = uuidv4();
         const invoiceDocument = this.documentRepository.create({
+          id: documentId,
           title: `Invoice ${i} - ${seller.companyName}`,
-          filename: `invoice-${i}-${seller.companyName.toLowerCase().replace(/\s+/g, '-')}.pdf`,
+          filename: `${documentId}.pdf`,
           value: `documents/invoice-${i}-${seller.companyName.toLowerCase().replace(/\s+/g, '-')}.pdf`,
           investor: seller,
+          type: DocumentType.INVOICE,
         });
 
         const dueDate = new Date();
