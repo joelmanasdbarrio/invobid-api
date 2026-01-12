@@ -19,6 +19,7 @@ import { UserType } from '../common/enums/user-type.enum';
 import { CreateInvestorDto } from './dto/create-investor.dto';
 import { UpdateInvestorDto } from './dto/update-investor.dto';
 import { Investor } from './entities/investor.entity';
+import { BankAccount } from 'src/app/bank-account/entities/bank-account.entity';
 
 @Injectable()
 export class InvestorService {
@@ -41,22 +42,25 @@ export class InvestorService {
       throw new BadRequestException('Document file is required');
     }
 
+    let bankAccount: BankAccount | undefined;
+    let investor: Investor | undefined;
+    let document: Document | undefined;
     try {
       createInvestorDto.password = await bcrypt.hash(
         createInvestorDto.password,
         10,
       );
 
-      const bankAccount = await this.bankAccountService.create({});
+      bankAccount = await this.bankAccountService.create({});
 
-      const investor = await this.investorRepository.save(
+      investor = await this.investorRepository.save(
         Object.assign(createInvestorDto, {
           bankAccount,
           lastCommunication: 'Pendiente de revisión por usuario administrador',
         }),
       );
 
-      const document = await this.documentService.create(
+      document = await this.documentService.create(
         {
           title: `${createInvestorDto.companyName}'s ID document`,
           value: createInvestorDto.documentValue,
@@ -71,6 +75,19 @@ export class InvestorService {
       return investor;
     } catch (error) {
       console.error(error);
+      if (investor) {
+        await this.investorRepository.delete(investor.id);
+      }
+      if (bankAccount) {
+        await this.bankAccountService.remove(bankAccount.id);
+      }
+      if (document) {
+        await this.documentService.remove(document.id, investor!);
+      }
+
+      if (error instanceof BadRequestException) {
+        throw error;
+      }
       // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access
       if (error.code === '23505') {
         // eslint-disable-next-line
@@ -263,8 +280,8 @@ export class InvestorService {
       }
     }
 
-    let documentPath: string | null = null;
-    let newDocument: Document | undefined = undefined;
+    let documentPath: string | undefined;
+    let newDocument: Document | undefined;
     try {
       if (updateInvestorDto.password) {
         updateInvestorDto.password = await bcrypt.hash(
@@ -298,10 +315,6 @@ export class InvestorService {
           file,
           newDocument.id,
         );
-
-        updateInvestorDto.status = InvestorStatus.PENDING;
-        updateInvestorDto.lastCommunication =
-          'Pendiente de revisión por usuario administrador';
       }
 
       Object.assign(investor, updateInvestorDto.removeUndefined());

@@ -1,3 +1,4 @@
+import { Transform } from 'class-transformer';
 import {
   IsEmail,
   IsIn,
@@ -16,6 +17,12 @@ export class CreateInvestorDto {
   @MinLength(2)
   name: string;
 
+  @Transform(({ obj }: { obj: CreateInvestorDto }) => {
+    if (obj.investorType === InvestorType.INDIVIDUAL) {
+      return obj.name;
+    }
+    return obj.companyName;
+  })
   @IsString()
   companyName: string;
 
