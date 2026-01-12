@@ -1,4 +1,5 @@
 import {
+  BadRequestException,
   Inject,
   Injectable,
   InternalServerErrorException,
@@ -7,7 +8,7 @@ import {
 import { ConfigService } from '@nestjs/config';
 import { InjectRepository } from '@nestjs/typeorm';
 import { GetDocumentsDto } from 'src/app/document/dto/get-documents.dto';
-import { Repository } from 'typeorm';
+import { Not, Repository } from 'typeorm';
 import { v4 as uuidv4 } from 'uuid';
 import { User } from '../user/common/entities/user.entity';
 import { UserType } from '../user/common/enums/user-type.enum';
@@ -32,6 +33,14 @@ export class DocumentService {
     file: Express.Multer.File,
     user: User,
   ): Promise<Document> {
+    if (
+      await this.checkDuplicateDocumentValues(user.id, createDocumentDto.value)
+    ) {
+      throw new BadRequestException(
+        'A document with the same value already exists for another investor',
+      );
+    }
+
     try {
       const documentId = uuidv4();
 
@@ -56,7 +65,7 @@ export class DocumentService {
   async uploadFile(
     file: Express.Multer.File,
     documentId: string,
-  ): Promise<string | null> {
+  ): Promise<string | undefined> {
     const storedFile = await this.documentStorageService.uploadFile(
       file.buffer,
       this.getFilename(file, documentId),
@@ -115,6 +124,10 @@ export class DocumentService {
       const skip = (query.page - 1) * query.limit;
       queryBuilder.skip(skip).take(query.limit);
     }
+
+    queryBuilder.orderBy({
+      'document.createdAt': 'DESC',
+    });
 
     const data = await queryBuilder.getMany();
 
@@ -181,5 +194,15 @@ export class DocumentService {
 
   private getFilename(file: Express.Multer.File, documentId: string) {
     return `${documentId}.${file.originalname.split('.').pop()}`;
+  }
+
+  private async checkDuplicateDocumentValues(
+    investorId: string,
+    value: string,
+  ): Promise<boolean> {
+    const existingDocuments = await this.documentRepository.count({
+      where: { value, investor: { id: Not(investorId) } },
+    });
+    return !!existingDocuments;
   }
 }
