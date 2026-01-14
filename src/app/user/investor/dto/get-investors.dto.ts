@@ -29,7 +29,7 @@ export class GetInvestorsDto extends PaginationDto {
 
   @IsCifNif()
   @IsOptional()
-  documentValue?: string;
+  taxId?: string;
 
   @IsIn(Object.values(InvestorType))
   @IsOptional()

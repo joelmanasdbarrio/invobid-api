@@ -6,6 +6,7 @@ import { User } from 'src/app/user/common/entities/user.entity';
 import { ChildEntity, Column, JoinColumn, OneToMany, OneToOne } from 'typeorm';
 import { InvestorStatus } from '../enums/investor-status.enum';
 import { InvestorType } from '../enums/investor-type.enum';
+import { Length } from 'class-validator';
 
 @ChildEntity('investor')
 export class Investor extends User {
@@ -14,6 +15,10 @@ export class Investor extends User {
 
   @Column('text', { unique: true })
   companyName: string;
+
+  @Length(9, 9)
+  @Column('text', { unique: true })
+  taxId: string;
 
   @Column('enum', {
     enum: InvestorType,
