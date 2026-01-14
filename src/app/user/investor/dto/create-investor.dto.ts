@@ -32,6 +32,9 @@ export class CreateInvestorDto {
   @IsPhoneNumber('ES')
   phoneNumber: string;
 
+  @IsCifNif()
+  taxId: string;
+
   @IsString()
   @MinLength(6)
   password: string;
@@ -39,7 +42,4 @@ export class CreateInvestorDto {
   @IsString()
   @MinLength(6)
   passwordRepeat: string;
-
-  @IsCifNif()
-  documentValue: string;
 }

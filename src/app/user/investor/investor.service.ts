@@ -53,17 +53,17 @@ export class InvestorService {
 
       bankAccount = await this.bankAccountService.create({});
 
-      investor = await this.investorRepository.save(
-        Object.assign(createInvestorDto, {
+      investor = await this.investorRepository.save({
+        ...Object.assign(createInvestorDto, {
           bankAccount,
           lastCommunication: 'Pendiente de revisión por usuario administrador',
         }),
-      );
+      });
 
       document = await this.documentService.create(
         {
           title: `${createInvestorDto.companyName}'s ID document`,
-          value: createInvestorDto.documentValue,
+          value: createInvestorDto.taxId,
           type: DocumentType.IDENTIFICATION,
         },
         documentFile,
@@ -161,9 +161,9 @@ export class InvestorService {
       });
     }
 
-    if (query.documentValue) {
+    if (query.taxId) {
       queryBuilder.andWhere('document.value = :documentValue', {
-        documentValue: query.documentValue,
+        documentValue: query.taxId,
       });
     }
 
@@ -270,7 +270,7 @@ export class InvestorService {
       updateInvestorDto.name = investor.name;
       updateInvestorDto.companyName = investor.companyName;
       updateInvestorDto.investorType = investor.investorType;
-      updateInvestorDto.documentValue = undefined;
+      updateInvestorDto.taxId = undefined;
       file = undefined;
     }
 
@@ -290,16 +290,16 @@ export class InvestorService {
         );
       }
 
-      if (file && !updateInvestorDto.documentValue)
+      if (file && !updateInvestorDto.taxId)
         throw new BadRequestException(
           'Document value is required when uploading a new document file',
         );
 
-      if (file && updateInvestorDto.documentValue) {
+      if (file && updateInvestorDto.taxId) {
         newDocument = await this.documentService.create(
           {
             title: `${investor.companyName}'s ID document`,
-            value: updateInvestorDto.documentValue,
+            value: updateInvestorDto.taxId,
             type: DocumentType.IDENTIFICATION,
           },
           file,
@@ -310,6 +310,7 @@ export class InvestorService {
           investor.documents = [];
         }
         investor.documents.push(newDocument);
+        investor.taxId = updateInvestorDto.taxId;
 
         documentPath = await this.documentService.uploadFile(
           file,
