@@ -5,6 +5,7 @@ import { Auction } from 'src/app/auction/entities/auction.entity';
 import { AuctionStatus } from 'src/app/auction/enum/auction-status.enum';
 import { BankAccount } from 'src/app/bank-account/entities/bank-account.entity';
 import { Bid } from 'src/app/bid/entities/bid.entity';
+import { Debtor } from 'src/app/debtor/entities/debtor.entity';
 import { Document } from 'src/app/document/entities/document.entity';
 import { DocumentType } from 'src/app/document/enums/document-type.enum';
 import { Invoice } from 'src/app/invoice/entities/invoice.entity';
@@ -23,6 +24,8 @@ export class SeedService {
     private readonly adminRepository: Repository<Admin>,
     @InjectRepository(Investor)
     private readonly investorRepository: Repository<Investor>,
+    @InjectRepository(Debtor)
+    private readonly debtorRepository: Repository<Debtor>,
     @InjectRepository(Document)
     private readonly documentRepository: Repository<Document>,
     @InjectRepository(BankAccount)
@@ -47,8 +50,11 @@ export class SeedService {
       console.log('💼 Seeding investors...');
       const investors = await this.seedInvestors();
 
+      console.log('🏢 Seeding debtors...');
+      const debtors = await this.seedDebtors(investors);
+
       console.log('📄 Seeding invoices...');
-      const invoices = await this.seedInvoices(investors);
+      const invoices = await this.seedInvoices(investors, debtors);
 
       console.log('🔨 Seeding auctions...');
       const auctions = await this.seedAuctions(invoices);
@@ -59,6 +65,7 @@ export class SeedService {
       console.log('✅ Database seeding completed successfully!');
       console.log(`\t - ${admins.length} admins created`);
       console.log(`\t - ${investors.length} investors created`);
+      console.log(`\t - ${debtors.length} debtors created`);
       console.log(`\t - ${invoices.length} invoices created`);
       console.log(`\t - ${auctions.length} auctions created`);
       console.log(`\t - ${auctions.length * 5} bids created`);
@@ -76,6 +83,7 @@ export class SeedService {
       await this.auctionRepository.query('TRUNCATE TABLE "auctions" CASCADE');
       await this.invoiceRepository.query('TRUNCATE TABLE "invoices" CASCADE');
       await this.documentRepository.query('TRUNCATE TABLE "documents" CASCADE');
+      await this.debtorRepository.query('TRUNCATE TABLE "debtors" CASCADE');
       await this.bankAccountRepository.query(
         'TRUNCATE TABLE "bank_accounts" CASCADE',
       );
@@ -122,7 +130,7 @@ export class SeedService {
         type: InvestorType.INDIVIDUAL,
         balance: 50000,
         status: InvestorStatus.PENDING,
-        documentValue: '12345678Z',
+        taxId: '12345678Z',
       },
       {
         name: 'Sarah Global',
@@ -132,7 +140,7 @@ export class SeedService {
         type: InvestorType.INDIVIDUAL,
         balance: 75000,
         status: InvestorStatus.VERIFIED,
-        documentValue: '23456780T',
+        taxId: '23456780T',
       },
       {
         name: 'Michael Wealth',
@@ -142,7 +150,7 @@ export class SeedService {
         type: InvestorType.COMPANY,
         balance: 500000,
         status: InvestorStatus.CORRECTION,
-        documentValue: 'A12345674',
+        taxId: 'A12345674',
         lastCommunication:
           'El documento de identificación es incorrecto o no es legible',
       },
@@ -154,7 +162,7 @@ export class SeedService {
         type: InvestorType.INDIVIDUAL,
         balance: 350000,
         status: InvestorStatus.VERIFIED,
-        documentValue: '34567890V',
+        taxId: '34567890V',
       },
       {
         name: 'Emma Johnson',
@@ -164,7 +172,7 @@ export class SeedService {
         type: InvestorType.COMPANY,
         balance: 250000,
         status: InvestorStatus.VERIFIED,
-        documentValue: 'B12345682',
+        taxId: 'B12345682',
       },
       {
         name: 'David Smith',
@@ -174,7 +182,7 @@ export class SeedService {
         type: InvestorType.INDIVIDUAL,
         balance: 120000,
         status: InvestorStatus.PENDING,
-        documentValue: '45678901G',
+        taxId: '45678901G',
       },
       {
         name: 'Lisa Anderson',
@@ -184,7 +192,7 @@ export class SeedService {
         type: InvestorType.COMPANY,
         balance: 600000,
         status: InvestorStatus.CORRECTION,
-        documentValue: 'C12345690',
+        taxId: 'C12345690',
         lastCommunication:
           'No se ha podido verificar la razón social de la empresa',
       },
@@ -196,7 +204,7 @@ export class SeedService {
         type: InvestorType.INDIVIDUAL,
         balance: 85000,
         status: InvestorStatus.VERIFIED,
-        documentValue: '56789012B',
+        taxId: '56789012B',
       },
       {
         name: 'Rachel Brown',
@@ -206,7 +214,7 @@ export class SeedService {
         type: InvestorType.COMPANY,
         balance: 450000,
         status: InvestorStatus.VERIFIED,
-        documentValue: 'D12345708',
+        taxId: 'D12345708',
       },
       {
         name: 'Christopher Lee',
@@ -216,7 +224,7 @@ export class SeedService {
         type: InvestorType.INDIVIDUAL,
         balance: 95000,
         status: InvestorStatus.PENDING,
-        documentValue: 'X1234567L',
+        taxId: 'X1234567L',
       },
       {
         name: 'Patricia Martinez',
@@ -226,7 +234,7 @@ export class SeedService {
         type: InvestorType.COMPANY,
         balance: 780000,
         status: InvestorStatus.VERIFIED,
-        documentValue: 'E12345716',
+        taxId: 'E12345716',
       },
       {
         name: 'Mark Taylor',
@@ -236,7 +244,7 @@ export class SeedService {
         type: InvestorType.INDIVIDUAL,
         balance: 110000,
         status: InvestorStatus.VERIFIED,
-        documentValue: '78901234X',
+        taxId: '78901234X',
       },
       {
         name: 'Jennifer Garcia',
@@ -246,7 +254,7 @@ export class SeedService {
         type: InvestorType.COMPANY,
         balance: 320000,
         status: InvestorStatus.VERIFIED,
-        documentValue: 'F12345724',
+        taxId: 'F12345724',
       },
       {
         name: 'Anthony Rodriguez',
@@ -256,7 +264,7 @@ export class SeedService {
         type: InvestorType.INDIVIDUAL,
         balance: 75000,
         status: InvestorStatus.PENDING,
-        documentValue: 'Y1234567X',
+        taxId: 'Y1234567X',
       },
       {
         name: 'Nancy White',
@@ -266,7 +274,7 @@ export class SeedService {
         type: InvestorType.COMPANY,
         balance: 550000,
         status: InvestorStatus.DENIED,
-        documentValue: 'G12345732',
+        taxId: 'G12345732',
         lastCommunication: 'La cuenta ha sido denegada por insolvencia',
       },
       {
@@ -277,7 +285,7 @@ export class SeedService {
         type: InvestorType.INDIVIDUAL,
         balance: 130000,
         status: InvestorStatus.VERIFIED,
-        documentValue: '90123456A',
+        taxId: '90123456A',
       },
       {
         name: 'Dorothy Clark',
@@ -287,7 +295,7 @@ export class SeedService {
         type: InvestorType.COMPANY,
         balance: 420000,
         status: InvestorStatus.VERIFIED,
-        documentValue: 'H12345740',
+        taxId: 'H12345740',
       },
       {
         name: 'Paul Lewis',
@@ -297,7 +305,7 @@ export class SeedService {
         type: InvestorType.INDIVIDUAL,
         balance: 88000,
         status: InvestorStatus.PENDING,
-        documentValue: '01234567L',
+        taxId: '01234567L',
       },
       {
         name: 'Susan Walker',
@@ -307,7 +315,7 @@ export class SeedService {
         type: InvestorType.COMPANY,
         balance: 670000,
         status: InvestorStatus.VERIFIED,
-        documentValue: 'J12345757',
+        taxId: 'J12345757',
       },
       {
         name: 'Andrew Hall',
@@ -317,7 +325,7 @@ export class SeedService {
         type: InvestorType.INDIVIDUAL,
         balance: 105000,
         status: InvestorStatus.VERIFIED,
-        documentValue: '12345679S',
+        taxId: '12345679S',
       },
       {
         name: 'Karen Allen',
@@ -327,7 +335,7 @@ export class SeedService {
         type: InvestorType.COMPANY,
         balance: 380000,
         status: InvestorStatus.VERIFIED,
-        documentValue: 'U12345765',
+        taxId: 'U12345765',
       },
       {
         name: 'Daniel Young',
@@ -337,7 +345,7 @@ export class SeedService {
         type: InvestorType.INDIVIDUAL,
         balance: 92000,
         status: InvestorStatus.PENDING,
-        documentValue: 'Z1234567R',
+        taxId: 'Z1234567R',
       },
       {
         name: 'Betty King',
@@ -347,7 +355,7 @@ export class SeedService {
         type: InvestorType.COMPANY,
         balance: 510000,
         status: InvestorStatus.VERIFIED,
-        documentValue: 'V12345773',
+        taxId: 'V12345773',
       },
       {
         name: 'Edward Wright',
@@ -357,7 +365,7 @@ export class SeedService {
         type: InvestorType.INDIVIDUAL,
         balance: 115000,
         status: InvestorStatus.VERIFIED,
-        documentValue: '34567891H',
+        taxId: '34567891H',
       },
       {
         name: 'Sandra Lopez',
@@ -367,7 +375,7 @@ export class SeedService {
         type: InvestorType.COMPANY,
         balance: 690000,
         status: InvestorStatus.VERIFIED,
-        documentValue: 'W12345781',
+        taxId: 'W12345781',
       },
       {
         name: 'Thomas Hill',
@@ -377,7 +385,7 @@ export class SeedService {
         type: InvestorType.INDIVIDUAL,
         balance: 78000,
         status: InvestorStatus.PENDING,
-        documentValue: '45678902M',
+        taxId: '45678902M',
       },
       {
         name: 'Angela Scott',
@@ -387,7 +395,7 @@ export class SeedService {
         type: InvestorType.COMPANY,
         balance: 720000,
         status: InvestorStatus.VERIFIED,
-        documentValue: 'N12345799',
+        taxId: 'N12345799',
       },
     ];
 
@@ -401,7 +409,7 @@ export class SeedService {
         id: documentId,
         title: `${data.company} NIF/CIF Document`,
         filename: data.type === InvestorType.INDIVIDUAL ? `dni.jpg` : `cif.jpg`,
-        value: data.documentValue,
+        value: data.taxId,
         type: DocumentType.IDENTIFICATION,
       });
 
@@ -414,6 +422,7 @@ export class SeedService {
         companyName: data.company,
         investorType: data.type,
         status: data.status,
+        taxId: data.taxId,
         isOptedInNotificationsEmail: true,
         isOptedInNotificationsSMS: Math.random() > 0.5,
         lastCommunication: data.lastCommunication || undefined,
@@ -427,13 +436,101 @@ export class SeedService {
     return await this.investorRepository.save(investors);
   }
 
-  private async seedInvoices(investors: Investor[]): Promise<Invoice[]> {
+  private async seedDebtors(investors: Investor[]): Promise<Debtor[]> {
+    const debtors: Debtor[] = [];
+
+    const debtorData = [
+      {
+        companyName: 'Client Company 1',
+        email: 'contact@client1.com',
+        phoneNumber: '34912345600',
+        taxId: '12345600A',
+      },
+      {
+        companyName: 'Client Company 2',
+        email: 'contact@client2.com',
+        phoneNumber: '34912345601',
+        taxId: '12345601B',
+      },
+      {
+        companyName: 'Client Company 3',
+        email: 'contact@client3.com',
+        phoneNumber: '34912345602',
+        taxId: '12345602C',
+      },
+      {
+        companyName: 'Client Company 4',
+        email: 'contact@client4.com',
+        phoneNumber: '34912345603',
+        taxId: '12345603D',
+      },
+      {
+        companyName: 'Client Company 5',
+        email: 'contact@client5.com',
+        phoneNumber: '34912345604',
+        taxId: '12345604E',
+      },
+      {
+        companyName: 'Client Company 6',
+        email: 'contact@client6.com',
+        phoneNumber: '34912345605',
+        taxId: '12345605F',
+      },
+      {
+        companyName: 'Client Company 7',
+        email: 'contact@client7.com',
+        phoneNumber: '34912345606',
+        taxId: '12345606G',
+      },
+      {
+        companyName: 'Client Company 8',
+        email: 'contact@client8.com',
+        phoneNumber: '34912345607',
+        taxId: '12345607H',
+      },
+    ];
+
+    // Distribute debtors across investors
+    for (let i = 0; i < debtorData.length; i++) {
+      const data = debtorData[i];
+      const investor = investors[i % investors.length];
+
+      const documentId = uuidv4();
+      const document = this.documentRepository.create({
+        id: documentId,
+        title: `${data.companyName} Tax ID Document`,
+        filename: `${data.taxId}.pdf`,
+        value: data.taxId,
+        type: DocumentType.IDENTIFICATION,
+      });
+
+      const debtor = this.debtorRepository.create({
+        investor: investor,
+        companyName: data.companyName,
+        email: data.email,
+        phoneNumber: data.phoneNumber,
+        taxId: data.taxId,
+        documents: [document],
+      });
+
+      debtors.push(debtor);
+    }
+
+    return await this.debtorRepository.save(debtors);
+  }
+
+  private async seedInvoices(
+    investors: Investor[],
+    debtors: Debtor[],
+  ): Promise<Invoice[]> {
     const invoices: Invoice[] = [];
 
     // Get only seller investors (individual type) for creating invoices
     const sellerInvestors = investors.filter(
       (inv) => inv.investorType === InvestorType.INDIVIDUAL,
     );
+
+    let debtorIndex = 0;
 
     for (const seller of sellerInvestors) {
       for (let i = 1; i <= 3; i++) {
@@ -450,15 +547,14 @@ export class SeedService {
         const dueDate = new Date();
         dueDate.setDate(dueDate.getDate() + 30 * i);
 
+        // Cycle through available debtors
+        const debtor = debtors[debtorIndex % debtors.length];
+        debtorIndex++;
+
         const invoice = this.invoiceRepository.create({
           sellerInvestor: seller,
           document: invoiceDocument,
-          debtor: {
-            id: `DEBTOR-${Math.floor(Math.random() * 10000)}`,
-            companyName: `Client Company ${i}`,
-            website: `https://client${i}.com`,
-            email: `contact@client${i}.com`,
-          },
+          debtor: debtor,
           amount: 10000 + i * 5000,
           dueDate: dueDate,
           transactionFee: {

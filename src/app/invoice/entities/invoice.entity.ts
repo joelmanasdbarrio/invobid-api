@@ -13,20 +13,7 @@ import {
   PrimaryGeneratedColumn,
   UpdateDateColumn,
 } from 'typeorm';
-
-export class Debtor {
-  @Column('text', { nullable: false })
-  id: string;
-
-  @Column('text', { nullable: false })
-  companyName: string;
-
-  @Column('text')
-  website: string;
-
-  @Column('text')
-  email: string;
-}
+import { Debtor } from 'src/app/debtor/entities/debtor.entity';
 
 export class TransactionFee {
   @Column('decimal', { precision: 5, scale: 2 })
@@ -63,7 +50,10 @@ export class Invoice {
   })
   auctions: Auction[];
 
-  @Column(() => Debtor)
+  @ManyToOne(() => Debtor, (debtor) => debtor.id, {
+    nullable: false,
+    eager: true,
+  })
   debtor: Debtor;
 
   @Column('decimal', { precision: 15, scale: 2, nullable: false })

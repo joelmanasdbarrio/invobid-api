@@ -4,6 +4,7 @@ import { TypeOrmModule } from '@nestjs/typeorm';
 import { AuctionModule } from './app/auction/auction.module';
 import { BankAccountModule } from './app/bank-account/bank-account.module';
 import { BidModule } from './app/bid/bid.module';
+import { DebtorModule } from './app/debtor/debtor.module';
 import { DocumentModule } from './app/document/document.module';
 import { InvoiceModule } from './app/invoice/invoice.module';
 import { AdminModule } from './app/user/admin/admin.module';
@@ -34,6 +35,7 @@ import { EnvConfigSchema } from './config/env.schema';
     AdminModule,
     InvoiceModule,
     AuctionModule,
+    DebtorModule,
     DocumentModule,
     BidModule,
     BankAccountModule,
