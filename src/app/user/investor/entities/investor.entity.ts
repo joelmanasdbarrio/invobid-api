@@ -1,12 +1,13 @@
+import { Length } from 'class-validator';
 import { BankAccount } from 'src/app/bank-account/entities/bank-account.entity';
 import { Bid } from 'src/app/bid/entities/bid.entity';
+import { Debtor } from 'src/app/debtor/entities/debtor.entity';
 import { Document } from 'src/app/document/entities/document.entity';
 import { Invoice } from 'src/app/invoice/entities/invoice.entity';
 import { User } from 'src/app/user/common/entities/user.entity';
 import { ChildEntity, Column, JoinColumn, OneToMany, OneToOne } from 'typeorm';
 import { InvestorStatus } from '../enums/investor-status.enum';
 import { InvestorType } from '../enums/investor-type.enum';
-import { Length } from 'class-validator';
 
 @ChildEntity('investor')
 export class Investor extends User {
@@ -58,6 +59,11 @@ export class Investor extends User {
 
   @OneToMany(() => Bid, (bid) => bid.investor)
   bids: Bid[];
+
+  @OneToMany(() => Debtor, (debtor) => debtor.investor, {
+    cascade: true,
+  })
+  debtors: Debtor[];
 
   @OneToOne(() => BankAccount, { cascade: true })
   @JoinColumn()
