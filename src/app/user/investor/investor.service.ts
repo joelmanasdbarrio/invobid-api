@@ -39,7 +39,9 @@ export class InvestorService {
     }
 
     if (!documentFile) {
-      throw new BadRequestException('Document file is required');
+      throw new BadRequestException(
+        'file must be a valid Investor ID document',
+      );
     }
 
     let bankAccount: BankAccount | undefined;
