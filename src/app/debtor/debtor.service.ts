@@ -37,7 +37,7 @@ export class DebtorService {
 
     if (!modelo111File || !modelo303File) {
       throw new BadRequestException(
-        'Both 111 and 303 AEAT documents are required.',
+        'modelo_111 and modelo_303 must be valid AEAT Documents',
       );
     }
 
@@ -94,25 +94,25 @@ export class DebtorService {
         // eslint-disable-next-line
         if (error.detail.includes('phoneNumber')) {
           throw new BadRequestException(
-            `You already have a debtor with phone number '${createDebtorDto.phoneNumber}'`,
+            `Debtor with phone number '${createDebtorDto.phoneNumber}' already exists`,
           );
         }
         // eslint-disable-next-line
         if (error.detail.includes('companyName')) {
           throw new BadRequestException(
-            `You already have a debtor with company name '${createDebtorDto.companyName}'`,
+            `Debtor with company name '${createDebtorDto.companyName}' already exists`,
           );
         }
         // eslint-disable-next-line
         if (error.detail.includes('email')) {
           throw new BadRequestException(
-            `You already have a debtor with email '${createDebtorDto.email}'`,
+            `Debtor with email '${createDebtorDto.email}' already exists`,
           );
         }
         // eslint-disable-next-line
         if (error.detail.includes('taxId')) {
           throw new BadRequestException(
-            `You already have a debtor with tax ID '${createDebtorDto.taxId}'`,
+            `Debtor with tax ID '${createDebtorDto.taxId}' already exists`,
           );
         }
       }
@@ -209,7 +209,7 @@ export class DebtorService {
       if (modelo111File) {
         if (!updateDebtorDto.modelo111Csv) {
           throw new BadRequestException(
-            'Modelo 111 CSV content is required when uploading a new file.',
+            'modelo111Csv is required when uploading a new file',
           );
         } else {
           modelo111 = await this.documentService.create(
@@ -228,7 +228,7 @@ export class DebtorService {
       if (modelo303File) {
         if (!updateDebtorDto.modelo303Csv) {
           throw new BadRequestException(
-            'Modelo 303 CSV content is required when uploading a new file.',
+            'modelo303Csv is required when uploading a new file',
           );
         } else {
           modelo303 = await this.documentService.create(
@@ -262,32 +262,30 @@ export class DebtorService {
         // eslint-disable-next-line
         if (error.detail.includes('phoneNumber')) {
           throw new BadRequestException(
-            `You already have a debtor with phone number '${updateDebtorDto.phoneNumber}'`,
+            `Debtor with phone number '${updateDebtorDto.phoneNumber}' already exists`,
           );
         }
         // eslint-disable-next-line
         if (error.detail.includes('companyName')) {
           throw new BadRequestException(
-            `You already have a debtor with company name '${updateDebtorDto.companyName}'`,
+            `Debtor with company name '${updateDebtorDto.companyName}' already exists`,
           );
         }
         // eslint-disable-next-line
         if (error.detail.includes('email')) {
           throw new BadRequestException(
-            `You already have a debtor with email '${updateDebtorDto.email}'`,
+            `Debtor with email '${updateDebtorDto.email}' already exists`,
           );
         }
         // eslint-disable-next-line
         if (error.detail.includes('taxId')) {
           throw new BadRequestException(
-            `You already have a debtor with tax ID '${updateDebtorDto.taxId}'`,
+            `Debtor with tax ID '${updateDebtorDto.taxId}' already exists`,
           );
         }
       }
       throw new InternalServerErrorException(error);
     }
-
-    return `This action updates a #${id} debtor`;
   }
 
   async remove(id: string, useSoft = true) {
