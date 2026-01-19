@@ -4,6 +4,7 @@ import { TypeOrmModule } from '@nestjs/typeorm';
 import { Auction } from 'src/app/auction/entities/auction.entity';
 import { BankAccount } from 'src/app/bank-account/entities/bank-account.entity';
 import { Bid } from 'src/app/bid/entities/bid.entity';
+import { Debtor } from 'src/app/debtor/entities/debtor.entity';
 import { Document } from 'src/app/document/entities/document.entity';
 import { Invoice } from 'src/app/invoice/entities/invoice.entity';
 import { Admin } from 'src/app/user/admin/entities/admin.entity';
@@ -25,6 +26,7 @@ import { SeedService } from './seed.service';
         User,
         Admin,
         Investor,
+        Debtor,
         Document,
         BankAccount,
         Invoice,
@@ -36,6 +38,7 @@ import { SeedService } from './seed.service';
     TypeOrmModule.forFeature([
       Admin,
       Investor,
+      Debtor,
       Document,
       BankAccount,
       Invoice,

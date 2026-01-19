@@ -9,6 +9,7 @@ import {
   UpdateDateColumn,
 } from 'typeorm';
 import { DocumentType } from '../enums/document-type.enum';
+import { Debtor } from 'src/app/debtor/entities/debtor.entity';
 
 @Entity('documents')
 export class Document {
@@ -40,4 +41,9 @@ export class Document {
     nullable: false,
   })
   investor: Investor;
+
+  @ManyToOne(() => Debtor, (debtor) => debtor.documents, {
+    nullable: true,
+  })
+  debtor: Debtor;
 }

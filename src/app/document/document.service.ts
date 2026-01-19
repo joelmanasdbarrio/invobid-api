@@ -17,6 +17,7 @@ import { CreateDocumentDto } from './dto/create-document.dto';
 import { UpdateDocumentDto } from './dto/update-document.dto';
 import { Document } from './entities/document.entity';
 import { type IStorageService } from './interfaces/storage.interface';
+import { Debtor } from 'src/app/debtor/entities/debtor.entity';
 
 @Injectable()
 export class DocumentService {
@@ -32,6 +33,7 @@ export class DocumentService {
     createDocumentDto: CreateDocumentDto,
     file: Express.Multer.File,
     user: User,
+    debtor?: Debtor,
   ): Promise<Document> {
     if (
       await this.checkDuplicateDocumentValues(user.id, createDocumentDto.value)
@@ -41,20 +43,32 @@ export class DocumentService {
       );
     }
 
+    let document: Document | undefined;
+    let documentPath: string | undefined;
     try {
       const documentId = uuidv4();
 
-      const document = this.documentRepository.create({
+      document = this.documentRepository.create({
         ...createDocumentDto,
         filename: this.getFilename(file, documentId),
         id: documentId,
         investor: user as Investor,
+        debtor: debtor as Debtor,
         type: createDocumentDto.type,
       });
+
+      documentPath = await this.uploadFile(file, documentId);
 
       return await this.documentRepository.save(document);
     } catch (error) {
       console.error(error);
+      if (document) {
+        await this.remove(document.id, user, false);
+      }
+      if (documentPath) {
+        await this.deleteFile(documentPath);
+      }
+
       throw new InternalServerErrorException(
         error,
         'Could not create document',
@@ -62,7 +76,7 @@ export class DocumentService {
     }
   }
 
-  async uploadFile(
+  private async uploadFile(
     file: Express.Multer.File,
     documentId: string,
   ): Promise<string | undefined> {
@@ -182,10 +196,14 @@ export class DocumentService {
     return { ...document, ...updateDocumentDto.removeUndefined() };
   }
 
-  async remove(id: string, user: User): Promise<void> {
+  async remove(id: string, user: User, useSoft = true): Promise<void> {
     await this.findOne(id, user);
 
-    await this.documentRepository.softDelete(id);
+    if (useSoft) {
+      await this.documentRepository.softDelete(id);
+    } else {
+      await this.documentRepository.delete(id);
+    }
   }
 
   async deleteFile(filePath: string): Promise<void> {

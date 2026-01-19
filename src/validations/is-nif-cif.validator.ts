@@ -121,7 +121,7 @@ export class IsCifNifConstraint implements ValidatorConstraintInterface {
   }
 
   defaultMessage(): string {
-    return 'The $property must be a valid Spanish NIF, NIE, or CIF';
+    return '$property must be a valid Spanish NIF, NIE, or CIF';
   }
 }
 

@@ -15,7 +15,7 @@ import {
 import { FileInterceptor } from '@nestjs/platform-express';
 import { Response } from 'express';
 import { GetDocumentsDto } from 'src/app/document/dto/get-documents.dto';
-import { FileTypePipe } from '../../pipes/file-type.pipe';
+import { FileTypePipe } from 'src/pipes/file-type.pipe';
 import { Auth } from '../user/auth/decorators/auth.decorator';
 import { GetUser } from '../user/auth/decorators/get-user.decorator';
 import { User } from '../user/common/entities/user.entity';
@@ -41,8 +41,11 @@ export class DocumentController {
       file,
       user,
     );
-    const storedFile = await this.documentService.uploadFile(file, document.id);
-    return { ...document, file: storedFile };
+
+    return {
+      status: 'success',
+      data: document,
+    };
   }
 
   @Get()
