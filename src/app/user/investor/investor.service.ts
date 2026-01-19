@@ -70,8 +70,6 @@ export class InvestorService {
         investor,
       );
 
-      await this.documentService.uploadFile(documentFile, document.id);
-
       return investor;
     } catch (error) {
       console.error(error);
@@ -82,7 +80,8 @@ export class InvestorService {
         await this.bankAccountService.remove(bankAccount.id);
       }
       if (document) {
-        await this.documentService.remove(document.id, investor!);
+        await this.documentService.deleteFile(document.filename);
+        await this.documentService.remove(document.id, investor!, false);
       }
 
       if (error instanceof BadRequestException) {
@@ -123,6 +122,12 @@ export class InvestorService {
         documentType: DocumentType.IDENTIFICATION,
       });
 
+      if (query.status) {
+        queryBuilder.andWhere('investor.status = :status', {
+          status: query.status,
+        });
+      }
+
       if (query.includeDeleted) queryBuilder.withDeleted();
     } else {
       queryBuilder.leftJoin('investor.documents', 'document');
@@ -133,8 +138,10 @@ export class InvestorService {
         'investor.phoneNumber',
         'investor.companyName',
         'investor.investorType',
-        'investor.status',
       ]);
+      queryBuilder.andWhere('investor.status = :status', {
+        status: InvestorStatus.VERIFIED,
+      });
     }
 
     if (query.email) {
@@ -170,12 +177,6 @@ export class InvestorService {
     if (query.investorType) {
       queryBuilder.andWhere('investor.investorType = :investorType', {
         investorType: query.investorType,
-      });
-    }
-
-    if (query.status) {
-      queryBuilder.andWhere('investor.status = :status', {
-        status: query.status,
       });
     }
 
@@ -221,7 +222,7 @@ export class InvestorService {
     })();
 
     if (!investor) {
-      throw new NotFoundException(`Investor with id '${id}' not found`);
+      throw new NotFoundException(`Investor with ID '${id}' not found`);
     }
 
     return investor;
@@ -280,7 +281,6 @@ export class InvestorService {
       }
     }
 
-    let documentPath: string | undefined;
     let newDocument: Document | undefined;
     try {
       if (updateInvestorDto.password) {
@@ -290,43 +290,35 @@ export class InvestorService {
         );
       }
 
-      if (file && !updateInvestorDto.taxId)
-        throw new BadRequestException(
-          'Document value is required when uploading a new document file',
-        );
+      if (file) {
+        if (!updateInvestorDto.taxId) {
+          throw new BadRequestException(
+            'Document value is required when uploading a new document file',
+          );
+        } else {
+          newDocument = await this.documentService.create(
+            {
+              title: `${investor.companyName}'s ID document`,
+              value: updateInvestorDto.taxId,
+              type: DocumentType.IDENTIFICATION,
+            },
+            file,
+            investor,
+          );
 
-      if (file && updateInvestorDto.taxId) {
-        newDocument = await this.documentService.create(
-          {
-            title: `${investor.companyName}'s ID document`,
-            value: updateInvestorDto.taxId,
-            type: DocumentType.IDENTIFICATION,
-          },
-          file,
-          investor,
-        );
-
-        if (!investor.documents) {
-          investor.documents = [];
+          if (!investor.documents) {
+            investor.documents = [];
+          }
+          investor.documents.push(newDocument);
+          investor.taxId = updateInvestorDto.taxId;
         }
-        investor.documents.push(newDocument);
-        investor.taxId = updateInvestorDto.taxId;
-
-        documentPath = await this.documentService.uploadFile(
-          file,
-          newDocument.id,
-        );
       }
 
       Object.assign(investor, updateInvestorDto.removeUndefined());
       return await this.investorRepository.save(investor);
     } catch (error) {
-      if (documentPath) {
-        await this.documentService.deleteFile(documentPath);
-      }
-
       if (newDocument) {
-        await this.documentService.remove(newDocument.id, user);
+        await this.documentService.remove(newDocument.id, user, false);
       }
 
       console.error(error);
@@ -355,12 +347,16 @@ export class InvestorService {
     }
   }
 
-  async remove(id: string, user: User) {
+  async remove(id: string, user: User, useSoft = true) {
     const investor = await this.findOne(id, user);
 
     this.checkPermissions(investor, user);
 
-    return await this.investorRepository.softDelete(id);
+    if (useSoft) {
+      return await this.investorRepository.softDelete(id);
+    } else {
+      return await this.investorRepository.delete(id);
+    }
   }
 
   private checkPermissions(investor: Investor, user: User) {

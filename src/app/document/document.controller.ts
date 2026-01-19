@@ -41,8 +41,11 @@ export class DocumentController {
       file,
       user,
     );
-    const storedFile = await this.documentService.uploadFile(file, document.id);
-    return { ...document, file: storedFile };
+
+    return {
+      status: 'success',
+      data: document,
+    };
   }
 
   @Get()
