@@ -1,29 +1,11 @@
-import {
-  IsDate,
-  IsNumber,
-  IsOptional,
-  IsPositive,
-  IsString,
-  IsUUID,
-} from 'class-validator';
+import { IsDate, IsNumber, IsPositive, IsUUID } from 'class-validator';
 
 export class CreateInvoiceDto {
   @IsUUID()
-  documentId: string;
+  sellerInvestorId: string;
 
-  @IsString()
+  @IsUUID()
   debtorId: string;
-
-  @IsString()
-  debtorcompanyName: string;
-
-  @IsString()
-  @IsOptional()
-  debtorWebsite: string;
-
-  @IsString()
-  @IsOptional()
-  debtorEmail: string;
 
   @IsNumber()
   @IsPositive()
@@ -39,8 +21,4 @@ export class CreateInvoiceDto {
   @IsNumber()
   @IsPositive()
   transactionFeeBuyerPercentage: number;
-
-  @IsNumber()
-  @IsPositive()
-  rating: number;
 }
