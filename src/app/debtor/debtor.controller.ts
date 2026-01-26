@@ -11,17 +11,18 @@ import {
   UseInterceptors,
 } from '@nestjs/common';
 import { FileFieldsInterceptor } from '@nestjs/platform-express';
+import { GetDebtorsDto } from 'src/app/debtor/dto/get-debtors.dto';
 import { DocumentType } from 'src/app/document/enums/document-type.enum';
 import { Auth } from 'src/app/user/auth/decorators/auth.decorator';
 import { GetUser } from 'src/app/user/auth/decorators/get-user.decorator';
 import { User } from 'src/app/user/common/entities/user.entity';
+import { UserType } from 'src/app/user/common/enums/user-type.enum';
+import { Investor } from 'src/app/user/investor/entities/investor.entity';
+import { InvestorType } from 'src/app/user/investor/enums/investor-type.enum';
 import { FilesTypePipe } from 'src/pipes/file-type.pipe';
 import { DebtorService } from './debtor.service';
 import { CreateDebtorDto } from './dto/create-debtor.dto';
 import { UpdateDebtorDto } from './dto/update-debtor.dto';
-import { UserType } from 'src/app/user/common/enums/user-type.enum';
-import { GetDebtorsDto } from 'src/app/debtor/dto/get-debtors.dto';
-import { Investor } from 'src/app/user/investor/entities/investor.entity';
 
 @Controller('debtors')
 export class DebtorController {
@@ -34,7 +35,7 @@ export class DebtorController {
       { name: DocumentType.MODELO_303, maxCount: 1 },
     ]),
   )
-  @Auth([UserType.INVESTOR])
+  @Auth([InvestorType.COMPANY])
   async create(
     @Body() createDebtorDto: CreateDebtorDto,
     @UploadedFiles(FilesTypePipe)
@@ -94,19 +95,19 @@ export class DebtorController {
       { name: DocumentType.MODELO_303, maxCount: 1 },
     ]),
   )
-  @Auth([UserType.INVESTOR])
+  @Auth([UserType.ADMIN, InvestorType.COMPANY])
   async update(
     @Param('id') id: string,
     @Body() updateDebtorDto: UpdateDebtorDto,
     @UploadedFiles(FilesTypePipe)
-    files: { [key: string]: Express.Multer.File[] },
-    @GetUser() investor: Investor,
+    files: { [key: string]: [Express.Multer.File | undefined] | undefined },
+    @GetUser() user: User,
   ) {
     const debtor = await this.debtorService.update(
       id,
       updateDebtorDto,
       files,
-      investor,
+      user,
     );
 
     return {
@@ -116,9 +117,9 @@ export class DebtorController {
   }
 
   @Delete(':id')
-  @Auth()
-  async remove(@Param('id') id: string) {
-    await this.debtorService.remove(id);
+  @Auth([UserType.ADMIN, InvestorType.COMPANY])
+  async remove(@Param('id') id: string, @GetUser() user: User) {
+    await this.debtorService.remove(id, user);
     return {
       status: 'success',
     };

@@ -273,7 +273,7 @@ export class InvestorService {
       updateInvestorDto.name = investor.name;
       updateInvestorDto.companyName = investor.companyName;
       updateInvestorDto.investorType = investor.investorType;
-      updateInvestorDto.taxId = undefined;
+      updateInvestorDto.taxId = investor.taxId;
       file = undefined;
     }
 
@@ -292,10 +292,10 @@ export class InvestorService {
         );
       }
 
-      if (file) {
+      if (user.type === UserType.INVESTOR && file) {
         if (!updateInvestorDto.taxId) {
           throw new BadRequestException(
-            'Document value is required when uploading a new document file',
+            'taxId is required when uploading a new document file',
           );
         } else {
           newDocument = await this.documentService.create(
