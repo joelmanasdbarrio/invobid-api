@@ -1,9 +1,30 @@
 import { PartialType } from '@nestjs/mapped-types';
-import { IsOptional, IsUUID } from 'class-validator';
+import {
+  IsIn,
+  IsNumber,
+  IsOptional,
+  IsPositive,
+  IsString,
+  IsUUID,
+} from 'class-validator';
+import { InvoiceStatus } from '../enums/invoice-status.enum';
 import { CreateInvoiceDto } from './create-invoice.dto';
 
 export class UpdateInvoiceDto extends PartialType(CreateInvoiceDto) {
   @IsUUID()
   @IsOptional()
   buyerInvestorId?: string;
+
+  @IsNumber()
+  @IsPositive()
+  @IsOptional()
+  rating?: number;
+
+  @IsOptional()
+  @IsIn(Object.values(InvoiceStatus))
+  status?: InvoiceStatus;
+
+  @IsOptional()
+  @IsString()
+  lastCommunication?: string;
 }

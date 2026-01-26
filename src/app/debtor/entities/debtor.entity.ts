@@ -13,6 +13,7 @@ import {
   PrimaryGeneratedColumn,
   UpdateDateColumn,
 } from 'typeorm';
+import { DebtorStatus } from 'src/app/debtor/enums/debtor-status.enum';
 
 @Entity('debtors')
 @Index(['investor', 'email'], { unique: true })
@@ -41,6 +42,15 @@ export class Debtor {
   @Length(9, 9)
   @Column('text')
   taxId: string;
+
+  @Column('enum', {
+    enum: DebtorStatus,
+    default: DebtorStatus.PENDING,
+  })
+  status: DebtorStatus;
+
+  @Column('text', { nullable: true })
+  lastCommunication?: string;
 
   @OneToMany(() => Document, (document) => document.debtor, {
     cascade: true,

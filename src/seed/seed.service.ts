@@ -502,6 +502,7 @@ export class SeedService {
         filename: `${data.taxId}.pdf`,
         value: data.taxId,
         type: DocumentType.IDENTIFICATION,
+        investor: investor,
       });
 
       const debtor = this.debtorRepository.create({

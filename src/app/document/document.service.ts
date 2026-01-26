@@ -35,11 +35,15 @@ export class DocumentService {
     user: User,
     debtor?: Debtor,
   ): Promise<Document> {
+    if (!file) {
+      throw new BadRequestException('file must be a valid Document');
+    }
+
     if (
       await this.checkDuplicateDocumentValues(user.id, createDocumentDto.value)
     ) {
       throw new BadRequestException(
-        'A document with the same value already exists for another investor',
+        `Document with value '${createDocumentDto.value}' already exists`,
       );
     }
 
