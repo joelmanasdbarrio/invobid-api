@@ -391,13 +391,9 @@ export class DebtorService {
 
       if (error instanceof BadRequestException) {
         throw error;
+      } else {
+        throw new InternalServerErrorException(error);
       }
-
-      if (error instanceof ForbiddenException) {
-        throw error;
-      }
-
-      throw new InternalServerErrorException(error);
     }
   }
 

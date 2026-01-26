@@ -8,6 +8,7 @@ import {
 import { InjectRepository } from '@nestjs/typeorm';
 import * as bcrypt from 'bcrypt';
 import { BankAccountService } from 'src/app/bank-account/bank-account.service';
+import { BankAccount } from 'src/app/bank-account/entities/bank-account.entity';
 import { DocumentService } from 'src/app/document/document.service';
 import { Document } from 'src/app/document/entities/document.entity';
 import { DocumentType } from 'src/app/document/enums/document-type.enum';
@@ -19,7 +20,6 @@ import { UserType } from '../common/enums/user-type.enum';
 import { CreateInvestorDto } from './dto/create-investor.dto';
 import { UpdateInvestorDto } from './dto/update-investor.dto';
 import { Investor } from './entities/investor.entity';
-import { BankAccount } from 'src/app/bank-account/entities/bank-account.entity';
 
 @Injectable()
 export class InvestorService {
@@ -319,11 +319,12 @@ export class InvestorService {
       Object.assign(investor, updateInvestorDto.removeUndefined());
       return await this.investorRepository.save(investor);
     } catch (error) {
+      console.error(error);
       if (newDocument) {
+        await this.documentService.deleteFile(newDocument.filename);
         await this.documentService.remove(newDocument.id, user, false);
       }
 
-      console.error(error);
       // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access
       if (error.code === '23505') {
         // eslint-disable-next-line
@@ -345,7 +346,12 @@ export class InvestorService {
           );
         }
       }
-      throw new InternalServerErrorException(error);
+
+      if (error instanceof BadRequestException) {
+        throw error;
+      } else {
+        throw new InternalServerErrorException(error);
+      }
     }
   }
 
