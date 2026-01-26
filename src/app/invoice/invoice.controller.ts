@@ -7,7 +7,13 @@ import {
   ParseUUIDPipe,
   Patch,
   Post,
+  Query,
+  UploadedFile,
+  UseInterceptors,
 } from '@nestjs/common';
+import { FileInterceptor } from '@nestjs/platform-express';
+import { GetInvoicesDto } from 'src/app/invoice/dto/get-invoices.dto';
+import { FileTypePipe } from 'src/pipes/file-type.pipe';
 import { Auth } from '../user/auth/decorators/auth.decorator';
 import { GetUser } from '../user/auth/decorators/get-user.decorator';
 import { User } from '../user/common/entities/user.entity';
@@ -23,30 +29,46 @@ export class InvoiceController {
 
   @Post()
   @Auth([InvestorType.COMPANY])
-  create(@Body() createInvoiceDto: CreateInvoiceDto) {
-    return this.invoiceService.create(createInvoiceDto);
+  @UseInterceptors(FileInterceptor('file'))
+  async create(
+    @Body() createInvoiceDto: CreateInvoiceDto,
+    @UploadedFile(FileTypePipe) file: Express.Multer.File,
+    @GetUser() user: User,
+  ) {
+    const invoice = await this.invoiceService.create(
+      createInvoiceDto,
+      file,
+      user,
+    );
+
+    return {
+      status: 'success',
+      data: invoice,
+    };
   }
 
   @Get()
-  @Auth([UserType.ADMIN, InvestorType.COMPANY])
-  findAll(@GetUser() user: User) {
-    return this.invoiceService.findAll(user);
+  @Auth()
+  findAll(@Query() query: GetInvoicesDto, @GetUser() user: User) {
+    return this.invoiceService.findAll(query, user);
   }
 
   @Get(':id')
-  @Auth([UserType.ADMIN, InvestorType.COMPANY])
+  @Auth()
   findOne(@Param('id', ParseUUIDPipe) id: string, @GetUser() user: User) {
     return this.invoiceService.findOne(id, user);
   }
 
   @Patch(':id')
   @Auth([UserType.ADMIN, InvestorType.COMPANY])
+  @UseInterceptors(FileInterceptor('file'))
   update(
     @Param('id', ParseUUIDPipe) id: string,
     @Body() updateInvoiceDto: UpdateInvoiceDto,
+    @UploadedFile(FileTypePipe) file: Express.Multer.File,
     @GetUser() user: User,
   ) {
-    return this.invoiceService.update(id, updateInvoiceDto, user);
+    return this.invoiceService.update(id, updateInvoiceDto, file, user);
   }
 
   @Delete(':id')

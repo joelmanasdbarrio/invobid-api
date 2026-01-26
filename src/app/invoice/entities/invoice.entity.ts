@@ -1,5 +1,7 @@
 import { Auction } from 'src/app/auction/entities/auction.entity';
+import { Debtor } from 'src/app/debtor/entities/debtor.entity';
 import { Document } from 'src/app/document/entities/document.entity';
+import { InvoiceStatus } from 'src/app/invoice/enums/invoice-status.enum';
 import { Investor } from 'src/app/user/investor/entities/investor.entity';
 import {
   Column,
@@ -13,7 +15,6 @@ import {
   PrimaryGeneratedColumn,
   UpdateDateColumn,
 } from 'typeorm';
-import { Debtor } from 'src/app/debtor/entities/debtor.entity';
 
 export class TransactionFee {
   @Column('decimal', { precision: 5, scale: 2 })
@@ -39,6 +40,15 @@ export class Invoice {
     nullable: true,
   })
   buyerInvestor: Investor;
+
+  @Column('enum', {
+    enum: InvoiceStatus,
+    default: InvoiceStatus.VERIFIED,
+  })
+  status: InvoiceStatus;
+
+  @Column('text', { nullable: true })
+  lastCommunication: string;
 
   @OneToOne(() => Document, { cascade: true, eager: true })
   @JoinColumn()
