@@ -310,6 +310,7 @@ export class InvoiceService {
     } catch (error) {
       console.error(error);
       if (document) {
+        await this.documentService.deleteFile(document.filename);
         await this.documentService.remove(document.id, user, false);
       }
 
