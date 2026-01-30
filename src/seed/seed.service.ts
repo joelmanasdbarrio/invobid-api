@@ -438,86 +438,110 @@ export class SeedService {
 
   private async seedDebtors(investors: Investor[]): Promise<Debtor[]> {
     const debtors: Debtor[] = [];
+    const nifLetters = 'TRWAGMYFPDXBNJZSQVHLCKE';
 
     const debtorData = [
       {
         companyName: 'Client Company 1',
         email: 'contact@client1.com',
         phoneNumber: '34912345600',
-        taxId: '12345600A',
+        baseNumber: 12345670,
       },
       {
         companyName: 'Client Company 2',
         email: 'contact@client2.com',
         phoneNumber: '34912345601',
-        taxId: '12345601B',
+        baseNumber: 23456781,
       },
       {
         companyName: 'Client Company 3',
         email: 'contact@client3.com',
         phoneNumber: '34912345602',
-        taxId: '12345602C',
+        baseNumber: 34567892,
       },
       {
         companyName: 'Client Company 4',
         email: 'contact@client4.com',
         phoneNumber: '34912345603',
-        taxId: '12345603D',
+        baseNumber: 45678903,
       },
       {
         companyName: 'Client Company 5',
         email: 'contact@client5.com',
         phoneNumber: '34912345604',
-        taxId: '12345604E',
+        baseNumber: 56789014,
       },
       {
         companyName: 'Client Company 6',
         email: 'contact@client6.com',
         phoneNumber: '34912345605',
-        taxId: '12345605F',
+        baseNumber: 67890125,
       },
       {
         companyName: 'Client Company 7',
         email: 'contact@client7.com',
         phoneNumber: '34912345606',
-        taxId: '12345606G',
+        baseNumber: 78901236,
       },
       {
         companyName: 'Client Company 8',
         email: 'contact@client8.com',
         phoneNumber: '34912345607',
-        taxId: '12345607H',
+        baseNumber: 89012347,
       },
     ];
 
-    // Distribute debtors across investors
     for (let i = 0; i < debtorData.length; i++) {
       const data = debtorData[i];
       const investor = investors[i % investors.length];
-
-      const documentId = uuidv4();
-      const document = this.documentRepository.create({
-        id: documentId,
-        title: `${data.companyName} Tax ID Document`,
-        filename: `${data.taxId}.pdf`,
-        value: data.taxId,
-        type: DocumentType.IDENTIFICATION,
-        investor: investor,
-      });
-
+      const controlLetter = nifLetters[data.baseNumber % 23];
+      const nif = `${data.baseNumber}${controlLetter}`;
       const debtor = this.debtorRepository.create({
         investor: investor,
         companyName: data.companyName,
         email: data.email,
         phoneNumber: data.phoneNumber,
-        taxId: data.taxId,
-        documents: [document],
+        taxId: nif,
       });
-
       debtors.push(debtor);
     }
+    const savedDebtors = await this.debtorRepository.save(debtors);
 
-    return await this.debtorRepository.save(debtors);
+    const allDocuments: Document[] = [];
+    for (let i = 0; i < savedDebtors.length; i++) {
+      const debtor = savedDebtors[i];
+      const data = debtorData[i];
+      const investor = debtor.investor;
+      const controlLetter = nifLetters[data.baseNumber % 23];
+      const nif = `${data.baseNumber}${controlLetter}`;
+
+      const document111 = this.documentRepository.create({
+        id: uuidv4(),
+        title: `${data.companyName} 111 tax document`,
+        filename: `modelo111.jpg`,
+        value: nif,
+        type: DocumentType.MODELO_111,
+        investor: investor,
+        debtor: debtor,
+      });
+
+      const document303 = this.documentRepository.create({
+        id: uuidv4(),
+        title: `${data.companyName} 303 tax document`,
+        filename: `modelo303.jpg`,
+        value: nif,
+        type: DocumentType.MODELO_303,
+        investor: investor,
+        debtor: debtor,
+      });
+
+      allDocuments.push(document111, document303);
+    }
+    await this.documentRepository.save(allDocuments);
+
+    return await this.debtorRepository.find({
+      relations: ['documents', 'documents', 'investor'],
+    });
   }
 
   private async seedInvoices(
@@ -526,7 +550,6 @@ export class SeedService {
   ): Promise<Invoice[]> {
     const invoices: Invoice[] = [];
 
-    // Get only seller investors (individual type) for creating invoices
     const sellerInvestors = investors.filter(
       (inv) => inv.investorType === InvestorType.INDIVIDUAL,
     );

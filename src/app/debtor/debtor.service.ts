@@ -9,7 +9,6 @@ import {
 import { InjectRepository } from '@nestjs/typeorm';
 import { GetDebtorsDto } from 'src/app/debtor/dto/get-debtors.dto';
 import { Debtor } from 'src/app/debtor/entities/debtor.entity';
-import { DebtorStatus } from 'src/app/debtor/enums/debtor-status.enum';
 import { DocumentService } from 'src/app/document/document.service';
 import { Document } from 'src/app/document/entities/document.entity';
 import { DocumentType } from 'src/app/document/enums/document-type.enum';
@@ -20,6 +19,7 @@ import { InvestorStatus } from 'src/app/user/investor/enums/investor-status.enum
 import { Repository } from 'typeorm';
 import { CreateDebtorDto } from './dto/create-debtor.dto';
 import { UpdateDebtorDto } from './dto/update-debtor.dto';
+import { DebtorStatus } from './enums/debtor-status.enum';
 
 @Injectable()
 export class DebtorService {
@@ -129,7 +129,7 @@ export class DebtorService {
     const queryBuilder = this.debtorRepository.createQueryBuilder('debtor');
 
     if (user.type === UserType.ADMIN) {
-      queryBuilder.leftJoinAndSelect('debtor.documents', 'document');
+      queryBuilder.leftJoinAndSelect('debtor.documents', 'documents');
       queryBuilder.leftJoinAndSelect('debtor.investor', 'investor');
 
       if (query.investorId) {
@@ -142,6 +142,10 @@ export class DebtorService {
         queryBuilder.andWhere('debtor.status = :status', {
           status: query.status,
         });
+      }
+
+      if (query.includeDeleted) {
+        queryBuilder.withDeleted();
       }
     } else {
       queryBuilder.leftJoinAndSelect('debtor.investor', 'investor');
@@ -160,6 +164,16 @@ export class DebtorService {
           verifiedStatus: InvestorStatus.VERIFIED,
         },
       );
+
+      if (query.includeDeleted) {
+        queryBuilder.withDeleted();
+        queryBuilder.andWhere(
+          '(debtor.investorId = :userId OR debtor.deletedAt IS NULL)',
+          {
+            userId: user.id,
+          },
+        );
+      }
     }
 
     if (query.email) {
@@ -243,10 +257,12 @@ export class DebtorService {
   async update(
     id: string,
     updateDebtorDto: UpdateDebtorDto,
-    files: { [key: string]: [Express.Multer.File | undefined] | undefined },
+    files: {
+      [key: string]: [Express.Multer.File | undefined] | undefined;
+    } = {},
     user: User,
   ) {
-    const debtor = await this.findOne(id, user);
+    const debtor: Debtor = await this.findOne(id, user);
 
     if (debtor.investor.id !== user.id && user.type !== UserType.ADMIN) {
       throw new ForbiddenException(
@@ -278,8 +294,7 @@ export class DebtorService {
         }
       } else if (
         updateDebtorDto.status !== debtor.status &&
-        (debtor.status !== DebtorStatus.CORRECTION ||
-          updateDebtorDto.status !== DebtorStatus.PENDING)
+        updateDebtorDto.status !== DebtorStatus.PENDING
       ) {
         throw new UnauthorizedException(
           "You don't have permissions to perform this action",

@@ -7,6 +7,7 @@ import {
 } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { InjectRepository } from '@nestjs/typeorm';
+import { Debtor } from 'src/app/debtor/entities/debtor.entity';
 import { GetDocumentsDto } from 'src/app/document/dto/get-documents.dto';
 import { Not, Repository } from 'typeorm';
 import { v4 as uuidv4 } from 'uuid';
@@ -17,7 +18,6 @@ import { CreateDocumentDto } from './dto/create-document.dto';
 import { UpdateDocumentDto } from './dto/update-document.dto';
 import { Document } from './entities/document.entity';
 import { type IStorageService } from './interfaces/storage.interface';
-import { Debtor } from 'src/app/debtor/entities/debtor.entity';
 
 @Injectable()
 export class DocumentService {
@@ -98,7 +98,8 @@ export class DocumentService {
   async findAll(query: GetDocumentsDto, user: User) {
     const queryBuilder = this.documentRepository
       .createQueryBuilder('document')
-      .leftJoinAndSelect('document.investor', 'investor');
+      .leftJoinAndSelect('document.investor', 'investor')
+      .leftJoinAndSelect('document.debtor', 'debtor');
 
     if (user.type !== UserType.ADMIN) {
       queryBuilder.where('document.investorId = :investorId', {
@@ -110,6 +111,12 @@ export class DocumentService {
           investorId: query.investorId,
         });
       }
+    }
+
+    if (query.debtorId) {
+      queryBuilder.andWhere('document.debtorId = :debtorId', {
+        debtorId: query.debtorId,
+      });
     }
 
     if (query.title) {
@@ -157,11 +164,11 @@ export class DocumentService {
       user.type === UserType.ADMIN
         ? await this.documentRepository.findOne({
             where: { id },
-            relations: ['investor'],
+            relations: ['investor', 'debtor'],
           })
         : await this.documentRepository.findOne({
             where: { id, investor: user as Investor },
-            relations: ['investor'],
+            relations: ['investor', 'debtor'],
           });
 
     if (!document)

@@ -1,4 +1,5 @@
 import {
+  IsBoolean,
   IsIn,
   IsNumber,
   IsOptional,
@@ -59,4 +60,8 @@ export class GetInvoicesDto extends PaginationDto {
   @IsPositive()
   @IsOptional()
   minTransactionFeeBuyerPercentage?: number;
+
+  @IsOptional()
+  @IsBoolean()
+  includeDeleted?: boolean;
 }
