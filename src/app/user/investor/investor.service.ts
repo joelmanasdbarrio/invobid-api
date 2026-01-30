@@ -241,39 +241,35 @@ export class InvestorService {
     this.checkIsPending(investor, user);
     this.checkIsDenied(investor, user);
 
-    if (
-      user.type !== UserType.ADMIN &&
-      investor.status === InvestorStatus.CORRECTION
-    ) {
-      if (
-        updateInvestorDto.status &&
-        updateInvestorDto.status.toLowerCase() ===
-          InvestorStatus.PENDING.toLocaleLowerCase()
+    if (user.type !== UserType.ADMIN) {
+      if (investor.status === InvestorStatus.CORRECTION) {
+        if (
+          updateInvestorDto.status &&
+          updateInvestorDto.status.toLowerCase() ===
+            InvestorStatus.PENDING.toLocaleLowerCase()
+        ) {
+          updateInvestorDto.status = InvestorStatus.PENDING;
+          updateInvestorDto.lastCommunication =
+            'Pendiente de revisión por usuario administrador';
+        } else {
+          updateInvestorDto.status = investor.status;
+          updateInvestorDto.lastCommunication = investor.lastCommunication;
+        }
+      } else if (
+        updateInvestorDto.status !== investor.status &&
+        updateInvestorDto.status !== InvestorStatus.PENDING
       ) {
-        updateInvestorDto.status = InvestorStatus.PENDING;
-        updateInvestorDto.lastCommunication =
-          'Pendiente de revisión por usuario administrador';
-      } else {
-        updateInvestorDto.status = investor.status;
-        updateInvestorDto.lastCommunication = investor.lastCommunication;
+        throw new UnauthorizedException(
+          "You don't have permissions to perform this action",
+        );
+      } else if (investor.status === InvestorStatus.VERIFIED) {
+        updateInvestorDto.name = investor.name;
+        updateInvestorDto.companyName = investor.companyName;
+        updateInvestorDto.investorType = investor.investorType;
+        updateInvestorDto.taxId = investor.taxId;
+        file = undefined;
       }
-    } else if (
-      user.type !== UserType.ADMIN &&
-      updateInvestorDto.status !== investor.status &&
-      (investor.status !== InvestorStatus.CORRECTION ||
-        updateInvestorDto.status !== InvestorStatus.PENDING)
-    ) {
-      throw new UnauthorizedException(
-        "You don't have permissions to perform this action",
-      );
-    } else if (
-      user.type !== UserType.ADMIN &&
-      investor.status === InvestorStatus.VERIFIED
-    ) {
-      updateInvestorDto.name = investor.name;
-      updateInvestorDto.companyName = investor.companyName;
-      updateInvestorDto.investorType = investor.investorType;
-      updateInvestorDto.taxId = investor.taxId;
+    } else {
       file = undefined;
     }
 

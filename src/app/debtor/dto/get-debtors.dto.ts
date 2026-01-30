@@ -1,4 +1,5 @@
 import {
+  IsBoolean,
   IsEmail,
   IsIn,
   IsOptional,
@@ -6,9 +7,10 @@ import {
   IsString,
   IsUUID,
 } from 'class-validator';
-import { IsCifNif } from 'src/validations/is-nif-cif.validator';
-import { PaginationDto } from 'src/dto/pagination.dto';
 import { DebtorStatus } from 'src/app/debtor/enums/debtor-status.enum';
+import { PaginationDto } from 'src/dto/pagination.dto';
+import { IsCifNif } from 'src/validations/is-nif-cif.validator';
+import { Transform } from 'class-transformer';
 
 export class GetDebtorsDto extends PaginationDto {
   @IsOptional()
@@ -28,10 +30,14 @@ export class GetDebtorsDto extends PaginationDto {
   taxId?: string;
 
   @IsOptional()
+  @IsUUID()
+  investorId?: string;
+
+  @IsOptional()
   @IsIn(Object.values(DebtorStatus))
   status?: DebtorStatus;
 
   @IsOptional()
-  @IsUUID()
-  investorId?: string;
+  @IsBoolean()
+  includeDeleted?: boolean;
 }

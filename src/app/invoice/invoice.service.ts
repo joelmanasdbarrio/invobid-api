@@ -105,6 +105,10 @@ export class InvoiceService {
           verifiedStatusDebtor: DebtorStatus.VERIFIED,
         },
       );
+
+      if (query.includeDeleted) {
+        queryBuilder.withDeleted();
+      }
     }
 
     if (query.sellerInvestorId) {
@@ -249,7 +253,7 @@ export class InvoiceService {
   async update(
     id: string,
     updateInvoiceDto: UpdateInvoiceDto,
-    file: Express.Multer.File,
+    file: Express.Multer.File | undefined,
     user: User,
   ) {
     const invoice = await this.findOne(id, user);
@@ -275,8 +279,7 @@ export class InvoiceService {
         }
       } else if (
         updateInvoiceDto.status !== invoice.status &&
-        (invoice.status !== InvoiceStatus.CORRECTION ||
-          updateInvoiceDto.status !== InvoiceStatus.PENDING)
+        updateInvoiceDto.status !== InvoiceStatus.PENDING
       ) {
         throw new UnauthorizedException(
           "You don't have permissions to perform this action",
