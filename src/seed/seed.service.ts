@@ -6,6 +6,7 @@ import { AuctionStatus } from 'src/app/auction/enum/auction-status.enum';
 import { BankAccount } from 'src/app/bank-account/entities/bank-account.entity';
 import { Bid } from 'src/app/bid/entities/bid.entity';
 import { Debtor } from 'src/app/debtor/entities/debtor.entity';
+import { DebtorStatus } from 'src/app/debtor/enums/debtor-status.enum';
 import { Document } from 'src/app/document/entities/document.entity';
 import { DocumentType } from 'src/app/document/enums/document-type.enum';
 import { Invoice } from 'src/app/invoice/entities/invoice.entity';
@@ -127,9 +128,9 @@ export class SeedService {
         email: 'seller1@techcorp.com',
         phone: '34912345678',
         company: 'TechCorp Solutions',
-        type: InvestorType.INDIVIDUAL,
+        type: InvestorType.COMPANY,
         balance: 50000,
-        status: InvestorStatus.PENDING,
+        status: InvestorStatus.VERIFIED,
         taxId: '12345678Z',
       },
       {
@@ -139,7 +140,7 @@ export class SeedService {
         company: 'GlobalTrade Industries',
         type: InvestorType.INDIVIDUAL,
         balance: 75000,
-        status: InvestorStatus.VERIFIED,
+        status: InvestorStatus.PENDING,
         taxId: '23456780T',
       },
       {
@@ -440,60 +441,185 @@ export class SeedService {
     const debtors: Debtor[] = [];
     const nifLetters = 'TRWAGMYFPDXBNJZSQVHLCKE';
 
+    // Only COMPANY investors can have debtors
+    const companyInvestors = investors.filter(
+      (inv) => inv.investorType === InvestorType.COMPANY,
+    );
+
     const debtorData = [
       {
         companyName: 'Client Company 1',
         email: 'contact@client1.com',
         phoneNumber: '34912345600',
         baseNumber: 12345670,
+        status: DebtorStatus.VERIFIED,
       },
       {
         companyName: 'Client Company 2',
         email: 'contact@client2.com',
         phoneNumber: '34912345601',
         baseNumber: 23456781,
+        status: DebtorStatus.PENDING,
       },
       {
         companyName: 'Client Company 3',
         email: 'contact@client3.com',
         phoneNumber: '34912345602',
         baseNumber: 34567892,
+        status: DebtorStatus.VERIFIED,
       },
       {
         companyName: 'Client Company 4',
         email: 'contact@client4.com',
         phoneNumber: '34912345603',
         baseNumber: 45678903,
+        status: DebtorStatus.CORRECTION,
       },
       {
         companyName: 'Client Company 5',
         email: 'contact@client5.com',
         phoneNumber: '34912345604',
         baseNumber: 56789014,
+        status: DebtorStatus.VERIFIED,
       },
       {
         companyName: 'Client Company 6',
         email: 'contact@client6.com',
         phoneNumber: '34912345605',
         baseNumber: 67890125,
+        status: DebtorStatus.PENDING,
       },
       {
         companyName: 'Client Company 7',
         email: 'contact@client7.com',
         phoneNumber: '34912345606',
         baseNumber: 78901236,
+        status: DebtorStatus.DENIED,
       },
       {
         companyName: 'Client Company 8',
         email: 'contact@client8.com',
         phoneNumber: '34912345607',
         baseNumber: 89012347,
+        status: DebtorStatus.VERIFIED,
+      },
+      {
+        companyName: 'Client Company 9',
+        email: 'contact@client9.com',
+        phoneNumber: '34912345608',
+        baseNumber: 90123458,
+        status: DebtorStatus.CORRECTION,
+      },
+      {
+        companyName: 'Client Company 10',
+        email: 'contact@client10.com',
+        phoneNumber: '34912345609',
+        baseNumber: 11234569,
+        status: DebtorStatus.PENDING,
+      },
+      {
+        companyName: 'Client Company 11',
+        email: 'contact@client11.com',
+        phoneNumber: '34912345610',
+        baseNumber: 22345670,
+        status: DebtorStatus.VERIFIED,
+      },
+      {
+        companyName: 'Client Company 12',
+        email: 'contact@client12.com',
+        phoneNumber: '34912345611',
+        baseNumber: 33456781,
+        status: DebtorStatus.DENIED,
+      },
+      {
+        companyName: 'Client Company 13',
+        email: 'contact@client13.com',
+        phoneNumber: '34912345612',
+        baseNumber: 44567892,
+        status: DebtorStatus.VERIFIED,
+      },
+      {
+        companyName: 'Client Company 14',
+        email: 'contact@client14.com',
+        phoneNumber: '34912345613',
+        baseNumber: 55678903,
+        status: DebtorStatus.PENDING,
+      },
+      {
+        companyName: 'Client Company 15',
+        email: 'contact@client15.com',
+        phoneNumber: '34912345614',
+        baseNumber: 66789014,
+        status: DebtorStatus.CORRECTION,
+      },
+      {
+        companyName: 'Client Company 16',
+        email: 'contact@client16.com',
+        phoneNumber: '34912345615',
+        baseNumber: 77890125,
+        status: DebtorStatus.VERIFIED,
+      },
+      {
+        companyName: 'Client Company 17',
+        email: 'contact@client17.com',
+        phoneNumber: '34912345616',
+        baseNumber: 88901236,
+        status: DebtorStatus.CORRECTION,
+      },
+      {
+        companyName: 'Client Company 18',
+        email: 'contact@client18.com',
+        phoneNumber: '34912345617',
+        baseNumber: 99012347,
+        status: DebtorStatus.PENDING,
+      },
+      {
+        companyName: 'Client Company 19',
+        email: 'contact@client19.com',
+        phoneNumber: '34912345618',
+        baseNumber: 10123458,
+        status: DebtorStatus.VERIFIED,
+      },
+      {
+        companyName: 'Client Company 20',
+        email: 'contact@client20.com',
+        phoneNumber: '34912345619',
+        baseNumber: 21234569,
+        status: DebtorStatus.DENIED,
+      },
+      {
+        companyName: 'Client Company 21',
+        email: 'contact@client21.com',
+        phoneNumber: '34912345620',
+        baseNumber: 32345670,
+        status: DebtorStatus.PENDING,
+      },
+      {
+        companyName: 'Client Company 22',
+        email: 'contact@client22.com',
+        phoneNumber: '34912345621',
+        baseNumber: 43456781,
+        status: DebtorStatus.VERIFIED,
+      },
+      {
+        companyName: 'Client Company 23',
+        email: 'contact@client23.com',
+        phoneNumber: '34912345622',
+        baseNumber: 54567892,
+        status: DebtorStatus.CORRECTION,
+      },
+      {
+        companyName: 'Client Company 24',
+        email: 'contact@client24.com',
+        phoneNumber: '34912345623',
+        baseNumber: 65678903,
+        status: DebtorStatus.VERIFIED,
       },
     ];
 
     for (let i = 0; i < debtorData.length; i++) {
       const data = debtorData[i];
-      const investor = investors[i % investors.length];
+      const investor = companyInvestors[i % companyInvestors.length];
       const controlLetter = nifLetters[data.baseNumber % 23];
       const nif = `${data.baseNumber}${controlLetter}`;
       const debtor = this.debtorRepository.create({
@@ -502,6 +628,7 @@ export class SeedService {
         email: data.email,
         phoneNumber: data.phoneNumber,
         taxId: nif,
+        status: data.status,
       });
       debtors.push(debtor);
     }
