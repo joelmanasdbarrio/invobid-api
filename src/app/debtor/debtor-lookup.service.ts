@@ -16,4 +16,10 @@ export class DebtorLookupService {
       where: { status: DebtorStatus.PENDING },
     });
   }
+
+  async countCorrectionDebtors(investorId: string): Promise<number> {
+    return await this.debtorRepository.count({
+      where: { status: DebtorStatus.CORRECTION, investor: { id: investorId } },
+    });
+  }
 }

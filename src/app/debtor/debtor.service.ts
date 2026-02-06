@@ -132,12 +132,6 @@ export class DebtorService {
       queryBuilder.leftJoinAndSelect('debtor.documents', 'documents');
       queryBuilder.leftJoinAndSelect('debtor.investor', 'investor');
 
-      if (query.investorId) {
-        queryBuilder.andWhere('debtor.investorId = :investorId', {
-          investorId: query.investorId,
-        });
-      }
-
       if (query.status) {
         queryBuilder.andWhere('debtor.status = :status', {
           status: query.status,
@@ -149,13 +143,6 @@ export class DebtorService {
       }
     } else {
       queryBuilder.leftJoinAndSelect('debtor.investor', 'investor');
-      queryBuilder.select([
-        'debtor.id',
-        'debtor.email',
-        'debtor.phoneNumber',
-        'debtor.companyName',
-        'debtor.taxId',
-      ]);
 
       queryBuilder.andWhere(
         '(debtor.investorId = :userId OR debtor.status = :verifiedStatus)',
@@ -174,6 +161,12 @@ export class DebtorService {
           },
         );
       }
+    }
+
+    if (query.investorId) {
+      queryBuilder.andWhere('debtor.investorId = :investorId', {
+        investorId: query.investorId,
+      });
     }
 
     if (query.email) {

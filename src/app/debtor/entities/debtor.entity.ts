@@ -1,4 +1,5 @@
 import { Length } from 'class-validator';
+import { DebtorStatus } from 'src/app/debtor/enums/debtor-status.enum';
 import { Document } from 'src/app/document/entities/document.entity';
 import { Invoice } from 'src/app/invoice/entities/invoice.entity';
 import { Investor } from 'src/app/user/investor/entities/investor.entity';
@@ -13,7 +14,6 @@ import {
   PrimaryGeneratedColumn,
   UpdateDateColumn,
 } from 'typeorm';
-import { DebtorStatus } from 'src/app/debtor/enums/debtor-status.enum';
 
 @Entity('debtors')
 @Index(['investor', 'email'], { unique: true })
