@@ -15,7 +15,6 @@ import { DocumentType } from 'src/app/document/enums/document-type.enum';
 import { User } from 'src/app/user/common/entities/user.entity';
 import { UserType } from 'src/app/user/common/enums/user-type.enum';
 import { Investor } from 'src/app/user/investor/entities/investor.entity';
-import { InvestorStatus } from 'src/app/user/investor/enums/investor-status.enum';
 import { Repository } from 'typeorm';
 import { CreateDebtorDto } from './dto/create-debtor.dto';
 import { UpdateDebtorDto } from './dto/update-debtor.dto';
@@ -138,7 +137,7 @@ export class DebtorService {
         });
       }
 
-      if (query.includeDeleted) {
+      if (query.includeDeleted && query.includeDeleted > 0) {
         queryBuilder.withDeleted();
       }
     } else {
@@ -148,11 +147,11 @@ export class DebtorService {
         '(debtor.investorId = :userId OR debtor.status = :verifiedStatus)',
         {
           userId: user.id,
-          verifiedStatus: InvestorStatus.VERIFIED,
+          verifiedStatus: DebtorStatus.VERIFIED,
         },
       );
 
-      if (query.includeDeleted) {
+      if (query.includeDeleted && query.includeDeleted > 0) {
         queryBuilder.withDeleted();
         queryBuilder.andWhere(
           '(debtor.investorId = :userId OR debtor.deletedAt IS NULL)',

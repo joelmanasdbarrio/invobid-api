@@ -16,4 +16,13 @@ export class InvoiceLookupService {
       where: { status: InvoiceStatus.PENDING },
     });
   }
+
+  async countCorrectionInvoices(investorId: string): Promise<number> {
+    return await this.invoiceRepository.count({
+      where: {
+        status: InvoiceStatus.CORRECTION,
+        sellerInvestor: { id: investorId },
+      },
+    });
+  }
 }

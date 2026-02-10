@@ -1,10 +1,13 @@
 import {
-  IsBoolean,
+  IsDateString,
   IsIn,
   IsNumber,
   IsOptional,
   IsPositive,
+  IsString,
   IsUUID,
+  Max,
+  Min,
 } from 'class-validator';
 import { InvoiceStatus } from 'src/app/invoice/enums/invoice-status.enum';
 import { PaginationDto } from 'src/dto/pagination.dto';
@@ -14,13 +17,25 @@ export class GetInvoicesDto extends PaginationDto {
   @IsOptional()
   sellerInvestorId?: string;
 
+  @IsString()
+  @IsOptional()
+  sellerCompanyName?: string;
+
   @IsUUID()
   @IsOptional()
   buyerInvestorId?: string;
 
+  @IsString()
+  @IsOptional()
+  buyerCompanyName?: string;
+
   @IsUUID()
   @IsOptional()
   debtorId?: string;
+
+  @IsString()
+  @IsOptional()
+  debtorCompanyName?: string;
 
   @IsIn(Object.values(InvoiceStatus))
   @IsOptional()
@@ -41,27 +56,23 @@ export class GetInvoicesDto extends PaginationDto {
   @IsOptional()
   minRating?: number;
 
-  @IsNumber()
-  @IsPositive()
+  @IsDateString()
   @IsOptional()
-  maxTransactionFeeSellerPercentage?: number;
+  dueDateFrom?: string;
 
-  @IsNumber()
-  @IsPositive()
+  @IsDateString()
   @IsOptional()
-  minTransactionFeeSellerPercentage?: number;
-
-  @IsNumber()
-  @IsPositive()
-  @IsOptional()
-  maxTransactionFeeBuyerPercentage?: number;
-
-  @IsNumber()
-  @IsPositive()
-  @IsOptional()
-  minTransactionFeeBuyerPercentage?: number;
+  dueDateTo?: string;
 
   @IsOptional()
-  @IsBoolean()
-  includeDeleted?: boolean;
+  @IsNumber()
+  @Min(0)
+  @Max(1)
+  isSold?: number;
+
+  @IsOptional()
+  @IsNumber()
+  @Min(0)
+  @Max(1)
+  includeDeleted?: number;
 }

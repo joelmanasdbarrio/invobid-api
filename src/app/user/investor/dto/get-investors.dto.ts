@@ -1,9 +1,11 @@
 import {
-  IsBoolean,
   IsIn,
+  IsNumber,
   IsOptional,
   IsPhoneNumber,
   IsString,
+  Max,
+  Min,
 } from 'class-validator';
 import { InvestorStatus } from 'src/app/user/investor/enums/investor-status.enum';
 import { InvestorType } from 'src/app/user/investor/enums/investor-type.enum';
@@ -40,6 +42,8 @@ export class GetInvestorsDto extends PaginationDto {
   status?: InvestorStatus;
 
   @IsOptional()
-  @IsBoolean()
-  includeDeleted?: boolean;
+  @IsNumber()
+  @Min(0)
+  @Max(1)
+  includeDeleted?: number;
 }

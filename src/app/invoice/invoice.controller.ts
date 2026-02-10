@@ -23,7 +23,7 @@ import { CreateInvoiceDto } from './dto/create-invoice.dto';
 import { UpdateInvoiceDto } from './dto/update-invoice.dto';
 import { InvoiceService } from './invoice.service';
 
-@Controller('invoice')
+@Controller('invoices')
 export class InvoiceController {
   constructor(private readonly invoiceService: InvoiceService) {}
 
@@ -49,8 +49,26 @@ export class InvoiceController {
 
   @Get()
   @Auth()
-  findAll(@Query() query: GetInvoicesDto, @GetUser() user: User) {
-    return this.invoiceService.findAll(query, user);
+  async findAll(@Query() query: GetInvoicesDto, @GetUser() user: User) {
+    const { data, total, page, limit } = await this.invoiceService.findAll(
+      {
+        ...query,
+        page: query.page || 1,
+        limit: query.limit || 10,
+      },
+      user,
+    );
+
+    return {
+      status: 'success',
+      data,
+      _metadata: {
+        total,
+        length: data.length,
+        page,
+        limit,
+      },
+    };
   }
 
   @Get(':id')

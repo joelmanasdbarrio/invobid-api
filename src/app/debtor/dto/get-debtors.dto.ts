@@ -1,16 +1,17 @@
 import {
-  IsBoolean,
   IsEmail,
   IsIn,
+  IsNumber,
   IsOptional,
   IsPhoneNumber,
   IsString,
   IsUUID,
+  Max,
+  Min,
 } from 'class-validator';
 import { DebtorStatus } from 'src/app/debtor/enums/debtor-status.enum';
 import { PaginationDto } from 'src/dto/pagination.dto';
 import { IsCifNif } from 'src/validations/is-nif-cif.validator';
-import { Transform } from 'class-transformer';
 
 export class GetDebtorsDto extends PaginationDto {
   @IsOptional()
@@ -38,6 +39,8 @@ export class GetDebtorsDto extends PaginationDto {
   status?: DebtorStatus;
 
   @IsOptional()
-  @IsBoolean()
-  includeDeleted?: boolean;
+  @IsNumber()
+  @Min(0)
+  @Max(1)
+  includeDeleted?: number;
 }

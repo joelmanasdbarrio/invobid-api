@@ -10,6 +10,7 @@ import { DebtorStatus } from 'src/app/debtor/enums/debtor-status.enum';
 import { Document } from 'src/app/document/entities/document.entity';
 import { DocumentType } from 'src/app/document/enums/document-type.enum';
 import { Invoice } from 'src/app/invoice/entities/invoice.entity';
+import { InvoiceStatus } from 'src/app/invoice/enums/invoice-status.enum';
 import { Admin } from 'src/app/user/admin/entities/admin.entity';
 import { UserType } from 'src/app/user/common/enums/user-type.enum';
 import { Investor } from 'src/app/user/investor/entities/investor.entity';
@@ -675,13 +676,15 @@ export class SeedService {
     investors: Investor[],
     debtors: Debtor[],
   ): Promise<Invoice[]> {
-    const invoices: Invoice[] = [];
+    const invoices: any[] = [];
 
     const sellerInvestors = investors.filter(
-      (inv) => inv.investorType === InvestorType.INDIVIDUAL,
+      (inv) => inv.investorType === InvestorType.COMPANY,
     );
 
+    const allInvestors = investors;
     let debtorIndex = 0;
+    let invoiceIndex = 0;
 
     for (const seller of sellerInvestors) {
       for (let i = 1; i <= 3; i++) {
@@ -702,20 +705,59 @@ export class SeedService {
         const debtor = debtors[debtorIndex % debtors.length];
         debtorIndex++;
 
-        const invoice = this.invoiceRepository.create({
+        // Determine invoice status and buyer based on invoice index
+        let status: InvoiceStatus;
+        let buyerInvestor: Investor | undefined;
+        let lastCommunication: string | undefined;
+
+        if (invoiceIndex % 4 === 0) {
+          status = InvoiceStatus.VERIFIED;
+          // VERIFIED invoices usually have buyers - mix of COMPANY and INDIVIDUAL
+          buyerInvestor =
+            allInvestors[(invoiceIndex * 3) % allInvestors.length];
+        } else if (invoiceIndex % 4 === 1) {
+          status = InvoiceStatus.PENDING;
+          // PENDING invoices may or may not have buyers
+          if (invoiceIndex % 2 === 0) {
+            buyerInvestor =
+              allInvestors[(invoiceIndex * 5) % allInvestors.length];
+          }
+        } else if (invoiceIndex % 4 === 2) {
+          status = InvoiceStatus.CORRECTION;
+          // CORRECTION invoices with communication message
+          lastCommunication =
+            'Se requiere documentación adicional para verificación';
+        } else {
+          status = InvoiceStatus.DENIED;
+          // DENIED invoices with rejection reason
+          lastCommunication = 'La factura no cumple con los requisitos mínimos';
+        }
+
+        const invoiceData: any = {
           sellerInvestor: seller,
           document: invoiceDocument,
           debtor: debtor,
           amount: 10000 + i * 5000,
           dueDate: dueDate,
+          status: status,
           transactionFee: {
             sellerPercentage: 2.5,
             buyerPercentage: 1.5,
           },
           rating: 4.0 + i * 0.3,
-        });
+        };
 
+        if (buyerInvestor) {
+          invoiceData.buyerInvestor = buyerInvestor;
+        }
+
+        if (lastCommunication) {
+          invoiceData.lastCommunication = lastCommunication;
+        }
+
+        const invoice = this.invoiceRepository.create(invoiceData);
         invoices.push(invoice);
+        invoiceIndex++;
       }
     }
 
