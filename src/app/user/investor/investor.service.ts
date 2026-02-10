@@ -130,7 +130,9 @@ export class InvestorService {
         });
       }
 
-      if (query.includeDeleted) queryBuilder.withDeleted();
+      if (query.includeDeleted && query.includeDeleted > 0) {
+        queryBuilder.withDeleted();
+      }
     } else {
       queryBuilder.leftJoin('investor.documents', 'document');
       queryBuilder.select([

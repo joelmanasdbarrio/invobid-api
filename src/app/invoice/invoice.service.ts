@@ -96,9 +96,13 @@ export class InvoiceService {
     queryBuilder.leftJoinAndSelect('invoice.sellerInvestor', 'sellerInvestor');
     queryBuilder.leftJoinAndSelect('invoice.document', 'document');
 
-    if (user.type !== UserType.ADMIN) {
+    if (user.type === UserType.ADMIN) {
+      if (query.includeDeleted && query.includeDeleted > 0) {
+        queryBuilder.withDeleted();
+      }
+    } else {
       queryBuilder.andWhere(
-        '(invoice.sellerInvestorId = :investorId OR (invoice.status = :verifiedStatusInvoice AND invoice.debtor.status = :verifiedStatusDebtor))',
+        '(invoice.sellerInvestorId = :investorId OR (invoice.status = :verifiedStatusInvoice AND debtor.status = :verifiedStatusDebtor))',
         {
           investorId: user.id,
           verifiedStatusInvoice: InvoiceStatus.VERIFIED,
@@ -106,8 +110,14 @@ export class InvoiceService {
         },
       );
 
-      if (query.includeDeleted) {
+      if (query.includeDeleted && query.includeDeleted > 0) {
         queryBuilder.withDeleted();
+        queryBuilder.andWhere(
+          '(invoice.sellerInvestorId = :userId OR debtor.deletedAt IS NULL)',
+          {
+            userId: user.id,
+          },
+        );
       }
     }
 
@@ -117,15 +127,39 @@ export class InvoiceService {
       });
     }
 
+    if (query.sellerCompanyName) {
+      queryBuilder.andWhere(
+        'sellerInvestor.companyName ILIKE :sellerCompanyName',
+        {
+          sellerCompanyName: `%${query.sellerCompanyName}%`,
+        },
+      );
+    }
+
     if (query.buyerInvestorId) {
       queryBuilder.andWhere('invoice.buyerInvestorId = :buyerInvestorId', {
         buyerInvestorId: query.buyerInvestorId,
       });
     }
 
+    if (query.buyerCompanyName) {
+      queryBuilder.andWhere(
+        'buyerInvestor.companyName ILIKE :buyerCompanyName',
+        {
+          buyerCompanyName: `%${query.buyerCompanyName}%`,
+        },
+      );
+    }
+
     if (query.debtorId) {
       queryBuilder.andWhere('invoice.debtorId = :debtorId', {
         debtorId: query.debtorId,
+      });
+    }
+
+    if (query.debtorCompanyName) {
+      queryBuilder.andWhere('debtor.companyName ILIKE :debtorCompanyName', {
+        debtorCompanyName: `%${query.debtorCompanyName}%`,
       });
     }
 
@@ -147,50 +181,30 @@ export class InvoiceService {
       });
     }
 
-    if (query.minTransactionFeeSellerPercentage) {
-      queryBuilder.andWhere(
-        'transactionFeeSellerPercentage >= :minTransactionFeeSellerPercentage',
-        {
-          minTransactionFeeSellerPercentage:
-            query.minTransactionFeeSellerPercentage,
-        },
-      );
-    }
-
-    if (query.maxTransactionFeeSellerPercentage) {
-      queryBuilder.andWhere(
-        'transactionFeeSellerPercentage <= :maxTransactionFeeSellerPercentage',
-        {
-          maxTransactionFeeSellerPercentage:
-            query.maxTransactionFeeSellerPercentage,
-        },
-      );
-    }
-
-    if (query.minTransactionFeeBuyerPercentage) {
-      queryBuilder.andWhere(
-        'transactionFeeBuyerPercentage >= :minTransactionFeeBuyerPercentage',
-        {
-          minTransactionFeeBuyerPercentage:
-            query.minTransactionFeeBuyerPercentage,
-        },
-      );
-    }
-
-    if (query.maxTransactionFeeBuyerPercentage) {
-      queryBuilder.andWhere(
-        'transactionFeeBuyerPercentage <= :maxTransactionFeeBuyerPercentage',
-        {
-          maxTransactionFeeBuyerPercentage:
-            query.maxTransactionFeeBuyerPercentage,
-        },
-      );
-    }
-
     if (query.status) {
       queryBuilder.andWhere('invoice.status = :status', {
         status: query.status,
       });
+    }
+
+    if (query.dueDateFrom) {
+      queryBuilder.andWhere('invoice.dueDate >= :dueDateFrom', {
+        dueDateFrom: query.dueDateFrom,
+      });
+    }
+
+    if (query.dueDateTo) {
+      queryBuilder.andWhere('invoice.dueDate <= :dueDateTo', {
+        dueDateTo: query.dueDateTo,
+      });
+    }
+
+    if (query.isSold !== undefined) {
+      if (query.isSold > 0) {
+        queryBuilder.andWhere('invoice.buyerInvestorId IS NOT NULL');
+      } else {
+        queryBuilder.andWhere('invoice.buyerInvestorId IS NULL');
+      }
     }
 
     const total = await queryBuilder.getCount();
@@ -221,7 +235,7 @@ export class InvoiceService {
 
     if (user.type !== UserType.ADMIN) {
       queryBuilder.andWhere(
-        '(invoice.sellerInvestorId = :investorId OR (invoice.status = :verifiedStatusInvoice AND invoice.debtor.status = :verifiedStatusDebtor))',
+        '(invoice.sellerInvestorId = :investorId OR (invoice.status = :verifiedStatusInvoice AND debtor.status = :verifiedStatusDebtor))',
         {
           investorId: user.id,
           verifiedStatusInvoice: InvoiceStatus.VERIFIED,
