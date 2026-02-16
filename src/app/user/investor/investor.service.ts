@@ -197,33 +197,30 @@ export class InvestorService {
   }
 
   async findOne(id: string, user?: User) {
-    const investor = await (async () => {
-      if (user && (user.type === UserType.ADMIN || user.id === id)) {
-        return await this.investorRepository.findOne({
+    const investor = await (user &&
+    (user.type === UserType.ADMIN || user.id === id)
+      ? this.investorRepository.findOne({
           where: { id },
           relations: ['documents', 'bankAccount'],
-        });
-      } else if (
-        user &&
-        user.type !== UserType.ADMIN &&
-        user.id !== id &&
-        (user as Investor).status === InvestorStatus.PENDING
-      ) {
-        throw new UnauthorizedException(
-          `You don't have permissions to perform this action`,
-        );
-      } else {
-        return await this.investorRepository.findOne({
-          where: { id },
-          select: {
-            lastCommunication: false,
-            createdAt: false,
-            updatedAt: false,
-            deletedAt: false,
-          },
-        });
-      }
-    })();
+        })
+      : user &&
+          user.type !== UserType.ADMIN &&
+          user.id !== id &&
+          (user as Investor).status === InvestorStatus.PENDING
+        ? Promise.reject(
+            new UnauthorizedException(
+              `You don't have permissions to perform this action`,
+            ),
+          )
+        : this.investorRepository.findOne({
+            where: { id },
+            select: {
+              lastCommunication: false,
+              createdAt: false,
+              updatedAt: false,
+              deletedAt: false,
+            },
+          }));
 
     if (!investor) {
       throw new NotFoundException(`Investor with ID '${id}' not found`);

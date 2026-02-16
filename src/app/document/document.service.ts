@@ -9,6 +9,7 @@ import { ConfigService } from '@nestjs/config';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Debtor } from 'src/app/debtor/entities/debtor.entity';
 import { GetDocumentsDto } from 'src/app/document/dto/get-documents.dto';
+import { Invoice } from 'src/app/invoice/entities/invoice.entity';
 import { Not, Repository } from 'typeorm';
 import { v4 as uuidv4 } from 'uuid';
 import { User } from '../user/common/entities/user.entity';
@@ -34,6 +35,7 @@ export class DocumentService {
     file: Express.Multer.File,
     user: User,
     debtor?: Debtor,
+    invoice?: Invoice,
   ): Promise<Document> {
     if (!file) {
       throw new BadRequestException('file must be a valid Document');
@@ -57,7 +59,8 @@ export class DocumentService {
         filename: this.getFilename(file, documentId),
         id: documentId,
         investor: user as Investor,
-        debtor: debtor as Debtor,
+        debtor: debtor,
+        invoice: invoice,
         type: createDocumentDto.type,
       });
 
@@ -111,6 +114,12 @@ export class DocumentService {
           investorId: query.investorId,
         });
       }
+    }
+
+    if (query.invoiceId) {
+      queryBuilder.andWhere('document.invoiceId = :invoiceId', {
+        invoiceId: query.invoiceId,
+      });
     }
 
     if (query.debtorId) {
@@ -167,7 +176,7 @@ export class DocumentService {
             relations: ['investor', 'debtor'],
           })
         : await this.documentRepository.findOne({
-            where: { id, investor: user as Investor },
+            where: { id, investor: { id: user.id } },
             relations: ['investor', 'debtor'],
           });
 

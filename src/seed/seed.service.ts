@@ -676,7 +676,13 @@ export class SeedService {
     investors: Investor[],
     debtors: Debtor[],
   ): Promise<Invoice[]> {
-    const invoices: any[] = [];
+    const invoices: Invoice[] = [];
+    const invoiceMetadata: Array<{
+      title: string;
+      filename: string;
+      value: string;
+      investor: Investor;
+    }> = [];
 
     const sellerInvestors = investors.filter(
       (inv) => inv.investorType === InvestorType.COMPANY,
@@ -686,56 +692,40 @@ export class SeedService {
     let debtorIndex = 0;
     let invoiceIndex = 0;
 
+    // Step 1: Create and save invoices without documents
     for (const seller of sellerInvestors) {
       for (let i = 1; i <= 3; i++) {
-        const documentId = uuidv4();
-        const invoiceDocument = this.documentRepository.create({
-          id: documentId,
-          title: `Invoice ${i} - ${seller.companyName}`,
-          filename: `${documentId}.pdf`,
-          value: `documents/invoice-${i}-${seller.companyName.toLowerCase().replace(/\s+/g, '-')}.pdf`,
-          investor: seller,
-          type: DocumentType.INVOICE,
-        });
-
         const dueDate = new Date();
         dueDate.setDate(dueDate.getDate() + 30 * i);
 
-        // Cycle through available debtors
         const debtor = debtors[debtorIndex % debtors.length];
         debtorIndex++;
 
-        // Determine invoice status and buyer based on invoice index
         let status: InvoiceStatus;
         let buyerInvestor: Investor | undefined;
         let lastCommunication: string | undefined;
 
         if (invoiceIndex % 4 === 0) {
           status = InvoiceStatus.VERIFIED;
-          // VERIFIED invoices usually have buyers - mix of COMPANY and INDIVIDUAL
           buyerInvestor =
             allInvestors[(invoiceIndex * 3) % allInvestors.length];
         } else if (invoiceIndex % 4 === 1) {
           status = InvoiceStatus.PENDING;
-          // PENDING invoices may or may not have buyers
           if (invoiceIndex % 2 === 0) {
             buyerInvestor =
               allInvestors[(invoiceIndex * 5) % allInvestors.length];
           }
         } else if (invoiceIndex % 4 === 2) {
           status = InvoiceStatus.CORRECTION;
-          // CORRECTION invoices with communication message
           lastCommunication =
             'Se requiere documentación adicional para verificación';
         } else {
           status = InvoiceStatus.DENIED;
-          // DENIED invoices with rejection reason
           lastCommunication = 'La factura no cumple con los requisitos mínimos';
         }
 
-        const invoiceData: any = {
+        const invoiceData: Partial<Invoice> = {
           sellerInvestor: seller,
-          document: invoiceDocument,
           debtor: debtor,
           amount: 10000 + i * 5000,
           dueDate: dueDate,
@@ -757,11 +747,44 @@ export class SeedService {
 
         const invoice = this.invoiceRepository.create(invoiceData);
         invoices.push(invoice);
+
+        // Store document metadata for later creation
+        const documentId = uuidv4();
+        invoiceMetadata.push({
+          title: `Invoice ${i} - ${seller.companyName}`,
+          filename: `${documentId}.pdf`,
+          value: `documents/invoice-${i}-${seller.companyName.toLowerCase().replace(/\s+/g, '-')}.pdf`,
+          investor: seller,
+        });
+
         invoiceIndex++;
       }
     }
 
-    return await this.invoiceRepository.save(invoices);
+    const savedInvoices = await this.invoiceRepository.save(invoices);
+
+    // Step 2: Create documents with invoice references and update invoices
+    for (let i = 0; i < savedInvoices.length; i++) {
+      const savedInvoice = savedInvoices[i];
+      const metadata = invoiceMetadata[i];
+
+      const invoiceDocument = this.documentRepository.create({
+        id: uuidv4(),
+        title: metadata.title,
+        filename: metadata.filename,
+        value: metadata.value,
+        investor: metadata.investor,
+        invoice: savedInvoice,
+        type: DocumentType.INVOICE,
+      });
+
+      const savedDocument = await this.documentRepository.save(invoiceDocument);
+
+      savedInvoice.documents = [savedDocument];
+      await this.invoiceRepository.save(savedInvoice);
+    }
+
+    return savedInvoices;
   }
 
   private async seedAuctions(invoices: Invoice[]): Promise<Auction[]> {

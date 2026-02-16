@@ -8,19 +8,17 @@ import {
   CreateDateColumn,
   DeleteDateColumn,
   Entity,
-  JoinColumn,
   ManyToOne,
   OneToMany,
-  OneToOne,
   PrimaryGeneratedColumn,
   UpdateDateColumn,
 } from 'typeorm';
 
-export class TransactionFee {
-  @Column('decimal', { precision: 5, scale: 2 })
+class TransactionFee {
+  @Column('decimal', { precision: 4, scale: 2 })
   sellerPercentage: number;
 
-  @Column('decimal', { precision: 5, scale: 2 })
+  @Column('decimal', { precision: 4, scale: 2 })
   buyerPercentage: number;
 }
 
@@ -50,9 +48,11 @@ export class Invoice {
   @Column('text', { nullable: true })
   lastCommunication: string;
 
-  @OneToOne(() => Document, { cascade: true, eager: true })
-  @JoinColumn()
-  document: Document;
+  @OneToMany(() => Document, (document) => document.invoice, {
+    cascade: true,
+    eager: true,
+  })
+  documents: Document[];
 
   @OneToMany(() => Auction, (auction) => auction.invoice, {
     cascade: true,
@@ -66,7 +66,11 @@ export class Invoice {
   })
   debtor: Debtor;
 
-  @Column('decimal', { precision: 15, scale: 2, nullable: false })
+  @Column('decimal', {
+    precision: 15,
+    scale: 3,
+    nullable: false,
+  })
   amount: number;
 
   @Column('date', { nullable: false })
@@ -75,15 +79,18 @@ export class Invoice {
   @Column(() => TransactionFee)
   transactionFee: TransactionFee;
 
-  @Column('decimal', { precision: 5, scale: 2 })
+  @Column('decimal', {
+    precision: 5,
+    scale: 2,
+  })
   rating: number;
 
-  @CreateDateColumn({ select: false })
+  @CreateDateColumn()
   createdAt: Date;
 
-  @UpdateDateColumn({ select: false })
+  @UpdateDateColumn()
   updatedAt: Date;
 
-  @DeleteDateColumn({ select: false })
+  @DeleteDateColumn()
   deletedAt: Date;
 }

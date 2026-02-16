@@ -26,4 +26,8 @@ export class GetDocumentsDto extends PaginationDto {
   @IsUUID()
   @IsOptional()
   debtorId?: string;
+
+  @IsUUID()
+  @IsOptional()
+  invoiceId?: string;
 }

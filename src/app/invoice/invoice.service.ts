@@ -17,6 +17,7 @@ import { InvoiceStatus } from 'src/app/invoice/enums/invoice-status.enum';
 import { UserType } from 'src/app/user/common/enums/user-type.enum';
 import { Repository } from 'typeorm';
 import { User } from '../user/common/entities/user.entity';
+import { Investor } from '../user/investor/entities/investor.entity';
 import { CreateInvoiceDto } from './dto/create-invoice.dto';
 import { UpdateInvoiceDto } from './dto/update-invoice.dto';
 
@@ -32,7 +33,7 @@ export class InvoiceService {
   async create(
     createInvoiceDto: CreateInvoiceDto,
     file: Express.Multer.File,
-    user: User,
+    user: Investor,
   ) {
     if (!file) {
       throw new BadRequestException('file must be a valid Invoice document');
@@ -49,41 +50,55 @@ export class InvoiceService {
       );
     }
 
+    const buyerPercentage: number = parseFloat(
+      String(process.env.BUYER_TRANSFER_FEE_PERCENTAGE),
+    );
+    const sellerPercentage: number = parseFloat(
+      String(process.env.SELLER_TRANSFER_FEE_PERCENTAGE),
+    );
+
     let document: Document | undefined;
     let invoice: Invoice | undefined;
     try {
+      invoice = await this.invoiceRepository.save({
+        ...createInvoiceDto,
+        transactionFee: {
+          buyerPercentage,
+          sellerPercentage,
+        },
+        sellerInvestor: user,
+        debtor: debtor,
+      });
+
       document = await this.documentService.create(
         {
           title: `${user.name}'s ${debtor.companyName} invoice document`,
-          value: debtor.taxId,
+          value:
+            user.taxId +
+            '-' +
+            debtor.taxId +
+            '-' +
+            createInvoiceDto.dueDate.toISOString(),
           type: DocumentType.INVOICE,
         },
         file,
         user,
       );
 
-      invoice = await this.invoiceRepository.save({
-        ...createInvoiceDto,
-        debtor: debtor,
-        document: document,
-      });
+      invoice.documents = [document];
+      await this.invoiceRepository.save(invoice);
 
       return invoice;
     } catch (error) {
       console.error(error);
       if (document) {
-        await this.documentService.remove(document.id, user);
+        await this.documentService.remove(document.id, user, false);
       }
       if (invoice) {
         await this.invoiceRepository.delete(invoice.id);
       }
 
-      if (
-        error instanceof BadRequestException ||
-        error instanceof InternalServerErrorException
-      ) {
-        throw error;
-      }
+      throw error;
     }
   }
 
@@ -94,7 +109,7 @@ export class InvoiceService {
     queryBuilder.leftJoinAndSelect('invoice.auctions', 'auctions');
     queryBuilder.leftJoinAndSelect('invoice.debtor', 'debtor');
     queryBuilder.leftJoinAndSelect('invoice.sellerInvestor', 'sellerInvestor');
-    queryBuilder.leftJoinAndSelect('invoice.document', 'document');
+    queryBuilder.leftJoinAndSelect('invoice.documents', 'documents');
 
     if (user.type === UserType.ADMIN) {
       if (query.includeDeleted && query.includeDeleted > 0) {
@@ -245,11 +260,11 @@ export class InvoiceService {
     }
 
     if (user.type === UserType.ADMIN) {
-      queryBuilder.leftJoinAndSelect('invoice.document', 'document');
+      queryBuilder.leftJoinAndSelect('invoice.documents', 'documents');
     } else {
       queryBuilder.leftJoinAndSelect(
-        'invoice.document',
-        'document',
+        'invoice.documents',
+        'documents',
         'invoice.sellerInvestorId = :investorId',
         { investorId: user.id },
       );
@@ -272,7 +287,7 @@ export class InvoiceService {
   ) {
     const invoice = await this.findOne(id, user);
 
-    if (invoice.sellerInvestor.id !== user.id) {
+    if (invoice.sellerInvestor.id !== user.id && user.type !== UserType.ADMIN) {
       throw new ForbiddenException(
         'You do not have permission to perform this action',
       );
@@ -320,6 +335,11 @@ export class InvoiceService {
           file,
           user,
         );
+
+        if (!invoice.documents) {
+          invoice.documents = [];
+        }
+        invoice.documents.push(document);
       }
 
       Object.assign(invoice, updateInvoiceDto.removeUndefined());
