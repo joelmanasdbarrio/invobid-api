@@ -18,6 +18,7 @@ import { Auth } from '../user/auth/decorators/auth.decorator';
 import { GetUser } from '../user/auth/decorators/get-user.decorator';
 import { User } from '../user/common/entities/user.entity';
 import { UserType } from '../user/common/enums/user-type.enum';
+import { Investor } from '../user/investor/entities/investor.entity';
 import { InvestorType } from '../user/investor/enums/investor-type.enum';
 import { CreateInvoiceDto } from './dto/create-invoice.dto';
 import { UpdateInvoiceDto } from './dto/update-invoice.dto';
@@ -33,7 +34,7 @@ export class InvoiceController {
   async create(
     @Body() createInvoiceDto: CreateInvoiceDto,
     @UploadedFile(FileTypePipe) file: Express.Multer.File,
-    @GetUser() user: User,
+    @GetUser() user: Investor,
   ) {
     const invoice = await this.invoiceService.create(
       createInvoiceDto,
@@ -73,25 +74,41 @@ export class InvoiceController {
 
   @Get(':id')
   @Auth()
-  findOne(@Param('id', ParseUUIDPipe) id: string, @GetUser() user: User) {
-    return this.invoiceService.findOne(id, user);
+  async findOne(@Param('id', ParseUUIDPipe) id: string, @GetUser() user: User) {
+    const invoice = await this.invoiceService.findOne(id, user);
+    return {
+      status: 'success',
+      data: invoice,
+    };
   }
 
   @Patch(':id')
   @Auth([UserType.ADMIN, InvestorType.COMPANY])
   @UseInterceptors(FileInterceptor('file'))
-  update(
+  async update(
     @Param('id', ParseUUIDPipe) id: string,
     @Body() updateInvoiceDto: UpdateInvoiceDto,
     @UploadedFile(FileTypePipe) file: Express.Multer.File,
     @GetUser() user: User,
   ) {
-    return this.invoiceService.update(id, updateInvoiceDto, file, user);
+    const invoice = await this.invoiceService.update(
+      id,
+      updateInvoiceDto,
+      file,
+      user,
+    );
+    return {
+      status: 'success',
+      data: invoice,
+    };
   }
 
   @Delete(':id')
   @Auth([UserType.ADMIN, InvestorType.COMPANY])
-  remove(@Param('id', ParseUUIDPipe) id: string, @GetUser() user: User) {
-    return this.invoiceService.remove(id, user);
+  async remove(@Param('id', ParseUUIDPipe) id: string, @GetUser() user: User) {
+    await this.invoiceService.remove(id, user);
+    return {
+      status: 'success',
+    };
   }
 }
