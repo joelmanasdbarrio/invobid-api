@@ -41,7 +41,7 @@ export class Invoice {
 
   @Column('enum', {
     enum: InvoiceStatus,
-    default: InvoiceStatus.VERIFIED,
+    default: InvoiceStatus.PENDING,
   })
   status: InvoiceStatus;
 
@@ -82,6 +82,7 @@ export class Invoice {
   @Column('decimal', {
     precision: 5,
     scale: 2,
+    nullable: true,
   })
   rating: number;
 
