@@ -44,9 +44,12 @@ export class InvoiceService {
       user,
     );
 
-    if (debtor.status !== DebtorStatus.VERIFIED) {
+    if (
+      debtor.status !== DebtorStatus.VERIFIED ||
+      debtor.investor.id !== user.id
+    ) {
       throw new BadRequestException(
-        `Debtor with id '${debtor.id}' is not verified`,
+        `Debtor with id '${debtor.id}' is not verified and/or does not belong to the user`,
       );
     }
 
@@ -73,12 +76,7 @@ export class InvoiceService {
       document = await this.documentService.create(
         {
           title: `${user.name}'s ${debtor.companyName} invoice document`,
-          value:
-            user.taxId +
-            '-' +
-            debtor.taxId +
-            '-' +
-            createInvoiceDto.dueDate.toISOString(),
+          value: createInvoiceDto.invoiceId,
           type: DocumentType.INVOICE,
         },
         file,

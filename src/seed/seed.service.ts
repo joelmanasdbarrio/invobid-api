@@ -689,17 +689,57 @@ export class SeedService {
     );
 
     const allInvestors = investors;
-    let debtorIndex = 0;
     let invoiceIndex = 0;
+
+    // Build a map of verified debtors for each investor
+    const verifiedDebtorsByInvestor = new Map<string, Debtor[]>();
+    for (const debtor of debtors) {
+      if (debtor.status === DebtorStatus.VERIFIED) {
+        const investorId = debtor.investor.id;
+        if (!verifiedDebtorsByInvestor.has(investorId)) {
+          verifiedDebtorsByInvestor.set(investorId, []);
+        }
+        verifiedDebtorsByInvestor.get(investorId)!.push(debtor);
+      }
+    }
+
+    console.log(
+      `📊 Verified debtors available: ${verifiedDebtorsByInvestor.size} sellers have verified debtors`,
+    );
+    let skippedSellerCount = 0;
+    for (const seller of sellerInvestors) {
+      const verifiedCount =
+        verifiedDebtorsByInvestor.get(seller.id)?.length || 0;
+      if (verifiedCount === 0) {
+        skippedSellerCount++;
+      }
+    }
+    if (skippedSellerCount > 0) {
+      console.log(
+        `⚠️  ${skippedSellerCount} sellers have no verified debtors and will be skipped`,
+      );
+    }
 
     // Step 1: Create and save invoices without documents
     for (const seller of sellerInvestors) {
       for (let i = 1; i <= 3; i++) {
-        const dueDate = new Date();
-        dueDate.setDate(dueDate.getDate() + 30 * i);
+        // Set due date to a date between Oct 1 and Dec 31 of 2026
+        const targetYear = 2026;
+        const month = 9 + (invoiceIndex % 3); // Oct (9), Nov (10), Dec (11)
+        const day = 1 + ((invoiceIndex * 2) % 28); // Vary the days
+        const dueDate = new Date(targetYear, month, day);
 
-        const debtor = debtors[debtorIndex % debtors.length];
-        debtorIndex++;
+        // Select verified debtor belonging to this seller
+        const sellerVerifiedDebtors =
+          verifiedDebtorsByInvestor.get(seller.id) || [];
+        if (sellerVerifiedDebtors.length === 0) {
+          console.warn(
+            `⚠️  No verified debtors found for seller ${seller.companyName}. Skipping invoice creation.`,
+          );
+          continue;
+        }
+        const debtorIndex = i % sellerVerifiedDebtors.length;
+        const debtor = sellerVerifiedDebtors[debtorIndex];
 
         let status: InvoiceStatus;
         let buyerInvestor: Investor | undefined;
@@ -753,7 +793,7 @@ export class SeedService {
         invoiceMetadata.push({
           title: `Invoice ${i} - ${seller.companyName}`,
           filename: `${documentId}.pdf`,
-          value: `documents/invoice-${i}-${seller.companyName.toLowerCase().replace(/\s+/g, '-')}.pdf`,
+          value: uuidv4(),
           investor: seller,
         });
 
