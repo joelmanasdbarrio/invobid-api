@@ -11,14 +11,14 @@ import {
   UseInterceptors,
 } from '@nestjs/common';
 import { FileInterceptor } from '@nestjs/platform-express';
+import { GetInvestorsDto } from 'src/app/user/investor/dto/get-investors.dto';
+import { InvestorStatus } from 'src/app/user/investor/enums/investor-status.enum';
 import { FileTypePipe } from 'src/pipes/file-type.pipe';
 import { Auth } from '../auth/decorators/auth.decorator';
 import { GetUser } from '../auth/decorators/get-user.decorator';
 import { User } from '../common/entities/user.entity';
 import { UpdateInvestorDto } from './dto/update-investor.dto';
 import { InvestorService } from './investor.service';
-import { GetInvestorsDto } from 'src/app/user/investor/dto/get-investors.dto';
-import { InvestorStatus } from 'src/app/user/investor/enums/investor-status.enum';
 
 @Controller('investors')
 export class InvestorController {
@@ -74,12 +74,11 @@ export class InvestorController {
       user,
     );
 
-    // eslint-disable-next-line @typescript-eslint/no-unused-vars
-    const { password, ...safeUser } = investor;
+    delete investor.password;
 
     return {
       status: 'success',
-      data: safeUser,
+      data: investor,
     };
   }
 
