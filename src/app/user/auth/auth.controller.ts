@@ -53,8 +53,7 @@ export class AuthController {
     const { admin, access_token } =
       await this.authService.registerAdmin(registerAdminDto);
 
-    // eslint-disable-next-line @typescript-eslint/no-unused-vars
-    const { password, ...safeUser } = admin;
+    delete admin.password;
 
     res.cookie('access_token', access_token, {
       httpOnly: true,
@@ -65,7 +64,7 @@ export class AuthController {
 
     return {
       status: 'success',
-      data: safeUser,
+      data: admin,
       access_token,
     };
   }
@@ -83,8 +82,7 @@ export class AuthController {
       file,
     );
 
-    // eslint-disable-next-line @typescript-eslint/no-unused-vars
-    const { password, ...safeUser } = investor;
+    delete investor.password;
 
     res.cookie('access_token', access_token, {
       httpOnly: true,
@@ -95,7 +93,7 @@ export class AuthController {
 
     return {
       status: 'success',
-      data: safeUser,
+      data: investor,
       access_token,
     };
   }

@@ -44,12 +44,11 @@ export class AdminController {
   ) {
     const admin = await this.adminService.update(id, updateAdminDto);
 
-    // eslint-disable-next-line @typescript-eslint/no-unused-vars
-    const { password, ...safeUser } = admin;
+    delete admin.password;
 
     return {
       status: 'success',
-      data: safeUser,
+      data: admin,
     };
   }
 
