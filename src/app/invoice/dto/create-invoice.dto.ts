@@ -1,9 +1,12 @@
-import { IsDate, IsNumber, IsPositive, IsUUID } from 'class-validator';
+import {
+  IsDate,
+  IsNumber,
+  IsPositive,
+  IsString,
+  IsUUID,
+} from 'class-validator';
 
 export class CreateInvoiceDto {
-  @IsUUID()
-  sellerInvestorId: string;
-
   @IsUUID()
   debtorId: string;
 
@@ -14,11 +17,12 @@ export class CreateInvoiceDto {
   @IsDate()
   dueDate: Date;
 
-  @IsNumber()
-  @IsPositive()
-  transactionFeeSellerPercentage: number;
-
-  @IsNumber()
-  @IsPositive()
-  transactionFeeBuyerPercentage: number;
+  /**
+   * Identificador del Registro de Facturación:
+   * NIF/CIF/DNI del emisor + Serie + Número factura + Fecha + Código de verificación
+   * [ID Emisor]-[Serie]-[Número]-[Fecha]-[CódigoVerificación]
+   * B12345678-F001-00001234-20260216-A9K3
+   */
+  @IsString()
+  invoiceId: string;
 }

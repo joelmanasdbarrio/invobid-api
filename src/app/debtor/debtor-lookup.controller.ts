@@ -1,4 +1,4 @@
-import { Controller, Get } from '@nestjs/common';
+import { Controller, Get, Param } from '@nestjs/common';
 import { Auth } from '../user/auth/decorators/auth.decorator';
 import { UserType } from '../user/common/enums/user-type.enum';
 import { DebtorLookupService } from './debtor-lookup.service';
@@ -11,6 +11,18 @@ export class DebtorLookupController {
   @Auth([UserType.ADMIN])
   async countPendingDebtors() {
     const data = await this.debtorLookupService.countPendingDebtors();
+
+    return {
+      status: 'success',
+      data,
+    };
+  }
+
+  @Get('countCorrection/:investorId')
+  @Auth([UserType.INVESTOR])
+  async countCorrectionDebtors(@Param('investorId') investorId: string) {
+    const data =
+      await this.debtorLookupService.countCorrectionDebtors(investorId);
 
     return {
       status: 'success',

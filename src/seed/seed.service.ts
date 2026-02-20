@@ -6,9 +6,11 @@ import { AuctionStatus } from 'src/app/auction/enum/auction-status.enum';
 import { BankAccount } from 'src/app/bank-account/entities/bank-account.entity';
 import { Bid } from 'src/app/bid/entities/bid.entity';
 import { Debtor } from 'src/app/debtor/entities/debtor.entity';
+import { DebtorStatus } from 'src/app/debtor/enums/debtor-status.enum';
 import { Document } from 'src/app/document/entities/document.entity';
 import { DocumentType } from 'src/app/document/enums/document-type.enum';
 import { Invoice } from 'src/app/invoice/entities/invoice.entity';
+import { InvoiceStatus } from 'src/app/invoice/enums/invoice-status.enum';
 import { Admin } from 'src/app/user/admin/entities/admin.entity';
 import { UserType } from 'src/app/user/common/enums/user-type.enum';
 import { Investor } from 'src/app/user/investor/entities/investor.entity';
@@ -127,9 +129,9 @@ export class SeedService {
         email: 'seller1@techcorp.com',
         phone: '34912345678',
         company: 'TechCorp Solutions',
-        type: InvestorType.INDIVIDUAL,
+        type: InvestorType.COMPANY,
         balance: 50000,
-        status: InvestorStatus.PENDING,
+        status: InvestorStatus.VERIFIED,
         taxId: '12345678Z',
       },
       {
@@ -139,7 +141,7 @@ export class SeedService {
         company: 'GlobalTrade Industries',
         type: InvestorType.INDIVIDUAL,
         balance: 75000,
-        status: InvestorStatus.VERIFIED,
+        status: InvestorStatus.PENDING,
         taxId: '23456780T',
       },
       {
@@ -438,86 +440,236 @@ export class SeedService {
 
   private async seedDebtors(investors: Investor[]): Promise<Debtor[]> {
     const debtors: Debtor[] = [];
+    const nifLetters = 'TRWAGMYFPDXBNJZSQVHLCKE';
+
+    // Only COMPANY investors can have debtors
+    const companyInvestors = investors.filter(
+      (inv) => inv.investorType === InvestorType.COMPANY,
+    );
 
     const debtorData = [
       {
         companyName: 'Client Company 1',
         email: 'contact@client1.com',
         phoneNumber: '34912345600',
-        taxId: '12345600A',
+        baseNumber: 12345670,
+        status: DebtorStatus.VERIFIED,
       },
       {
         companyName: 'Client Company 2',
         email: 'contact@client2.com',
         phoneNumber: '34912345601',
-        taxId: '12345601B',
+        baseNumber: 23456781,
+        status: DebtorStatus.PENDING,
       },
       {
         companyName: 'Client Company 3',
         email: 'contact@client3.com',
         phoneNumber: '34912345602',
-        taxId: '12345602C',
+        baseNumber: 34567892,
+        status: DebtorStatus.VERIFIED,
       },
       {
         companyName: 'Client Company 4',
         email: 'contact@client4.com',
         phoneNumber: '34912345603',
-        taxId: '12345603D',
+        baseNumber: 45678903,
+        status: DebtorStatus.CORRECTION,
       },
       {
         companyName: 'Client Company 5',
         email: 'contact@client5.com',
         phoneNumber: '34912345604',
-        taxId: '12345604E',
+        baseNumber: 56789014,
+        status: DebtorStatus.VERIFIED,
       },
       {
         companyName: 'Client Company 6',
         email: 'contact@client6.com',
         phoneNumber: '34912345605',
-        taxId: '12345605F',
+        baseNumber: 67890125,
+        status: DebtorStatus.PENDING,
       },
       {
         companyName: 'Client Company 7',
         email: 'contact@client7.com',
         phoneNumber: '34912345606',
-        taxId: '12345606G',
+        baseNumber: 78901236,
+        status: DebtorStatus.DENIED,
       },
       {
         companyName: 'Client Company 8',
         email: 'contact@client8.com',
         phoneNumber: '34912345607',
-        taxId: '12345607H',
+        baseNumber: 89012347,
+        status: DebtorStatus.VERIFIED,
+      },
+      {
+        companyName: 'Client Company 9',
+        email: 'contact@client9.com',
+        phoneNumber: '34912345608',
+        baseNumber: 90123458,
+        status: DebtorStatus.CORRECTION,
+      },
+      {
+        companyName: 'Client Company 10',
+        email: 'contact@client10.com',
+        phoneNumber: '34912345609',
+        baseNumber: 11234569,
+        status: DebtorStatus.PENDING,
+      },
+      {
+        companyName: 'Client Company 11',
+        email: 'contact@client11.com',
+        phoneNumber: '34912345610',
+        baseNumber: 22345670,
+        status: DebtorStatus.VERIFIED,
+      },
+      {
+        companyName: 'Client Company 12',
+        email: 'contact@client12.com',
+        phoneNumber: '34912345611',
+        baseNumber: 33456781,
+        status: DebtorStatus.DENIED,
+      },
+      {
+        companyName: 'Client Company 13',
+        email: 'contact@client13.com',
+        phoneNumber: '34912345612',
+        baseNumber: 44567892,
+        status: DebtorStatus.VERIFIED,
+      },
+      {
+        companyName: 'Client Company 14',
+        email: 'contact@client14.com',
+        phoneNumber: '34912345613',
+        baseNumber: 55678903,
+        status: DebtorStatus.PENDING,
+      },
+      {
+        companyName: 'Client Company 15',
+        email: 'contact@client15.com',
+        phoneNumber: '34912345614',
+        baseNumber: 66789014,
+        status: DebtorStatus.CORRECTION,
+      },
+      {
+        companyName: 'Client Company 16',
+        email: 'contact@client16.com',
+        phoneNumber: '34912345615',
+        baseNumber: 77890125,
+        status: DebtorStatus.VERIFIED,
+      },
+      {
+        companyName: 'Client Company 17',
+        email: 'contact@client17.com',
+        phoneNumber: '34912345616',
+        baseNumber: 88901236,
+        status: DebtorStatus.CORRECTION,
+      },
+      {
+        companyName: 'Client Company 18',
+        email: 'contact@client18.com',
+        phoneNumber: '34912345617',
+        baseNumber: 99012347,
+        status: DebtorStatus.PENDING,
+      },
+      {
+        companyName: 'Client Company 19',
+        email: 'contact@client19.com',
+        phoneNumber: '34912345618',
+        baseNumber: 10123458,
+        status: DebtorStatus.VERIFIED,
+      },
+      {
+        companyName: 'Client Company 20',
+        email: 'contact@client20.com',
+        phoneNumber: '34912345619',
+        baseNumber: 21234569,
+        status: DebtorStatus.DENIED,
+      },
+      {
+        companyName: 'Client Company 21',
+        email: 'contact@client21.com',
+        phoneNumber: '34912345620',
+        baseNumber: 32345670,
+        status: DebtorStatus.PENDING,
+      },
+      {
+        companyName: 'Client Company 22',
+        email: 'contact@client22.com',
+        phoneNumber: '34912345621',
+        baseNumber: 43456781,
+        status: DebtorStatus.VERIFIED,
+      },
+      {
+        companyName: 'Client Company 23',
+        email: 'contact@client23.com',
+        phoneNumber: '34912345622',
+        baseNumber: 54567892,
+        status: DebtorStatus.CORRECTION,
+      },
+      {
+        companyName: 'Client Company 24',
+        email: 'contact@client24.com',
+        phoneNumber: '34912345623',
+        baseNumber: 65678903,
+        status: DebtorStatus.VERIFIED,
       },
     ];
 
-    // Distribute debtors across investors
     for (let i = 0; i < debtorData.length; i++) {
       const data = debtorData[i];
-      const investor = investors[i % investors.length];
-
-      const documentId = uuidv4();
-      const document = this.documentRepository.create({
-        id: documentId,
-        title: `${data.companyName} Tax ID Document`,
-        filename: `${data.taxId}.pdf`,
-        value: data.taxId,
-        type: DocumentType.IDENTIFICATION,
-        investor: investor,
-      });
-
+      const investor = companyInvestors[i % companyInvestors.length];
+      const controlLetter = nifLetters[data.baseNumber % 23];
+      const nif = `${data.baseNumber}${controlLetter}`;
       const debtor = this.debtorRepository.create({
         investor: investor,
         companyName: data.companyName,
         email: data.email,
         phoneNumber: data.phoneNumber,
-        taxId: data.taxId,
-        documents: [document],
+        taxId: nif,
+        status: data.status,
       });
-
       debtors.push(debtor);
     }
+    const savedDebtors = await this.debtorRepository.save(debtors);
 
-    return await this.debtorRepository.save(debtors);
+    const allDocuments: Document[] = [];
+    for (let i = 0; i < savedDebtors.length; i++) {
+      const debtor = savedDebtors[i];
+      const data = debtorData[i];
+      const investor = debtor.investor;
+      const controlLetter = nifLetters[data.baseNumber % 23];
+      const nif = `${data.baseNumber}${controlLetter}`;
+
+      const document111 = this.documentRepository.create({
+        id: uuidv4(),
+        title: `${data.companyName} 111 tax document`,
+        filename: `modelo111.jpg`,
+        value: nif,
+        type: DocumentType.MODELO_111,
+        investor: investor,
+        debtor: debtor,
+      });
+
+      const document303 = this.documentRepository.create({
+        id: uuidv4(),
+        title: `${data.companyName} 303 tax document`,
+        filename: `modelo303.jpg`,
+        value: nif,
+        type: DocumentType.MODELO_303,
+        investor: investor,
+        debtor: debtor,
+      });
+
+      allDocuments.push(document111, document303);
+    }
+    await this.documentRepository.save(allDocuments);
+
+    return await this.debtorRepository.find({
+      relations: ['documents', 'documents', 'investor'],
+    });
   }
 
   private async seedInvoices(
@@ -525,51 +677,154 @@ export class SeedService {
     debtors: Debtor[],
   ): Promise<Invoice[]> {
     const invoices: Invoice[] = [];
+    const invoiceMetadata: Array<{
+      title: string;
+      filename: string;
+      value: string;
+      investor: Investor;
+    }> = [];
 
-    // Get only seller investors (individual type) for creating invoices
     const sellerInvestors = investors.filter(
-      (inv) => inv.investorType === InvestorType.INDIVIDUAL,
+      (inv) => inv.investorType === InvestorType.COMPANY,
     );
 
-    let debtorIndex = 0;
+    const allInvestors = investors;
+    let invoiceIndex = 0;
 
+    // Build a map of verified debtors for each investor
+    const verifiedDebtorsByInvestor = new Map<string, Debtor[]>();
+    for (const debtor of debtors) {
+      if (debtor.status === DebtorStatus.VERIFIED) {
+        const investorId = debtor.investor.id;
+        if (!verifiedDebtorsByInvestor.has(investorId)) {
+          verifiedDebtorsByInvestor.set(investorId, []);
+        }
+        verifiedDebtorsByInvestor.get(investorId)!.push(debtor);
+      }
+    }
+
+    console.log(
+      `📊 Verified debtors available: ${verifiedDebtorsByInvestor.size} sellers have verified debtors`,
+    );
+    let skippedSellerCount = 0;
+    for (const seller of sellerInvestors) {
+      const verifiedCount =
+        verifiedDebtorsByInvestor.get(seller.id)?.length || 0;
+      if (verifiedCount === 0) {
+        skippedSellerCount++;
+      }
+    }
+    if (skippedSellerCount > 0) {
+      console.log(
+        `⚠️  ${skippedSellerCount} sellers have no verified debtors and will be skipped`,
+      );
+    }
+
+    // Step 1: Create and save invoices without documents
     for (const seller of sellerInvestors) {
       for (let i = 1; i <= 3; i++) {
-        const documentId = uuidv4();
-        const invoiceDocument = this.documentRepository.create({
-          id: documentId,
-          title: `Invoice ${i} - ${seller.companyName}`,
-          filename: `${documentId}.pdf`,
-          value: `documents/invoice-${i}-${seller.companyName.toLowerCase().replace(/\s+/g, '-')}.pdf`,
-          investor: seller,
-          type: DocumentType.INVOICE,
-        });
+        // Set due date to a date between Oct 1 and Dec 31 of 2026
+        const targetYear = 2026;
+        const month = 9 + (invoiceIndex % 3); // Oct (9), Nov (10), Dec (11)
+        const day = 1 + ((invoiceIndex * 2) % 28); // Vary the days
+        const dueDate = new Date(targetYear, month, day);
 
-        const dueDate = new Date();
-        dueDate.setDate(dueDate.getDate() + 30 * i);
+        // Select verified debtor belonging to this seller
+        const sellerVerifiedDebtors =
+          verifiedDebtorsByInvestor.get(seller.id) || [];
+        if (sellerVerifiedDebtors.length === 0) {
+          console.warn(
+            `⚠️  No verified debtors found for seller ${seller.companyName}. Skipping invoice creation.`,
+          );
+          continue;
+        }
+        const debtorIndex = i % sellerVerifiedDebtors.length;
+        const debtor = sellerVerifiedDebtors[debtorIndex];
 
-        // Cycle through available debtors
-        const debtor = debtors[debtorIndex % debtors.length];
-        debtorIndex++;
+        let status: InvoiceStatus;
+        let buyerInvestor: Investor | undefined;
+        let lastCommunication: string | undefined;
 
-        const invoice = this.invoiceRepository.create({
+        if (invoiceIndex % 4 === 0) {
+          status = InvoiceStatus.VERIFIED;
+          buyerInvestor =
+            allInvestors[(invoiceIndex * 3) % allInvestors.length];
+        } else if (invoiceIndex % 4 === 1) {
+          status = InvoiceStatus.PENDING;
+          if (invoiceIndex % 2 === 0) {
+            buyerInvestor =
+              allInvestors[(invoiceIndex * 5) % allInvestors.length];
+          }
+        } else if (invoiceIndex % 4 === 2) {
+          status = InvoiceStatus.CORRECTION;
+          lastCommunication =
+            'Se requiere documentación adicional para verificación';
+        } else {
+          status = InvoiceStatus.DENIED;
+          lastCommunication = 'La factura no cumple con los requisitos mínimos';
+        }
+
+        const invoiceData: Partial<Invoice> = {
           sellerInvestor: seller,
-          document: invoiceDocument,
           debtor: debtor,
           amount: 10000 + i * 5000,
           dueDate: dueDate,
+          status: status,
           transactionFee: {
             sellerPercentage: 2.5,
             buyerPercentage: 1.5,
           },
           rating: 4.0 + i * 0.3,
+        };
+
+        if (buyerInvestor) {
+          invoiceData.buyerInvestor = buyerInvestor;
+        }
+
+        if (lastCommunication) {
+          invoiceData.lastCommunication = lastCommunication;
+        }
+
+        const invoice = this.invoiceRepository.create(invoiceData);
+        invoices.push(invoice);
+
+        // Store document metadata for later creation
+        const documentId = uuidv4();
+        invoiceMetadata.push({
+          title: `Invoice ${i} - ${seller.companyName}`,
+          filename: `${documentId}.pdf`,
+          value: uuidv4(),
+          investor: seller,
         });
 
-        invoices.push(invoice);
+        invoiceIndex++;
       }
     }
 
-    return await this.invoiceRepository.save(invoices);
+    const savedInvoices = await this.invoiceRepository.save(invoices);
+
+    // Step 2: Create documents with invoice references and update invoices
+    for (let i = 0; i < savedInvoices.length; i++) {
+      const savedInvoice = savedInvoices[i];
+      const metadata = invoiceMetadata[i];
+
+      const invoiceDocument = this.documentRepository.create({
+        id: uuidv4(),
+        title: metadata.title,
+        filename: metadata.filename,
+        value: metadata.value,
+        investor: metadata.investor,
+        invoice: savedInvoice,
+        type: DocumentType.INVOICE,
+      });
+
+      const savedDocument = await this.documentRepository.save(invoiceDocument);
+
+      savedInvoice.documents = [savedDocument];
+      await this.invoiceRepository.save(savedInvoice);
+    }
+
+    return savedInvoices;
   }
 
   private async seedAuctions(invoices: Invoice[]): Promise<Auction[]> {

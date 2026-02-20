@@ -1,3 +1,5 @@
+import { Debtor } from 'src/app/debtor/entities/debtor.entity';
+import { Invoice } from 'src/app/invoice/entities/invoice.entity';
 import { Investor } from 'src/app/user/investor/entities/investor.entity';
 import {
   Column,
@@ -9,7 +11,6 @@ import {
   UpdateDateColumn,
 } from 'typeorm';
 import { DocumentType } from '../enums/document-type.enum';
-import { Debtor } from 'src/app/debtor/entities/debtor.entity';
 
 @Entity('documents')
 export class Document {
@@ -46,4 +47,9 @@ export class Document {
     nullable: true,
   })
   debtor: Debtor;
+
+  @ManyToOne(() => Invoice, (invoice) => invoice.documents, {
+    nullable: true,
+  })
+  invoice: Invoice;
 }

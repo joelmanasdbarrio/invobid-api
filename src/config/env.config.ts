@@ -1,4 +1,6 @@
 export const EnvConfiguration = () => ({
+  buyerTransferFeePercentage: process.env.BUYER_TRANSFER_FEE_PERCENTAGE,
+  sellerTransferFeePercentage: process.env.SELLER_TRANSFER_FEE_PERCENTAGE,
   environment: process.env.NODE_ENV || 'development',
   port: process.env.PORT || 3000,
   jwtSecret: process.env.JWT_SECRET,

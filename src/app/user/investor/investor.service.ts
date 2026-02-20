@@ -130,7 +130,9 @@ export class InvestorService {
         });
       }
 
-      if (query.includeDeleted) queryBuilder.withDeleted();
+      if (query.includeDeleted && query.includeDeleted > 0) {
+        queryBuilder.withDeleted();
+      }
     } else {
       queryBuilder.leftJoin('investor.documents', 'document');
       queryBuilder.select([
@@ -195,33 +197,30 @@ export class InvestorService {
   }
 
   async findOne(id: string, user?: User) {
-    const investor = await (async () => {
-      if (user && (user.type === UserType.ADMIN || user.id === id)) {
-        return await this.investorRepository.findOne({
+    const investor = await (user &&
+    (user.type === UserType.ADMIN || user.id === id)
+      ? this.investorRepository.findOne({
           where: { id },
           relations: ['documents', 'bankAccount'],
-        });
-      } else if (
-        user &&
-        user.type !== UserType.ADMIN &&
-        user.id !== id &&
-        (user as Investor).status === InvestorStatus.PENDING
-      ) {
-        throw new UnauthorizedException(
-          `You don't have permissions to perform this action`,
-        );
-      } else {
-        return await this.investorRepository.findOne({
-          where: { id },
-          select: {
-            lastCommunication: false,
-            createdAt: false,
-            updatedAt: false,
-            deletedAt: false,
-          },
-        });
-      }
-    })();
+        })
+      : user &&
+          user.type !== UserType.ADMIN &&
+          user.id !== id &&
+          (user as Investor).status === InvestorStatus.PENDING
+        ? Promise.reject(
+            new UnauthorizedException(
+              `You don't have permissions to perform this action`,
+            ),
+          )
+        : this.investorRepository.findOne({
+            where: { id },
+            select: {
+              lastCommunication: false,
+              createdAt: false,
+              updatedAt: false,
+              deletedAt: false,
+            },
+          }));
 
     if (!investor) {
       throw new NotFoundException(`Investor with ID '${id}' not found`);
@@ -241,39 +240,35 @@ export class InvestorService {
     this.checkIsPending(investor, user);
     this.checkIsDenied(investor, user);
 
-    if (
-      user.type !== UserType.ADMIN &&
-      investor.status === InvestorStatus.CORRECTION
-    ) {
-      if (
-        updateInvestorDto.status &&
-        updateInvestorDto.status.toLowerCase() ===
-          InvestorStatus.PENDING.toLocaleLowerCase()
+    if (user.type !== UserType.ADMIN) {
+      if (investor.status === InvestorStatus.CORRECTION) {
+        if (
+          updateInvestorDto.status &&
+          updateInvestorDto.status.toLowerCase() ===
+            InvestorStatus.PENDING.toLocaleLowerCase()
+        ) {
+          updateInvestorDto.status = InvestorStatus.PENDING;
+          updateInvestorDto.lastCommunication =
+            'Pendiente de revisión por usuario administrador';
+        } else {
+          updateInvestorDto.status = investor.status;
+          updateInvestorDto.lastCommunication = investor.lastCommunication;
+        }
+      } else if (
+        updateInvestorDto.status !== investor.status &&
+        updateInvestorDto.status !== InvestorStatus.PENDING
       ) {
-        updateInvestorDto.status = InvestorStatus.PENDING;
-        updateInvestorDto.lastCommunication =
-          'Pendiente de revisión por usuario administrador';
-      } else {
-        updateInvestorDto.status = investor.status;
-        updateInvestorDto.lastCommunication = investor.lastCommunication;
+        throw new UnauthorizedException(
+          "You don't have permissions to perform this action",
+        );
+      } else if (investor.status === InvestorStatus.VERIFIED) {
+        updateInvestorDto.name = investor.name;
+        updateInvestorDto.companyName = investor.companyName;
+        updateInvestorDto.investorType = investor.investorType;
+        updateInvestorDto.taxId = investor.taxId;
+        file = undefined;
       }
-    } else if (
-      user.type !== UserType.ADMIN &&
-      updateInvestorDto.status !== investor.status &&
-      (investor.status !== InvestorStatus.CORRECTION ||
-        updateInvestorDto.status !== InvestorStatus.PENDING)
-    ) {
-      throw new UnauthorizedException(
-        "You don't have permissions to perform this action",
-      );
-    } else if (
-      user.type !== UserType.ADMIN &&
-      investor.status === InvestorStatus.VERIFIED
-    ) {
-      updateInvestorDto.name = investor.name;
-      updateInvestorDto.companyName = investor.companyName;
-      updateInvestorDto.investorType = investor.investorType;
-      updateInvestorDto.taxId = investor.taxId;
+    } else {
       file = undefined;
     }
 

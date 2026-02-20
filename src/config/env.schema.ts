@@ -1,6 +1,8 @@
 import * as Joi from 'joi';
 
 export const EnvConfigSchema = Joi.object({
+  BUYER_TRANSFER_FEE_PERCENTAGE: Joi.number().required(),
+  SELLER_TRANSFER_FEE_PERCENTAGE: Joi.number().required(),
   NODE_ENV: Joi.string()
     .valid('development', 'production', 'local')
     .default('development'),

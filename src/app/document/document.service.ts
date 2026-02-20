@@ -7,7 +7,9 @@ import {
 } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { InjectRepository } from '@nestjs/typeorm';
+import { Debtor } from 'src/app/debtor/entities/debtor.entity';
 import { GetDocumentsDto } from 'src/app/document/dto/get-documents.dto';
+import { Invoice } from 'src/app/invoice/entities/invoice.entity';
 import { Not, Repository } from 'typeorm';
 import { v4 as uuidv4 } from 'uuid';
 import { User } from '../user/common/entities/user.entity';
@@ -17,7 +19,6 @@ import { CreateDocumentDto } from './dto/create-document.dto';
 import { UpdateDocumentDto } from './dto/update-document.dto';
 import { Document } from './entities/document.entity';
 import { type IStorageService } from './interfaces/storage.interface';
-import { Debtor } from 'src/app/debtor/entities/debtor.entity';
 
 @Injectable()
 export class DocumentService {
@@ -34,6 +35,7 @@ export class DocumentService {
     file: Express.Multer.File,
     user: User,
     debtor?: Debtor,
+    invoice?: Invoice,
   ): Promise<Document> {
     if (!file) {
       throw new BadRequestException('file must be a valid Document');
@@ -57,7 +59,8 @@ export class DocumentService {
         filename: this.getFilename(file, documentId),
         id: documentId,
         investor: user as Investor,
-        debtor: debtor as Debtor,
+        debtor: debtor,
+        invoice: invoice,
         type: createDocumentDto.type,
       });
 
@@ -98,7 +101,8 @@ export class DocumentService {
   async findAll(query: GetDocumentsDto, user: User) {
     const queryBuilder = this.documentRepository
       .createQueryBuilder('document')
-      .leftJoinAndSelect('document.investor', 'investor');
+      .leftJoinAndSelect('document.investor', 'investor')
+      .leftJoinAndSelect('document.debtor', 'debtor');
 
     if (user.type !== UserType.ADMIN) {
       queryBuilder.where('document.investorId = :investorId', {
@@ -110,6 +114,18 @@ export class DocumentService {
           investorId: query.investorId,
         });
       }
+    }
+
+    if (query.invoiceId) {
+      queryBuilder.andWhere('document.invoiceId = :invoiceId', {
+        invoiceId: query.invoiceId,
+      });
+    }
+
+    if (query.debtorId) {
+      queryBuilder.andWhere('document.debtorId = :debtorId', {
+        debtorId: query.debtorId,
+      });
     }
 
     if (query.title) {
@@ -157,11 +173,11 @@ export class DocumentService {
       user.type === UserType.ADMIN
         ? await this.documentRepository.findOne({
             where: { id },
-            relations: ['investor'],
+            relations: ['investor', 'debtor'],
           })
         : await this.documentRepository.findOne({
-            where: { id, investor: user as Investor },
-            relations: ['investor'],
+            where: { id, investor: { id: user.id } },
+            relations: ['investor', 'debtor'],
           });
 
     if (!document)
