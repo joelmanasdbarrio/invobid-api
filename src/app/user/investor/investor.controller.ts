@@ -74,7 +74,7 @@ export class InvestorController {
       user,
     );
 
-    delete investor.password;
+    delete (investor as Partial<typeof investor>).password;
 
     return {
       status: 'success',

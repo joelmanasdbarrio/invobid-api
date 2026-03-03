@@ -29,13 +29,13 @@ export class Document {
   @Column('text', { nullable: false })
   type: DocumentType;
 
-  @CreateDateColumn()
+  @CreateDateColumn({ type: 'timestamptz' })
   createdAt: Date;
 
-  @UpdateDateColumn()
+  @UpdateDateColumn({ type: 'timestamptz' })
   updatedAt: Date;
 
-  @DeleteDateColumn({ select: false })
+  @DeleteDateColumn({ select: false, type: 'timestamptz' })
   deletedAt: Date;
 
   @ManyToOne(() => Investor, (investor) => investor.documents, {

@@ -1,7 +1,7 @@
 export enum AuctionStatus {
-  PENDING = 'pending',
-  ACTIVE = 'active',
+  DRAFT = 'draft',
+  PUBLISHED = 'published',
   PAUSED = 'paused',
-  COMPLETED = 'completed',
+  FINISHED = 'finished',
   CANCELLED = 'cancelled',
 }
