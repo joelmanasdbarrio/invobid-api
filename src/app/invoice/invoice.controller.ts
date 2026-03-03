@@ -76,6 +76,7 @@ export class InvoiceController {
   @Auth()
   async findOne(@Param('id', ParseUUIDPipe) id: string, @GetUser() user: User) {
     const invoice = await this.invoiceService.findOne(id, user);
+
     return {
       status: 'success',
       data: invoice,
@@ -97,6 +98,7 @@ export class InvoiceController {
       file,
       user,
     );
+
     return {
       status: 'success',
       data: invoice,
@@ -107,6 +109,7 @@ export class InvoiceController {
   @Auth([UserType.ADMIN, InvestorType.COMPANY])
   async remove(@Param('id', ParseUUIDPipe) id: string, @GetUser() user: User) {
     await this.invoiceService.remove(id, user);
+
     return {
       status: 'success',
     };

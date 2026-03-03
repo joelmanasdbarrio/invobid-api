@@ -1,10 +1,13 @@
 import {
-  IsDate,
+  IsDateString,
+  IsEnum,
   IsNumber,
+  IsOptional,
   IsPositive,
   IsString,
   IsUUID,
 } from 'class-validator';
+import { Currency } from '../enums/currency.enum';
 
 export class CreateInvoiceDto {
   @IsUUID()
@@ -14,8 +17,12 @@ export class CreateInvoiceDto {
   @IsPositive()
   amount: number;
 
-  @IsDate()
-  dueDate: Date;
+  @IsOptional()
+  @IsEnum(Currency)
+  currency?: Currency;
+
+  @IsDateString()
+  dueDate: string;
 
   /**
    * Identificador del Registro de Facturación:

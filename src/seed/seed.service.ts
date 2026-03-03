@@ -767,7 +767,7 @@ export class SeedService {
         const invoiceData: Partial<Invoice> = {
           sellerInvestor: seller,
           debtor: debtor,
-          amount: 10000 + i * 5000,
+          amount: 500000 + Math.random() * 4500000,
           dueDate: dueDate,
           status: status,
           transactionFee: {
@@ -775,6 +775,7 @@ export class SeedService {
             buyerPercentage: 1.5,
           },
           rating: 4.0 + i * 0.3,
+          invoiceId: uuidv4(),
         };
 
         if (buyerInvestor) {
@@ -833,25 +834,31 @@ export class SeedService {
     for (let i = 0; i < invoices.length; i++) {
       const invoice = invoices[i];
 
-      const auctionDate = new Date();
-      auctionDate.setDate(auctionDate.getDate() - 5);
+      const auctionDateStart = new Date();
+      auctionDateStart.setDate(auctionDateStart.getDate() - 5);
 
-      const dueDate = new Date(invoice.dueDate);
+      const auctionDateEnd = new Date(invoice.dueDate);
 
       let status: AuctionStatus;
-      if (i % 3 === 0) {
-        status = AuctionStatus.ACTIVE;
-      } else if (i % 3 === 1) {
-        status = AuctionStatus.COMPLETED;
+      if (i % 5 === 0) {
+        status = AuctionStatus.PUBLISHED;
+      } else if (i % 5 === 1) {
+        status = AuctionStatus.DRAFT;
+      } else if (i % 5 === 2) {
+        status = AuctionStatus.FINISHED;
+      } else if (i % 5 === 3) {
+        status = AuctionStatus.CANCELLED;
       } else {
-        status = AuctionStatus.PENDING;
+        status = AuctionStatus.PAUSED;
       }
 
       const auction = this.auctionRepository.create({
         invoice: invoice,
-        discountRate: 3.5 + i * 0.5,
-        auctionDate: auctionDate,
-        dueDate: dueDate,
+        startingPrice: invoice.amount * (1 - (Math.random() * 0.15 + 0.05)),
+        auctionDate: {
+          auctionDateStart,
+          auctionDateEnd,
+        },
         status: status,
       });
 
@@ -879,7 +886,9 @@ export class SeedService {
         const bid = this.bidRepository.create({
           auction: auction,
           investor: investor,
-          amount: 1000 + i * 500,
+          amount:
+            auction.startingPrice * 1.05 +
+            Math.random() * auction.startingPrice * 0.5,
         });
 
         bids.push(bid);

@@ -46,7 +46,7 @@ describe('InvoiceController', () => {
     const dto: CreateInvoiceDto = {
       debtorId: 'debtor-uuid',
       amount: 5000,
-      dueDate: new Date('2026-06-01'),
+      dueDate: '2026-06-01',
       invoiceId: 'B12345678-F001-00001234-20260216-A9K3',
     };
     const invoice = { id: 'invoice-uuid', amount: 5000 };

@@ -62,12 +62,12 @@ export class Debtor {
   })
   invoices: Invoice[];
 
-  @CreateDateColumn()
+  @CreateDateColumn({ type: 'timestamptz' })
   createdAt: Date;
 
-  @UpdateDateColumn()
+  @UpdateDateColumn({ type: 'timestamptz' })
   updatedAt: Date;
 
-  @DeleteDateColumn({ nullable: true })
+  @DeleteDateColumn({ nullable: true, type: 'timestamptz' })
   deletedAt: Date | null;
 }

@@ -2,6 +2,7 @@ import {
   BadRequestException,
   ForbiddenException,
   InternalServerErrorException,
+  NotFoundException,
   UnauthorizedException,
 } from '@nestjs/common';
 import { Test, TestingModule } from '@nestjs/testing';
@@ -83,7 +84,7 @@ const makeDebtor = (
 const makeCreateDto = (): CreateInvoiceDto => ({
   debtorId: 'debtor-id',
   amount: 5000,
-  dueDate: new Date('2026-06-01'),
+  dueDate: '2026-06-01',
   invoiceId: 'B12345678-F001-00001234-20260216-A9K3',
 });
 
@@ -292,7 +293,7 @@ describe('InvoiceService', () => {
       mockQueryBuilder.getOne.mockResolvedValue(null);
 
       await expect(service.findOne('missing-id', adminUser)).rejects.toThrow(
-        BadRequestException,
+        NotFoundException,
       );
     });
 
