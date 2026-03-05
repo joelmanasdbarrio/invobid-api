@@ -110,10 +110,10 @@ export class AuctionService {
       }
     } else {
       queryBuilder.andWhere(
-        '(sellerInvestor.id = :userId OR auction.status = :auctionPublishedStatus)',
+        '(sellerInvestor.id = :userId OR auction.status IN (:...publicStatuses))',
         {
           userId: user.id,
-          auctionPublishedStatus: AuctionStatus.PUBLISHED,
+          publicStatuses: [AuctionStatus.PUBLISHED, AuctionStatus.LIVE],
         },
       );
       if (query.includeDeleted && query.includeDeleted > 0) {
@@ -230,10 +230,10 @@ export class AuctionService {
 
     if (user.type !== UserType.ADMIN) {
       queryBuilder.andWhere(
-        '(sellerInvestor.id = :userId OR auction.status = :auctionPublishedStatus)',
+        '(sellerInvestor.id = :userId OR auction.status IN (:...publicStatuses))',
         {
           userId: user.id,
-          auctionPublishedStatus: AuctionStatus.PUBLISHED,
+          publicStatuses: [AuctionStatus.PUBLISHED, AuctionStatus.LIVE],
         },
       );
     }
@@ -259,11 +259,52 @@ export class AuctionService {
       );
     }
 
-    if (user.type !== UserType.ADMIN) {
+    if (user.type === UserType.ADMIN) {
+      if (updateAuctionDto.status !== undefined) {
+        if (updateAuctionDto.status === AuctionStatus.LIVE) {
+          throw new BadRequestException(
+            `Auction status cannot be set to live manually`,
+          );
+        }
+
+        if (
+          updateAuctionDto.status === AuctionStatus.PAUSED &&
+          auction.status !== AuctionStatus.LIVE
+        ) {
+          throw new BadRequestException(
+            `Auction can only be paused when it is live`,
+          );
+        }
+
+        if (
+          updateAuctionDto.status === AuctionStatus.PAUSED &&
+          auction.status === AuctionStatus.LIVE
+        ) {
+          auction.pausedAt = new Date();
+        }
+
+        if (
+          updateAuctionDto.status === AuctionStatus.PUBLISHED &&
+          auction.status === AuctionStatus.PAUSED
+        ) {
+          const pauseDurationMs = Date.now() - auction.pausedAt!.getTime();
+          auction.auctionDate.auctionDateEnd = new Date(
+            auction.auctionDate.auctionDateEnd.getTime() + pauseDurationMs,
+          );
+          auction.pausedAt = null;
+        }
+      }
+    } else {
       if (
-        auction.invoice.sellerInvestor.id !== user.id ||
+        auction.status === AuctionStatus.LIVE ||
         auction.status === AuctionStatus.PAUSED
       ) {
+        throw new ForbiddenException(
+          `You do not have permission to perform this action`,
+        );
+      }
+
+      if (auction.invoice.sellerInvestor.id !== user.id) {
         throw new ForbiddenException(
           `You do not have permission to perform this action`,
         );

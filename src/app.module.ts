@@ -1,5 +1,6 @@
 import { Module } from '@nestjs/common';
 import { ConfigModule } from '@nestjs/config';
+import { ScheduleModule } from '@nestjs/schedule';
 import { TypeOrmModule } from '@nestjs/typeorm';
 import { AuctionModule } from './app/auction/auction.module';
 import { BankAccountModule } from './app/bank-account/bank-account.module';
@@ -20,6 +21,7 @@ import { EnvConfigSchema } from './config/env.schema';
       load: [EnvConfiguration],
       validationSchema: EnvConfigSchema,
     }),
+    ScheduleModule.forRoot(),
     TypeOrmModule.forRoot({
       type: 'postgres',
       host: process.env.DB_HOST,
