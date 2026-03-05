@@ -61,6 +61,9 @@ export class SeedService {
       console.log('🔨 Seeding auctions...');
       const auctions = await this.seedAuctions(invoices);
 
+      console.log('🏆 Assigning buyers to finished auctions...');
+      await this.assignBuyersToFinishedInvoices(auctions, invoices, investors);
+
       console.log('💰 Seeding bids...');
       await this.seedBids(auctions, investors);
 
@@ -688,9 +691,7 @@ export class SeedService {
       (inv) => inv.investorType === InvestorType.COMPANY,
     );
 
-    const allInvestors = investors;
     let invoiceIndex = 0;
-
     // Build a map of verified debtors for each investor
     const verifiedDebtorsByInvestor = new Map<string, Debtor[]>();
     for (const debtor of debtors) {
@@ -742,19 +743,12 @@ export class SeedService {
         const debtor = sellerVerifiedDebtors[debtorIndex];
 
         let status: InvoiceStatus;
-        let buyerInvestor: Investor | undefined;
         let lastCommunication: string | undefined;
 
         if (invoiceIndex % 4 === 0) {
           status = InvoiceStatus.VERIFIED;
-          buyerInvestor =
-            allInvestors[(invoiceIndex * 3) % allInvestors.length];
         } else if (invoiceIndex % 4 === 1) {
           status = InvoiceStatus.PENDING;
-          if (invoiceIndex % 2 === 0) {
-            buyerInvestor =
-              allInvestors[(invoiceIndex * 5) % allInvestors.length];
-          }
         } else if (invoiceIndex % 4 === 2) {
           status = InvoiceStatus.CORRECTION;
           lastCommunication =
@@ -777,10 +771,6 @@ export class SeedService {
           rating: 4.0 + i * 0.3,
           invoiceId: uuidv4(),
         };
-
-        if (buyerInvestor) {
-          invoiceData.buyerInvestor = buyerInvestor;
-        }
 
         if (lastCommunication) {
           invoiceData.lastCommunication = lastCommunication;
@@ -830,42 +820,108 @@ export class SeedService {
 
   private async seedAuctions(invoices: Invoice[]): Promise<Auction[]> {
     const auctions: Auction[] = [];
+    const DAY_MS = 24 * 60 * 60 * 1000;
+    const now = new Date();
+
+    const statuses = [
+      AuctionStatus.PUBLISHED,
+      AuctionStatus.DRAFT,
+      AuctionStatus.FINISHED,
+      AuctionStatus.CANCELLED,
+      AuctionStatus.LIVE,
+      AuctionStatus.PAUSED,
+    ];
 
     for (let i = 0; i < invoices.length; i++) {
       const invoice = invoices[i];
+      const status = statuses[i % statuses.length];
 
-      const auctionDateStart = new Date();
-      auctionDateStart.setDate(auctionDateStart.getDate() - 5);
+      // Duration between 1 and 7 days
+      const durationMs = (1 + Math.floor(Math.random() * 7)) * DAY_MS;
 
-      const auctionDateEnd = new Date(invoice.dueDate);
+      let auctionDateStart: Date;
+      let auctionDateEnd: Date;
+      let endingPrice: number | undefined;
 
-      let status: AuctionStatus;
-      if (i % 5 === 0) {
-        status = AuctionStatus.PUBLISHED;
-      } else if (i % 5 === 1) {
-        status = AuctionStatus.DRAFT;
-      } else if (i % 5 === 2) {
-        status = AuctionStatus.FINISHED;
-      } else if (i % 5 === 3) {
-        status = AuctionStatus.CANCELLED;
-      } else {
-        status = AuctionStatus.PAUSED;
+      switch (status) {
+        case AuctionStatus.FINISHED:
+        case AuctionStatus.CANCELLED: {
+          // End already passed (1–23 days ago)
+          const endDaysAgo = 1 + Math.floor(Math.random() * 23);
+          auctionDateEnd = new Date(now.getTime() - endDaysAgo * DAY_MS);
+          auctionDateStart = new Date(auctionDateEnd.getTime() - durationMs);
+          if (status === AuctionStatus.FINISHED) {
+            const startingPrice =
+              invoice.amount * (1 - (Math.random() * 0.15 + 0.05));
+            endingPrice =
+              startingPrice + Math.random() * (invoice.amount - startingPrice);
+          }
+          break;
+        }
+        case AuctionStatus.LIVE:
+        case AuctionStatus.PAUSED: {
+          // Started in the past, ends in the future
+          const startDaysAgo = 1 + Math.floor(Math.random() * 5);
+          auctionDateStart = new Date(now.getTime() - startDaysAgo * DAY_MS);
+          auctionDateEnd = new Date(auctionDateStart.getTime() + durationMs);
+          if (auctionDateEnd <= now) {
+            auctionDateEnd = new Date(now.getTime() + DAY_MS);
+          }
+          break;
+        }
+        default: {
+          // PUBLISHED / DRAFT — starts in the future (1–30 days from now)
+          const startDaysAhead = 1 + Math.floor(Math.random() * 30);
+          auctionDateStart = new Date(now.getTime() + startDaysAhead * DAY_MS);
+          auctionDateEnd = new Date(auctionDateStart.getTime() + durationMs);
+          break;
+        }
       }
 
+      // Never exceed the invoice due date
+      if (auctionDateEnd >= invoice.dueDate) {
+        auctionDateEnd = new Date(invoice.dueDate.getTime() - DAY_MS);
+      }
+
+      const startingPrice =
+        invoice.amount * (1 - (Math.random() * 0.15 + 0.05));
+
       const auction = this.auctionRepository.create({
-        invoice: invoice,
-        startingPrice: invoice.amount * (1 - (Math.random() * 0.15 + 0.05)),
-        auctionDate: {
-          auctionDateStart,
-          auctionDateEnd,
-        },
-        status: status,
+        invoice,
+        startingPrice,
+        endingPrice,
+        auctionDate: { auctionDateStart, auctionDateEnd },
+        status,
       });
 
       auctions.push(auction);
     }
 
     return await this.auctionRepository.save(auctions);
+  }
+
+  private async assignBuyersToFinishedInvoices(
+    auctions: Auction[],
+    invoices: Invoice[],
+    investors: Investor[],
+  ): Promise<void> {
+    const invoiceSellerMap = new Map(
+      invoices.map((inv) => [inv.id, inv.sellerInvestor?.id]),
+    );
+
+    const finishedAuctions = auctions.filter(
+      (a) => a.status === AuctionStatus.FINISHED,
+    );
+
+    for (let i = 0; i < finishedAuctions.length; i++) {
+      const auction = finishedAuctions[i];
+      const sellerId = invoiceSellerMap.get(auction.invoice.id);
+      const availableBuyers = investors.filter((inv) => inv.id !== sellerId);
+      const buyer = availableBuyers[i % availableBuyers.length];
+      await this.invoiceRepository.update(auction.invoice.id, {
+        buyerInvestor: { id: buyer.id },
+      });
+    }
   }
 
   private async seedBids(

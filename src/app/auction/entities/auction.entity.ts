@@ -59,6 +59,9 @@ export class Auction {
   })
   lastCommunication: string;
 
+  @Column('timestamptz', { nullable: true })
+  pausedAt: Date | null;
+
   @OneToMany(() => Bid, (bid) => bid.auction, {
     cascade: true,
     eager: true,
