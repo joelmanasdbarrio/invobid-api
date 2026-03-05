@@ -10,7 +10,7 @@ import {
   PrimaryGeneratedColumn,
   UpdateDateColumn,
 } from 'typeorm';
-import { AuctionStatus } from '../enum/auction-status.enum';
+import { AuctionStatus } from '../enums/auction-status.enum';
 
 class AuctionDate {
   @Column('timestamptz', { nullable: true })
