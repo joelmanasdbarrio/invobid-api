@@ -1,6 +1,6 @@
 import { PartialType } from '@nestjs/mapped-types';
 import { IsIn, IsOptional, IsString } from 'class-validator';
-import { AuctionStatus } from '../enum/auction-status.enum';
+import { AuctionStatus } from '../enums/auction-status.enum';
 import { CreateAuctionDto } from './create-auction.dto';
 
 export class UpdateAuctionDto extends PartialType(CreateAuctionDto) {

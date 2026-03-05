@@ -10,7 +10,7 @@ import {
   Min,
 } from 'class-validator';
 import { PaginationDto } from 'src/dto/pagination.dto';
-import { AuctionStatus } from '../enum/auction-status.enum';
+import { AuctionStatus } from '../enums/auction-status.enum';
 
 export class GetAuctionsDto extends PaginationDto {
   @IsUUID()

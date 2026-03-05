@@ -3,7 +3,7 @@ import { Cron, CronExpression } from '@nestjs/schedule';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import { Auction } from './entities/auction.entity';
-import { AuctionStatus } from './enum/auction-status.enum';
+import { AuctionStatus } from './enums/auction-status.enum';
 
 @Injectable()
 export class AuctionSchedulerService {

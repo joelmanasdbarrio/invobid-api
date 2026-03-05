@@ -16,7 +16,7 @@ import { CreateAuctionDto } from './dto/create-auction.dto';
 import { GetAuctionsDto } from './dto/get-auctions.dto';
 import { UpdateAuctionDto } from './dto/update-auction.dto';
 import { Auction } from './entities/auction.entity';
-import { AuctionStatus } from './enum/auction-status.enum';
+import { AuctionStatus } from './enums/auction-status.enum';
 
 const toUTCDate = (val: string | Date): Date => {
   const str = val instanceof Date ? val.toISOString().slice(0, 10) : val;

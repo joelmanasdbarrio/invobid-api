@@ -2,7 +2,7 @@ import { Injectable } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import * as bcrypt from 'bcrypt';
 import { Auction } from 'src/app/auction/entities/auction.entity';
-import { AuctionStatus } from 'src/app/auction/enum/auction-status.enum';
+import { AuctionStatus } from 'src/app/auction/enums/auction-status.enum';
 import { BankAccount } from 'src/app/bank-account/entities/bank-account.entity';
 import { Bid } from 'src/app/bid/entities/bid.entity';
 import { Debtor } from 'src/app/debtor/entities/debtor.entity';
