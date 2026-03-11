@@ -1,10 +1,4 @@
-import {
-  IsDate,
-  IsNumber,
-  IsOptional,
-  IsPositive,
-  IsUUID,
-} from 'class-validator';
+import { IsDateString, IsNumber, IsPositive, IsUUID } from 'class-validator';
 
 export class CreateAuctionDto {
   @IsUUID()
@@ -12,13 +6,11 @@ export class CreateAuctionDto {
 
   @IsNumber()
   @IsPositive()
-  discountRate: number;
+  startingPrice: number;
 
-  @IsDate()
-  @IsOptional()
-  auctionDate?: Date;
+  @IsDateString()
+  auctionDateStart: string;
 
-  @IsDate()
-  @IsOptional()
-  dueDate?: Date;
+  @IsDateString()
+  auctionDateEnd: string;
 }

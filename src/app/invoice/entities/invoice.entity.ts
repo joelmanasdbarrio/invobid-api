@@ -1,6 +1,7 @@
 import { Auction } from 'src/app/auction/entities/auction.entity';
 import { Debtor } from 'src/app/debtor/entities/debtor.entity';
 import { Document } from 'src/app/document/entities/document.entity';
+import { Currency } from 'src/app/invoice/enums/currency.enum';
 import { InvoiceStatus } from 'src/app/invoice/enums/invoice-status.enum';
 import { Investor } from 'src/app/user/investor/entities/investor.entity';
 import {
@@ -26,6 +27,9 @@ class TransactionFee {
 export class Invoice {
   @PrimaryGeneratedColumn('uuid')
   id: string;
+
+  @Column('text', { unique: true })
+  invoiceId: string;
 
   @ManyToOne(() => Investor, (investor) => investor.listedInvoices, {
     onDelete: 'CASCADE',
@@ -68,10 +72,13 @@ export class Invoice {
 
   @Column('decimal', {
     precision: 15,
-    scale: 3,
+    scale: 2,
     nullable: false,
   })
   amount: number;
+
+  @Column('enum', { enum: Currency, default: Currency.EUR })
+  currency: Currency;
 
   @Column('date', { nullable: false })
   dueDate: Date;
@@ -86,12 +93,12 @@ export class Invoice {
   })
   rating: number;
 
-  @CreateDateColumn()
+  @CreateDateColumn({ type: 'timestamptz' })
   createdAt: Date;
 
-  @UpdateDateColumn()
+  @UpdateDateColumn({ type: 'timestamptz' })
   updatedAt: Date;
 
-  @DeleteDateColumn()
+  @DeleteDateColumn({ type: 'timestamptz' })
   deletedAt: Date;
 }

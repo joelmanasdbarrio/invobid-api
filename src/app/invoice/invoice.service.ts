@@ -3,6 +3,7 @@ import {
   ForbiddenException,
   Injectable,
   InternalServerErrorException,
+  NotFoundException,
   UnauthorizedException,
 } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
@@ -50,6 +51,17 @@ export class InvoiceService {
     ) {
       throw new BadRequestException(
         `Debtor with id '${debtor.id}' is not verified and/or does not belong to the user`,
+      );
+    }
+
+    const minDueDate = new Date();
+    minDueDate.setUTCHours(0, 0, 0, 0);
+    minDueDate.setUTCMonth(minDueDate.getUTCMonth() + 1);
+    minDueDate.setUTCDate(minDueDate.getUTCDate() + 7);
+
+    if (new Date(createInvoiceDto.dueDate) < minDueDate) {
+      throw new BadRequestException(
+        `Due date must be at least 5 weeks from today`,
       );
     }
 
@@ -132,6 +144,12 @@ export class InvoiceService {
           },
         );
       }
+    }
+
+    if (query.invoiceId) {
+      queryBuilder.andWhere('invoice.invoiceId ILIKE :invoiceId', {
+        invoiceId: `%${query.invoiceId}%`,
+      });
     }
 
     if (query.sellerInvestorId) {
@@ -240,11 +258,13 @@ export class InvoiceService {
   async findOne(id: string, user: User) {
     const queryBuilder = this.invoiceRepository.createQueryBuilder('invoice');
 
-    queryBuilder.leftJoinAndSelect('invoice.sellerInvestor', 'sellerInvestor');
-    queryBuilder.leftJoinAndSelect('invoice.buyerInvestor', 'buyerInvestor');
-    queryBuilder.leftJoinAndSelect('invoice.auctions', 'auctions');
-    queryBuilder.leftJoinAndSelect('invoice.debtor', 'debtor');
-    queryBuilder.where('invoice.id = :id', { id });
+    queryBuilder
+      .leftJoinAndSelect('invoice.sellerInvestor', 'sellerInvestor')
+      .leftJoinAndSelect('invoice.buyerInvestor', 'buyerInvestor')
+      .leftJoinAndSelect('invoice.auctions', 'auctions')
+      .leftJoinAndSelect('invoice.debtor', 'debtor')
+      .where('invoice.id = :id', { id })
+      .withDeleted();
 
     if (user.type !== UserType.ADMIN) {
       queryBuilder.andWhere(
@@ -271,7 +291,7 @@ export class InvoiceService {
     const invoice = await queryBuilder.getOne();
 
     if (!invoice) {
-      throw new BadRequestException(`Invoice with id '${id}' not found`);
+      throw new NotFoundException(`Invoice with id '${id}' not found`);
     }
 
     return invoice;
@@ -284,6 +304,12 @@ export class InvoiceService {
     user: User,
   ) {
     const invoice = await this.findOne(id, user);
+
+    if (invoice.buyerInvestor && invoice.buyerInvestor.id !== null) {
+      throw new BadRequestException(
+        `Invoice with id ${id} can no longer be updated`,
+      );
+    }
 
     if (invoice.sellerInvestor.id !== user.id && user.type !== UserType.ADMIN) {
       throw new ForbiddenException(
@@ -327,7 +353,7 @@ export class InvoiceService {
         document = await this.documentService.create(
           {
             title: `${user.name}'s updated invoice document`,
-            value: invoice.debtor.taxId,
+            value: updateInvoiceDto.invoiceId || invoice.invoiceId,
             type: DocumentType.INVOICE,
           },
           file,
@@ -355,6 +381,12 @@ export class InvoiceService {
 
   async remove(id: string, user: User, useSoft = true) {
     const invoice = await this.findOne(id, user);
+
+    if (invoice.buyerInvestor && invoice.buyerInvestor.id !== null) {
+      throw new BadRequestException(
+        `Invoice with id ${id} can no longer be updated`,
+      );
+    }
 
     if (invoice.sellerInvestor.id !== user.id) {
       throw new ForbiddenException(

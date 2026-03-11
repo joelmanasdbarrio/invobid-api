@@ -44,7 +44,7 @@ export class AdminController {
   ) {
     const admin = await this.adminService.update(id, updateAdminDto);
 
-    delete admin.password;
+    delete (admin as Partial<typeof admin>).password;
 
     return {
       status: 'success',

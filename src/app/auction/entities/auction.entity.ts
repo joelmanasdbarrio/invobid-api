@@ -10,7 +10,15 @@ import {
   PrimaryGeneratedColumn,
   UpdateDateColumn,
 } from 'typeorm';
-import { AuctionStatus } from '../enum/auction-status.enum';
+import { AuctionStatus } from '../enums/auction-status.enum';
+
+class AuctionDate {
+  @Column('timestamptz', { nullable: true })
+  auctionDateStart: Date;
+
+  @Column('timestamptz', { nullable: true })
+  auctionDateEnd: Date;
+}
 
 @Entity('auctions')
 export class Auction {
@@ -23,20 +31,36 @@ export class Auction {
   })
   invoice: Invoice;
 
-  @Column('decimal', { precision: 5, scale: 2, nullable: false })
-  discountRate: number;
+  @Column('decimal', {
+    precision: 15,
+    scale: 2,
+    nullable: false,
+  })
+  startingPrice: number;
 
-  @Column('date', { nullable: true })
-  auctionDate?: Date | null;
+  @Column('decimal', {
+    precision: 15,
+    scale: 2,
+    nullable: true,
+  })
+  endingPrice: number;
 
-  @Column('date', { nullable: true })
-  dueDate?: Date | null;
+  @Column(() => AuctionDate)
+  auctionDate: AuctionDate;
 
   @Column('enum', {
     enum: AuctionStatus,
-    default: AuctionStatus.PENDING,
+    default: AuctionStatus.DRAFT,
   })
   status: AuctionStatus;
+
+  @Column('text', {
+    nullable: true,
+  })
+  lastCommunication: string;
+
+  @Column('timestamptz', { nullable: true })
+  pausedAt: Date | null;
 
   @OneToMany(() => Bid, (bid) => bid.auction, {
     cascade: true,
@@ -44,12 +68,12 @@ export class Auction {
   })
   bids: Bid[];
 
-  @CreateDateColumn({ select: false })
+  @CreateDateColumn({ type: 'timestamptz' })
   createdAt: Date;
 
-  @UpdateDateColumn({ select: false })
+  @UpdateDateColumn({ type: 'timestamptz' })
   updatedAt: Date;
 
-  @DeleteDateColumn({ select: false })
+  @DeleteDateColumn({ nullable: true, type: 'timestamptz' })
   deletedAt: Date;
 }

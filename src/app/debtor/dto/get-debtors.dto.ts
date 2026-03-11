@@ -5,7 +5,6 @@ import {
   IsOptional,
   IsPhoneNumber,
   IsString,
-  IsUUID,
   Max,
   Min,
 } from 'class-validator';
@@ -31,7 +30,7 @@ export class GetDebtorsDto extends PaginationDto {
   taxId?: string;
 
   @IsOptional()
-  @IsUUID()
+  @IsString()
   investorId?: string;
 
   @IsOptional()

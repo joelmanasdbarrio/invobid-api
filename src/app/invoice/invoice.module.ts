@@ -12,5 +12,6 @@ import { InvoiceService } from './invoice.service';
   imports: [TypeOrmModule.forFeature([Invoice]), DocumentModule, DebtorModule],
   controllers: [InvoiceController, InvoiceLookupController],
   providers: [InvoiceService, InvoiceLookupService],
+  exports: [InvoiceService],
 })
 export class InvoiceModule {}

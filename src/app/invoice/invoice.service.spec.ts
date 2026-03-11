@@ -2,6 +2,7 @@ import {
   BadRequestException,
   ForbiddenException,
   InternalServerErrorException,
+  NotFoundException,
   UnauthorizedException,
 } from '@nestjs/common';
 import { Test, TestingModule } from '@nestjs/testing';
@@ -83,7 +84,7 @@ const makeDebtor = (
 const makeCreateDto = (): CreateInvoiceDto => ({
   debtorId: 'debtor-id',
   amount: 5000,
-  dueDate: new Date('2026-06-01'),
+  dueDate: '2026-06-01',
   invoiceId: 'B12345678-F001-00001234-20260216-A9K3',
 });
 
@@ -292,7 +293,7 @@ describe('InvoiceService', () => {
       mockQueryBuilder.getOne.mockResolvedValue(null);
 
       await expect(service.findOne('missing-id', adminUser)).rejects.toThrow(
-        BadRequestException,
+        NotFoundException,
       );
     });
 
@@ -550,6 +551,85 @@ describe('InvoiceService', () => {
       await service.remove(invoice.id, sellerUser, false);
 
       expect(mockInvoiceRepository.delete).toHaveBeenCalledWith(invoice.id);
+    });
+  });
+
+  describe('dueDate — date pipeline', () => {
+    const sellerUser = {
+      id: 'seller-id',
+      name: 'Seller',
+      type: UserType.INVESTOR,
+    } as unknown as Investor;
+
+    it('persists dueDate as a "yyyy-MM-dd" string (no time/timezone component)', async () => {
+      const debtor = makeDebtor();
+      const invoice = makeInvoice({ id: 'new-invoice-id' });
+      const document = { id: 'doc-id', filename: 'file.pdf' };
+
+      mockDebtorService.findOne.mockResolvedValue(debtor);
+      mockDocumentService.create.mockResolvedValue(document);
+      mockInvoiceRepository.save
+        .mockResolvedValueOnce(invoice)
+        .mockResolvedValueOnce({ ...invoice, documents: [document] });
+
+      const dto = makeCreateDto(); // dueDate: "2026-06-01"
+      await service.create(dto, mockFile, sellerUser);
+
+      // The first save call receives the raw DTO values — dueDate must be
+      // passed through as-is (a plain "yyyy-MM-dd" string, no conversion)
+      const savedPayload = (
+        mockInvoiceRepository.save.mock.calls[0] as unknown[]
+      )[0] as Record<string, unknown>;
+      expect(savedPayload.dueDate).toBe('2026-06-01');
+    });
+
+    it('dueDate value from DTO is not converted to a Date object before saving', async () => {
+      const debtor = makeDebtor();
+      const invoice = makeInvoice({ id: 'new-invoice-id' });
+      const document = { id: 'doc-id', filename: 'file.pdf' };
+
+      mockDebtorService.findOne.mockResolvedValue(debtor);
+      mockDocumentService.create.mockResolvedValue(document);
+      mockInvoiceRepository.save
+        .mockResolvedValueOnce(invoice)
+        .mockResolvedValueOnce({ ...invoice, documents: [document] });
+
+      await service.create(makeCreateDto(), mockFile, sellerUser);
+
+      const savedPayload = (
+        mockInvoiceRepository.save.mock.calls[0] as unknown[]
+      )[0] as Record<string, unknown>;
+      // Must be a string, not a Date object — TypeORM handles DATE columns
+      // by accepting plain date strings and storing them without timezone conversion
+      expect(typeof savedPayload.dueDate).toBe('string');
+    });
+
+    it('passes dueDateFrom filter string directly to query builder without conversion', async () => {
+      const adminUser_ = { id: 'admin-id', type: UserType.ADMIN } as User;
+
+      await service.findAll(
+        { page: 1, limit: 10, dueDateFrom: '2026-04-01' } as GetInvoicesDto,
+        adminUser_,
+      );
+
+      expect(mockQueryBuilder.andWhere).toHaveBeenCalledWith(
+        expect.stringContaining('dueDate >= :dueDateFrom'),
+        expect.objectContaining({ dueDateFrom: '2026-04-01' }),
+      );
+    });
+
+    it('passes dueDateTo filter string directly to query builder without conversion', async () => {
+      const adminUser_ = { id: 'admin-id', type: UserType.ADMIN } as User;
+
+      await service.findAll(
+        { page: 1, limit: 10, dueDateTo: '2026-06-30' } as GetInvoicesDto,
+        adminUser_,
+      );
+
+      expect(mockQueryBuilder.andWhere).toHaveBeenCalledWith(
+        expect.stringContaining('dueDate <= :dueDateTo'),
+        expect.objectContaining({ dueDateTo: '2026-06-30' }),
+      );
     });
   });
 });

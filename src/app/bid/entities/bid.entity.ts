@@ -29,9 +29,9 @@ export class Bid {
   @Column('decimal', { precision: 10, scale: 2, nullable: false })
   amount: number;
 
-  @CreateDateColumn({ select: false })
+  @CreateDateColumn({ select: false, type: 'timestamptz' })
   createdAt: Date;
 
-  @DeleteDateColumn({ select: false })
+  @DeleteDateColumn({ select: false, type: 'timestamptz' })
   deletedAt: Date;
 }

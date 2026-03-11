@@ -5,7 +5,6 @@ import {
   IsOptional,
   IsPositive,
   IsString,
-  IsUUID,
   Max,
   Min,
 } from 'class-validator';
@@ -13,7 +12,11 @@ import { InvoiceStatus } from 'src/app/invoice/enums/invoice-status.enum';
 import { PaginationDto } from 'src/dto/pagination.dto';
 
 export class GetInvoicesDto extends PaginationDto {
-  @IsUUID()
+  @IsString()
+  @IsOptional()
+  invoiceId?: string;
+
+  @IsString()
   @IsOptional()
   sellerInvestorId?: string;
 
@@ -21,7 +24,7 @@ export class GetInvoicesDto extends PaginationDto {
   @IsOptional()
   sellerCompanyName?: string;
 
-  @IsUUID()
+  @IsString()
   @IsOptional()
   buyerInvestorId?: string;
 
@@ -29,7 +32,7 @@ export class GetInvoicesDto extends PaginationDto {
   @IsOptional()
   buyerCompanyName?: string;
 
-  @IsUUID()
+  @IsString()
   @IsOptional()
   debtorId?: string;
 
