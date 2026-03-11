@@ -54,6 +54,17 @@ export class InvoiceService {
       );
     }
 
+    const minDueDate = new Date();
+    minDueDate.setUTCHours(0, 0, 0, 0);
+    minDueDate.setUTCMonth(minDueDate.getUTCMonth() + 1);
+    minDueDate.setUTCDate(minDueDate.getUTCDate() + 7);
+
+    if (new Date(createInvoiceDto.dueDate) < minDueDate) {
+      throw new BadRequestException(
+        `Due date must be at least 5 weeks from today`,
+      );
+    }
+
     const buyerPercentage: number = parseFloat(
       String(process.env.BUYER_TRANSFER_FEE_PERCENTAGE),
     );
@@ -133,6 +144,12 @@ export class InvoiceService {
           },
         );
       }
+    }
+
+    if (query.invoiceId) {
+      queryBuilder.andWhere('invoice.invoiceId ILIKE :invoiceId', {
+        invoiceId: `%${query.invoiceId}%`,
+      });
     }
 
     if (query.sellerInvestorId) {
@@ -288,7 +305,7 @@ export class InvoiceService {
   ) {
     const invoice = await this.findOne(id, user);
 
-    if (invoice.buyerInvestor.id !== null) {
+    if (invoice.buyerInvestor && invoice.buyerInvestor.id !== null) {
       throw new BadRequestException(
         `Invoice with id ${id} can no longer be updated`,
       );
@@ -365,7 +382,7 @@ export class InvoiceService {
   async remove(id: string, user: User, useSoft = true) {
     const invoice = await this.findOne(id, user);
 
-    if (invoice.buyerInvestor.id !== null) {
+    if (invoice.buyerInvestor && invoice.buyerInvestor.id !== null) {
       throw new BadRequestException(
         `Invoice with id ${id} can no longer be updated`,
       );

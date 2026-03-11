@@ -72,7 +72,7 @@ export class Invoice {
 
   @Column('decimal', {
     precision: 15,
-    scale: 3,
+    scale: 2,
     nullable: false,
   })
   amount: number;
