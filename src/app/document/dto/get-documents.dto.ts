@@ -1,4 +1,4 @@
-import { IsIn, IsOptional, IsString, IsUUID } from 'class-validator';
+import { IsIn, IsOptional, IsString } from 'class-validator';
 import { DocumentType } from 'src/app/document/enums/document-type.enum';
 import { PaginationDto } from 'src/dto/pagination.dto';
 
@@ -19,15 +19,15 @@ export class GetDocumentsDto extends PaginationDto {
   @IsOptional()
   type?: DocumentType;
 
-  @IsUUID()
+  @IsString()
   @IsOptional()
   investorId?: string;
 
-  @IsUUID()
+  @IsString()
   @IsOptional()
   debtorId?: string;
 
-  @IsUUID()
+  @IsString()
   @IsOptional()
   invoiceId?: string;
 }

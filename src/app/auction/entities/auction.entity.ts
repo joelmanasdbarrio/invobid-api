@@ -33,14 +33,14 @@ export class Auction {
 
   @Column('decimal', {
     precision: 15,
-    scale: 3,
+    scale: 2,
     nullable: false,
   })
   startingPrice: number;
 
   @Column('decimal', {
     precision: 15,
-    scale: 3,
+    scale: 2,
     nullable: true,
   })
   endingPrice: number;

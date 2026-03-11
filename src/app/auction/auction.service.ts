@@ -51,10 +51,14 @@ export class AuctionService {
     const today = new Date();
     today.setUTCHours(0, 0, 0, 0);
 
+    const dueDateUTC = toUTCDate(invoice.dueDate);
+    const oneMonthBeforeDue = new Date(dueDateUTC);
+    oneMonthBeforeDue.setUTCMonth(oneMonthBeforeDue.getUTCMonth() - 1);
+
     if (
       endDate <= startDate ||
       startDate <= today ||
-      endDate >= toUTCDate(invoice.dueDate)
+      endDate > oneMonthBeforeDue
     ) {
       throw new BadRequestException(`Auction dates are not valid`);
     }
@@ -317,6 +321,33 @@ export class AuctionService {
         throw new BadRequestException(
           `Auction with id ${id} has already started and cannot be updated`,
         );
+      }
+
+      if (
+        updateAuctionDto.auctionDateStart !== undefined ||
+        updateAuctionDto.auctionDateEnd !== undefined
+      ) {
+        const startDate = toUTCDate(
+          updateAuctionDto.auctionDateStart ??
+            auction.auctionDate.auctionDateStart,
+        );
+        const endDate = toUTCDate(
+          updateAuctionDto.auctionDateEnd ?? auction.auctionDate.auctionDateEnd,
+        );
+        const today = new Date();
+        today.setUTCHours(0, 0, 0, 0);
+
+        const dueDateUTC = toUTCDate(auction.invoice.dueDate);
+        const oneMonthBeforeDue = new Date(dueDateUTC);
+        oneMonthBeforeDue.setUTCMonth(oneMonthBeforeDue.getUTCMonth() - 1);
+
+        if (
+          endDate <= startDate ||
+          startDate <= today ||
+          endDate > oneMonthBeforeDue
+        ) {
+          throw new BadRequestException(`Auction dates are not valid`);
+        }
       }
 
       if (
