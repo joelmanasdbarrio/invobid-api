@@ -50,6 +50,16 @@ export class GetAuctionsDto extends PaginationDto {
   @IsOptional()
   minAmount?: number;
 
+  @IsNumber()
+  @IsPositive()
+  @IsOptional()
+  minDiscount?: number;
+
+  @IsNumber()
+  @IsPositive()
+  @IsOptional()
+  minProfitability?: number;
+
   @IsDateString()
   @IsOptional()
   auctionDateStart?: string;
@@ -57,6 +67,11 @@ export class GetAuctionsDto extends PaginationDto {
   @IsDateString()
   @IsOptional()
   auctionDateEnd?: string;
+
+  @IsNumber()
+  @IsPositive()
+  @IsOptional()
+  minRating?: number;
 
   @IsIn(Object.values(AuctionStatus))
   @IsOptional()
@@ -67,4 +82,10 @@ export class GetAuctionsDto extends PaginationDto {
   @Min(0)
   @Max(1)
   includeDeleted?: number;
+
+  @IsOptional()
+  @IsNumber()
+  @Min(0)
+  @Max(1)
+  includeSelf?: number;
 }

@@ -12,6 +12,7 @@ import { InvoiceService } from '../invoice/invoice.service';
 import { User } from '../user/common/entities/user.entity';
 import { UserType } from '../user/common/enums/user-type.enum';
 import { Investor } from '../user/investor/entities/investor.entity';
+import { computeDiscount, computeProfitability } from './auction-metrics.util';
 import { CreateAuctionDto } from './dto/create-auction.dto';
 import { GetAuctionsDto } from './dto/get-auctions.dto';
 import { UpdateAuctionDto } from './dto/update-auction.dto';
@@ -85,6 +86,11 @@ export class AuctionService {
           auctionDateStart: createAuctionDto.auctionDateStart,
           auctionDateEnd: createAuctionDto.auctionDateEnd,
         },
+        ...this.computeMetrics(
+          invoice.amount,
+          invoice.transactionFee.buyerPercentage,
+          createAuctionDto.startingPrice,
+        ),
       });
 
       return await this.auctionRepository.save(auction);
@@ -116,8 +122,12 @@ export class AuctionService {
       queryBuilder.andWhere(
         '(sellerInvestor.id = :userId OR auction.status IN (:...publicStatuses))',
         {
-          userId: user.id,
-          publicStatuses: [AuctionStatus.PUBLISHED, AuctionStatus.LIVE],
+          userId: query.includeSelf && query.includeSelf > 0 ? user.id : null,
+          publicStatuses: [
+            AuctionStatus.PUBLISHED,
+            AuctionStatus.PAUSED,
+            AuctionStatus.LIVE,
+          ],
         },
       );
       if (query.includeDeleted && query.includeDeleted > 0) {
@@ -174,14 +184,26 @@ export class AuctionService {
     }
 
     if (query.maxAmount) {
-      queryBuilder.andWhere('invoice.amount <= :maxAmount', {
+      queryBuilder.andWhere('auction.startingPrice <= :maxAmount', {
         maxAmount: query.maxAmount,
       });
     }
 
     if (query.minAmount) {
-      queryBuilder.andWhere('invoice.amount >= :minAmount', {
+      queryBuilder.andWhere('auction.startingPrice >= :minAmount', {
         minAmount: query.minAmount,
+      });
+    }
+
+    if (query.minDiscount) {
+      queryBuilder.andWhere('auction.discount >= :minDiscount', {
+        minDiscount: query.minDiscount,
+      });
+    }
+
+    if (query.minProfitability) {
+      queryBuilder.andWhere('auction.profitability >= :minProfitability', {
+        minProfitability: query.minProfitability,
       });
     }
 
@@ -194,6 +216,12 @@ export class AuctionService {
     if (query.auctionDateEnd) {
       queryBuilder.andWhere('auction.auctionDateEnd <= :auctionDateEnd', {
         auctionDateEnd: query.auctionDateEnd,
+      });
+    }
+
+    if (query.minRating) {
+      queryBuilder.andWhere('invoice.rating >= :rating', {
+        rating: query.minRating,
       });
     }
 
@@ -237,7 +265,11 @@ export class AuctionService {
         '(sellerInvestor.id = :userId OR auction.status IN (:...publicStatuses))',
         {
           userId: user.id,
-          publicStatuses: [AuctionStatus.PUBLISHED, AuctionStatus.LIVE],
+          publicStatuses: [
+            AuctionStatus.PUBLISHED,
+            AuctionStatus.LIVE,
+            AuctionStatus.PAUSED,
+          ],
         },
       );
     }
@@ -361,6 +393,14 @@ export class AuctionService {
     }
 
     Object.assign(auction, updateAuctionDto.removeUndefined());
+    Object.assign(
+      auction,
+      this.computeMetrics(
+        auction.invoice.amount,
+        auction.invoice.transactionFee.buyerPercentage,
+        auction.startingPrice,
+      ),
+    );
     return await this.auctionRepository.save(auction);
   }
 
@@ -381,5 +421,20 @@ export class AuctionService {
     } else {
       await this.auctionRepository.delete(auction.id);
     }
+  }
+
+  private computeMetrics(
+    invoiceAmount: number,
+    buyerPercentage: number,
+    startingPrice: number,
+  ): { discount: number; profitability: number } {
+    return {
+      discount: computeDiscount(invoiceAmount, startingPrice),
+      profitability: computeProfitability(
+        invoiceAmount,
+        buyerPercentage,
+        startingPrice,
+      ),
+    };
   }
 }
