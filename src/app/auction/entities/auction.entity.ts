@@ -45,6 +45,20 @@ export class Auction {
   })
   endingPrice: number;
 
+  @Column('decimal', {
+    precision: 8,
+    scale: 4,
+    nullable: false,
+  })
+  discount: number;
+
+  @Column('decimal', {
+    precision: 8,
+    scale: 4,
+    nullable: false,
+  })
+  profitability: number;
+
   @Column(() => AuctionDate)
   auctionDate: AuctionDate;
 
@@ -59,14 +73,14 @@ export class Auction {
   })
   lastCommunication: string;
 
-  @Column('timestamptz', { nullable: true })
-  pausedAt: Date | null;
-
   @OneToMany(() => Bid, (bid) => bid.auction, {
     cascade: true,
     eager: true,
   })
   bids: Bid[];
+
+  @Column('timestamptz', { nullable: true })
+  pausedAt: Date | null;
 
   @CreateDateColumn({ type: 'timestamptz' })
   createdAt: Date;

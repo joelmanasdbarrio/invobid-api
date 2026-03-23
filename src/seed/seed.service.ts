@@ -1,6 +1,10 @@
 import { Injectable } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import * as bcrypt from 'bcrypt';
+import {
+  computeDiscount,
+  computeProfitability,
+} from 'src/app/auction/auction-metrics.util';
 import { Auction } from 'src/app/auction/entities/auction.entity';
 import { AuctionStatus } from 'src/app/auction/enums/auction-status.enum';
 import { BankAccount } from 'src/app/bank-account/entities/bank-account.entity';
@@ -761,7 +765,7 @@ export class SeedService {
         const invoiceData: Partial<Invoice> = {
           sellerInvestor: seller,
           debtor: debtor,
-          amount: 500000 + Math.random() * 4500000,
+          amount: 10000 + Math.random() * 90000,
           dueDate: dueDate,
           status: status,
           transactionFee: {
@@ -842,6 +846,7 @@ export class SeedService {
       let auctionDateStart: Date;
       let auctionDateEnd: Date;
       let endingPrice: number | undefined;
+      let pausedAt: Date | undefined;
 
       switch (status) {
         case AuctionStatus.FINISHED:
@@ -867,6 +872,12 @@ export class SeedService {
           if (auctionDateEnd <= now) {
             auctionDateEnd = new Date(now.getTime() + DAY_MS);
           }
+          if (status === AuctionStatus.PAUSED) {
+            // Paused sometime after start, before now
+            const pauseOffsetMs =
+              Math.random() * (now.getTime() - auctionDateStart.getTime());
+            pausedAt = new Date(auctionDateStart.getTime() + pauseOffsetMs);
+          }
           break;
         }
         default: {
@@ -886,12 +897,22 @@ export class SeedService {
       const startingPrice =
         invoice.amount * (1 - (Math.random() * 0.15 + 0.05));
 
+      const discount = computeDiscount(invoice.amount, startingPrice);
+      const profitability = computeProfitability(
+        invoice.amount,
+        invoice.transactionFee.buyerPercentage,
+        startingPrice,
+      );
+
       const auction = this.auctionRepository.create({
         invoice,
         startingPrice,
         endingPrice,
+        discount,
+        profitability,
         auctionDate: { auctionDateStart, auctionDateEnd },
         status,
+        pausedAt,
       });
 
       auctions.push(auction);
@@ -936,21 +957,35 @@ export class SeedService {
     );
 
     for (const auction of auctions) {
+      // Each bid steps up from startingPrice toward invoice.amount,
+      // progressively closing the discount/profitability gap
+      const spread = auction.invoice.amount - auction.startingPrice;
+      const step = spread / 6; // divide gap into 6 steps, use steps 1–5
+
       for (let i = 1; i <= 5; i++) {
         const investor = buyerInvestors[i % buyerInvestors.length];
+        // Add slight random noise (±5% of step) to avoid perfectly linear bids
+        const noise = step * (Math.random() * 0.1 - 0.05);
 
+        const amount = auction.startingPrice + step * i + noise;
         const bid = this.bidRepository.create({
           auction: auction,
           investor: investor,
-          amount:
-            auction.startingPrice * 1.05 +
-            Math.random() * auction.startingPrice * 0.5,
+          amount,
+          discount: computeDiscount(auction.invoice.amount, amount),
+          profitability: computeProfitability(
+            auction.invoice.amount,
+            auction.invoice.transactionFee.buyerPercentage,
+            amount,
+          ),
         });
 
-        bids.push(bid);
+        // Save individually so each bid gets a distinct createdAt timestamp,
+        // ensuring chronological order reflects ascending bid amounts.
+        bids.push(await this.bidRepository.save(bid));
       }
     }
 
-    return await this.bidRepository.save(bids);
+    return bids;
   }
 }
