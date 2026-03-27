@@ -20,6 +20,11 @@ export class UpdateInvoiceDto extends PartialType(CreateInvoiceDto) {
   @IsOptional()
   rating?: number;
 
+  @IsNumber()
+  @IsPositive()
+  @IsOptional()
+  extRating?: number;
+
   @IsOptional()
   @IsIn(Object.values(InvoiceStatus))
   status?: InvoiceStatus;

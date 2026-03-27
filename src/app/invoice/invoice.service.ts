@@ -88,7 +88,7 @@ export class InvoiceService {
       document = await this.documentService.create(
         {
           title: `${user.name}'s ${debtor.companyName} invoice document`,
-          value: createInvoiceDto.invoiceId,
+          value: createInvoiceDto.invoiceUid,
           type: DocumentType.INVOICE,
         },
         file,
@@ -146,9 +146,9 @@ export class InvoiceService {
       }
     }
 
-    if (query.invoiceId) {
-      queryBuilder.andWhere('invoice.invoiceId ILIKE :invoiceId', {
-        invoiceId: `%${query.invoiceId}%`,
+    if (query.invoiceUid) {
+      queryBuilder.andWhere('invoice.invoiceUid ILIKE :invoiceUid', {
+        invoiceUid: `%${query.invoiceUid}%`,
       });
     }
 
@@ -207,9 +207,12 @@ export class InvoiceService {
     }
 
     if (query.minRating) {
-      queryBuilder.andWhere('debtor.rating >= :minRating', {
-        minRating: query.minRating,
-      });
+      queryBuilder.andWhere(
+        'invoice.rating >= :minRating OR invoice.extRating >= :minRating',
+        {
+          minRating: query.minRating,
+        },
+      );
     }
 
     if (query.status) {
@@ -339,6 +342,7 @@ export class InvoiceService {
         );
       } else if (invoice.status === InvoiceStatus.VERIFIED) {
         updateInvoiceDto.rating = invoice.rating;
+        updateInvoiceDto.extRating = invoice.extRating;
         updateInvoiceDto.status = invoice.status;
         updateInvoiceDto.lastCommunication = invoice.lastCommunication;
         file = undefined;
@@ -353,7 +357,7 @@ export class InvoiceService {
         document = await this.documentService.create(
           {
             title: `${user.name}'s updated invoice document`,
-            value: updateInvoiceDto.invoiceId || invoice.invoiceId,
+            value: updateInvoiceDto.invoiceUid || invoice.invoiceUid,
             type: DocumentType.INVOICE,
           },
           file,

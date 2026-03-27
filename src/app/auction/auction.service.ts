@@ -220,9 +220,12 @@ export class AuctionService {
     }
 
     if (query.minRating) {
-      queryBuilder.andWhere('invoice.rating >= :rating', {
-        rating: query.minRating,
-      });
+      queryBuilder.andWhere(
+        'invoice.rating >= :minRating OR invoice.extRating >= :minRating',
+        {
+          minRating: query.minRating,
+        },
+      );
     }
 
     if (query.status) {

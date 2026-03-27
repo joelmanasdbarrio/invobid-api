@@ -14,7 +14,7 @@ import { PaginationDto } from 'src/dto/pagination.dto';
 export class GetInvoicesDto extends PaginationDto {
   @IsString()
   @IsOptional()
-  invoiceId?: string;
+  invoiceUid?: string;
 
   @IsString()
   @IsOptional()
