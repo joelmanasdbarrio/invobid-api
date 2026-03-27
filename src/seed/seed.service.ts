@@ -773,7 +773,8 @@ export class SeedService {
             buyerPercentage: 1.5,
           },
           rating: 4.0 + i * 0.3,
-          invoiceId: uuidv4(),
+          extRating: 4.0 + i * 0.28,
+          invoiceUid: uuidv4(),
         };
 
         if (lastCommunication) {
@@ -840,8 +841,7 @@ export class SeedService {
       const invoice = invoices[i];
       const status = statuses[i % statuses.length];
 
-      // Duration between 1 and 7 days
-      const durationMs = (1 + Math.floor(Math.random() * 7)) * DAY_MS;
+      const durationMs = (1 + Math.floor(Math.random() * 24)) * 60 * 60 * 1000;
 
       let auctionDateStart: Date;
       let auctionDateEnd: Date;
@@ -865,13 +865,10 @@ export class SeedService {
         }
         case AuctionStatus.LIVE:
         case AuctionStatus.PAUSED: {
-          // Started in the past, ends in the future
-          const startDaysAgo = 1 + Math.floor(Math.random() * 5);
-          auctionDateStart = new Date(now.getTime() - startDaysAgo * DAY_MS);
+          // Started somewhere within durationMs before now, so end is always in the future
+          const elapsedMs = Math.random() * durationMs;
+          auctionDateStart = new Date(now.getTime() - elapsedMs);
           auctionDateEnd = new Date(auctionDateStart.getTime() + durationMs);
-          if (auctionDateEnd <= now) {
-            auctionDateEnd = new Date(now.getTime() + DAY_MS);
-          }
           if (status === AuctionStatus.PAUSED) {
             // Paused sometime after start, before now
             const pauseOffsetMs =

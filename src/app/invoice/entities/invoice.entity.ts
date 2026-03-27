@@ -29,7 +29,7 @@ export class Invoice {
   id: string;
 
   @Column('text', { unique: true })
-  invoiceId: string;
+  invoiceUid: string;
 
   @ManyToOne(() => Investor, (investor) => investor.listedInvoices, {
     onDelete: 'CASCADE',
@@ -87,11 +87,18 @@ export class Invoice {
   transactionFee: TransactionFee;
 
   @Column('decimal', {
-    precision: 5,
+    precision: 4,
     scale: 2,
     nullable: true,
   })
   rating: number;
+
+  @Column('decimal', {
+    precision: 4,
+    scale: 2,
+    nullable: true,
+  })
+  extRating?: number;
 
   @CreateDateColumn({ type: 'timestamptz' })
   createdAt: Date;

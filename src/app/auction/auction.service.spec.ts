@@ -46,6 +46,8 @@ const makeInvoice = (dueDate: string) => ({
   status: InvoiceStatus.VERIFIED,
   sellerInvestor: { id: 'seller-id' },
   dueDate,
+  amount: 10000,
+  transactionFee: { buyerPercentage: 2.5, sellerPercentage: 1.5 },
 });
 
 const makeDto = (
