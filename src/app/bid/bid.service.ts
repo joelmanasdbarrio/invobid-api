@@ -35,8 +35,10 @@ export class BidService {
       );
     }
 
-    if (auction.status !== AuctionStatus.LIVE) {
-      throw new BadRequestException('Bids can only be placed on live auctions');
+    if (auction.status !== AuctionStatus.PUBLISHED) {
+      throw new BadRequestException(
+        'Bids can only be placed on published auctions',
+      );
     }
 
     const latestBid = await this.bidRepository
@@ -89,7 +91,7 @@ export class BidService {
 
     if (user.type !== UserType.ADMIN) {
       queryBuilder.andWhere('auction.status IN (:...status)', {
-        status: [AuctionStatus.LIVE, AuctionStatus.PAUSED],
+        status: [AuctionStatus.PUBLISHED],
       });
     }
 

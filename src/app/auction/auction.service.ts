@@ -47,20 +47,17 @@ export class AuctionService {
       );
     }
 
-    const startDate = toUTCDate(createAuctionDto.auctionDateStart);
     const endDate = toUTCDate(createAuctionDto.auctionDateEnd);
     const today = new Date();
     today.setUTCHours(0, 0, 0, 0);
+    const minEndDate = new Date(today);
+    minEndDate.setUTCDate(minEndDate.getUTCDate() + 2);
 
     const dueDateUTC = toUTCDate(invoice.dueDate);
     const oneMonthBeforeDue = new Date(dueDateUTC);
     oneMonthBeforeDue.setUTCMonth(oneMonthBeforeDue.getUTCMonth() - 1);
 
-    if (
-      endDate <= startDate ||
-      startDate <= today ||
-      endDate > oneMonthBeforeDue
-    ) {
+    if (endDate < minEndDate || endDate > oneMonthBeforeDue) {
       throw new BadRequestException(`Auction dates are not valid`);
     }
 
@@ -83,7 +80,6 @@ export class AuctionService {
         invoice,
         startingPrice: createAuctionDto.startingPrice,
         auctionDate: {
-          auctionDateStart: createAuctionDto.auctionDateStart,
           auctionDateEnd: createAuctionDto.auctionDateEnd,
         },
         ...this.computeMetrics(
@@ -123,11 +119,7 @@ export class AuctionService {
         '(sellerInvestor.id = :userId OR auction.status IN (:...publicStatuses))',
         {
           userId: query.includeSelf && query.includeSelf > 0 ? user.id : null,
-          publicStatuses: [
-            AuctionStatus.PUBLISHED,
-            AuctionStatus.PAUSED,
-            AuctionStatus.LIVE,
-          ],
+          publicStatuses: [AuctionStatus.PUBLISHED],
         },
       );
       if (query.includeDeleted && query.includeDeleted > 0) {
@@ -268,11 +260,7 @@ export class AuctionService {
         '(sellerInvestor.id = :userId OR auction.status IN (:...publicStatuses))',
         {
           userId: user.id,
-          publicStatuses: [
-            AuctionStatus.PUBLISHED,
-            AuctionStatus.LIVE,
-            AuctionStatus.PAUSED,
-          ],
+          publicStatuses: [AuctionStatus.PUBLISHED],
         },
       );
     }
@@ -298,46 +286,39 @@ export class AuctionService {
       );
     }
 
+    if (auction.status === AuctionStatus.PUBLISHED) {
+      throw new BadRequestException(
+        `Auction with id ${id} is published and cannot be modified`,
+      );
+    }
+
+    if (updateAuctionDto.status === AuctionStatus.TRANSITIONING) {
+      throw new BadRequestException(
+        `Auction status cannot be set to transitioning manually`,
+      );
+    }
+
     if (user.type === UserType.ADMIN) {
       if (updateAuctionDto.status !== undefined) {
-        if (updateAuctionDto.status === AuctionStatus.LIVE) {
-          throw new BadRequestException(
-            `Auction status cannot be set to live manually`,
-          );
-        }
-
         if (
-          updateAuctionDto.status === AuctionStatus.PAUSED &&
-          auction.status !== AuctionStatus.LIVE
+          auction.status === AuctionStatus.TRANSITIONING &&
+          updateAuctionDto.status !== AuctionStatus.FINISHED &&
+          updateAuctionDto.status !== AuctionStatus.CANCELLED
         ) {
           throw new BadRequestException(
-            `Auction can only be paused when it is live`,
+            `A transitioning auction can only be set to finished or cancelled`,
           );
-        }
-
-        if (
-          updateAuctionDto.status === AuctionStatus.PAUSED &&
-          auction.status === AuctionStatus.LIVE
-        ) {
-          auction.pausedAt = new Date();
-        }
-
-        if (
-          updateAuctionDto.status === AuctionStatus.PUBLISHED &&
-          auction.status === AuctionStatus.PAUSED
-        ) {
-          const pauseDurationMs = Date.now() - auction.pausedAt!.getTime();
-          auction.auctionDate.auctionDateEnd = new Date(
-            auction.auctionDate.auctionDateEnd.getTime() + pauseDurationMs,
-          );
-          auction.pausedAt = null;
         }
       }
-    } else {
+
       if (
-        auction.status === AuctionStatus.LIVE ||
-        auction.status === AuctionStatus.PAUSED
+        updateAuctionDto.status === AuctionStatus.PUBLISHED &&
+        auction.status === AuctionStatus.DRAFT
       ) {
+        auction.auctionDate.auctionDateStart = new Date();
+      }
+    } else {
+      if (auction.status === AuctionStatus.TRANSITIONING) {
         throw new ForbiddenException(
           `You do not have permission to perform this action`,
         );
@@ -349,50 +330,32 @@ export class AuctionService {
         );
       }
 
-      if (
-        auction.status === AuctionStatus.PUBLISHED &&
-        toUTCDate(auction.auctionDate.auctionDateStart) <= new Date()
-      ) {
-        throw new BadRequestException(
-          `Auction with id ${id} has already started and cannot be updated`,
-        );
-      }
-
-      if (
-        updateAuctionDto.auctionDateStart !== undefined ||
-        updateAuctionDto.auctionDateEnd !== undefined
-      ) {
-        const startDate = toUTCDate(
-          updateAuctionDto.auctionDateStart ??
-            auction.auctionDate.auctionDateStart,
-        );
-        const endDate = toUTCDate(
-          updateAuctionDto.auctionDateEnd ?? auction.auctionDate.auctionDateEnd,
-        );
+      if (updateAuctionDto.auctionDateEnd !== undefined) {
+        const endDate = toUTCDate(updateAuctionDto.auctionDateEnd);
         const today = new Date();
         today.setUTCHours(0, 0, 0, 0);
+        const minEndDate = new Date(today);
+        minEndDate.setUTCDate(minEndDate.getUTCDate() + 2);
 
         const dueDateUTC = toUTCDate(auction.invoice.dueDate);
         const oneMonthBeforeDue = new Date(dueDateUTC);
         oneMonthBeforeDue.setUTCMonth(oneMonthBeforeDue.getUTCMonth() - 1);
 
-        if (
-          endDate <= startDate ||
-          startDate <= today ||
-          endDate > oneMonthBeforeDue
-        ) {
+        if (endDate < minEndDate || endDate > oneMonthBeforeDue) {
           throw new BadRequestException(`Auction dates are not valid`);
         }
       }
 
       if (
-        updateAuctionDto.status !== AuctionStatus.DRAFT &&
-        auction.status !== AuctionStatus.PUBLISHED
+        updateAuctionDto.status !== undefined &&
+        updateAuctionDto.status !== AuctionStatus.PUBLISHED
       ) {
         updateAuctionDto.status = auction.status;
       }
 
-      updateAuctionDto.lastCommunication = auction.lastCommunication;
+      if (updateAuctionDto.status === AuctionStatus.PUBLISHED) {
+        auction.auctionDate.auctionDateStart = new Date();
+      }
     }
 
     Object.assign(auction, updateAuctionDto.removeUndefined());

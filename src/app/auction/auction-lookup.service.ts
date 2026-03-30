@@ -33,7 +33,7 @@ export class AuctionLookupService {
         '(sellerInvestor.id = :userId OR auction.status IN (:...publicStatuses))',
         {
           userId: user.id,
-          publicStatuses: [AuctionStatus.PUBLISHED, AuctionStatus.LIVE],
+          publicStatuses: [AuctionStatus.PUBLISHED],
         },
       );
       if (query.includeDeleted && query.includeDeleted > 0) {
