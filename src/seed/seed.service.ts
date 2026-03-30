@@ -828,14 +828,7 @@ export class SeedService {
     const DAY_MS = 24 * 60 * 60 * 1000;
     const now = new Date();
 
-    const statuses = [
-      AuctionStatus.PUBLISHED,
-      AuctionStatus.DRAFT,
-      AuctionStatus.FINISHED,
-      AuctionStatus.CANCELLED,
-      AuctionStatus.LIVE,
-      AuctionStatus.PAUSED,
-    ];
+    const statuses = [Object.values(AuctionStatus)].flat();
 
     for (let i = 0; i < invoices.length; i++) {
       const invoice = invoices[i];
@@ -843,10 +836,9 @@ export class SeedService {
 
       const durationMs = (1 + Math.floor(Math.random() * 24)) * 60 * 60 * 1000;
 
-      let auctionDateStart: Date;
+      let auctionDateStart: Date | undefined;
       let auctionDateEnd: Date;
       let endingPrice: number | undefined;
-      let pausedAt: Date | undefined;
 
       switch (status) {
         case AuctionStatus.FINISHED:
@@ -863,25 +855,33 @@ export class SeedService {
           }
           break;
         }
-        case AuctionStatus.LIVE:
-        case AuctionStatus.PAUSED: {
-          // Started somewhere within durationMs before now, so end is always in the future
+        case AuctionStatus.PUBLISHED:
+        case AuctionStatus.TRANSITIONING: {
+          // For PUBLISHED: started in the past, end is in the future
+          // For TRANSITIONING: started and ended in the past (waiting for admin close)
           const elapsedMs = Math.random() * durationMs;
           auctionDateStart = new Date(now.getTime() - elapsedMs);
-          auctionDateEnd = new Date(auctionDateStart.getTime() + durationMs);
-          if (status === AuctionStatus.PAUSED) {
-            // Paused sometime after start, before now
-            const pauseOffsetMs =
-              Math.random() * (now.getTime() - auctionDateStart.getTime());
-            pausedAt = new Date(auctionDateStart.getTime() + pauseOffsetMs);
+          if (status === AuctionStatus.PUBLISHED) {
+            auctionDateEnd = new Date(auctionDateStart.getTime() + durationMs);
+          } else {
+            // TRANSITIONING: end is in the past
+            const endDaysAgo = 1 + Math.floor(Math.random() * 3);
+            auctionDateEnd = new Date(
+              now.getTime() - endDaysAgo * DAY_MS * 0.5,
+            );
+            if (auctionDateEnd <= auctionDateStart) {
+              auctionDateEnd = new Date(
+                auctionDateStart.getTime() + durationMs * 0.1,
+              );
+            }
           }
           break;
         }
         default: {
-          // PUBLISHED / DRAFT — starts in the future (1–30 days from now)
-          const startDaysAhead = 1 + Math.floor(Math.random() * 30);
-          auctionDateStart = new Date(now.getTime() + startDaysAhead * DAY_MS);
-          auctionDateEnd = new Date(auctionDateStart.getTime() + durationMs);
+          // DRAFT — auctionDateStart is null (auto-set on publish);
+          // end date set 3–32 days from now
+          const endDaysAhead = 3 + Math.floor(Math.random() * 30);
+          auctionDateEnd = new Date(now.getTime() + endDaysAhead * DAY_MS);
           break;
         }
       }
@@ -909,7 +909,6 @@ export class SeedService {
         profitability,
         auctionDate: { auctionDateStart, auctionDateEnd },
         status,
-        pausedAt,
       });
 
       auctions.push(auction);

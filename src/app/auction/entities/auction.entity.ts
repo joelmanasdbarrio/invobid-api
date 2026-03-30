@@ -68,19 +68,11 @@ export class Auction {
   })
   status: AuctionStatus;
 
-  @Column('text', {
-    nullable: true,
-  })
-  lastCommunication: string;
-
   @OneToMany(() => Bid, (bid) => bid.auction, {
     cascade: true,
     eager: true,
   })
   bids: Bid[];
-
-  @Column('timestamptz', { nullable: true })
-  pausedAt: Date | null;
 
   @CreateDateColumn({ type: 'timestamptz' })
   createdAt: Date;

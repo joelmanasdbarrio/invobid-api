@@ -9,8 +9,5 @@ export class CreateAuctionDto {
   startingPrice: number;
 
   @IsDateString()
-  auctionDateStart: string;
-
-  @IsDateString()
   auctionDateEnd: string;
 }
