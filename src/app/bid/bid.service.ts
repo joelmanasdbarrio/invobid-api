@@ -86,8 +86,17 @@ export class BidService {
     queryBuilder
       .addSelect('bid.createdAt')
       .leftJoinAndSelect('bid.auction', 'auction')
-      .leftJoinAndSelect('bid.investor', 'investor')
       .orderBy('bid.createdAt', 'DESC');
+
+    if (user.type === UserType.ADMIN) {
+      queryBuilder.leftJoinAndSelect('bid.investor', 'investor');
+
+      if (query.investorId) {
+        queryBuilder.andWhere('investor.id = :investorId', {
+          investorId: query.investorId,
+        });
+      }
+    }
 
     if (user.type !== UserType.ADMIN) {
       queryBuilder.andWhere('auction.status IN (:...status)', {
@@ -98,12 +107,6 @@ export class BidService {
     if (query.auctionId) {
       queryBuilder.andWhere('auction.id = :auctionId', {
         auctionId: query.auctionId,
-      });
-    }
-
-    if (query.investorId) {
-      queryBuilder.andWhere('investor.id = :investorId', {
-        investorId: query.investorId,
       });
     }
 
