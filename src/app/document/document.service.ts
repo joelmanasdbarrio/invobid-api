@@ -116,9 +116,9 @@ export class DocumentService {
       }
     }
 
-    if (query.invoiceId) {
-      queryBuilder.andWhere('document.invoiceId = :invoiceId', {
-        invoiceId: query.invoiceId,
+    if (query.invoiceUid) {
+      queryBuilder.andWhere('document.invoiceUid = :invoiceUid', {
+        invoiceUid: query.invoiceUid,
       });
     }
 

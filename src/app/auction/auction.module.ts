@@ -1,5 +1,6 @@
 import { Module } from '@nestjs/common';
 import { TypeOrmModule } from '@nestjs/typeorm';
+import { Bid } from '../bid/entities/bid.entity';
 import { InvoiceModule } from '../invoice/invoice.module';
 import { AuctionLookupController } from './auction-lookup.controller';
 import { AuctionLookupService } from './auction-lookup.service';
@@ -9,7 +10,7 @@ import { AuctionService } from './auction.service';
 import { Auction } from './entities/auction.entity';
 
 @Module({
-  imports: [TypeOrmModule.forFeature([Auction]), InvoiceModule],
+  imports: [TypeOrmModule.forFeature([Auction, Bid]), InvoiceModule],
   controllers: [AuctionController, AuctionLookupController],
   providers: [AuctionService, AuctionLookupService, AuctionSchedulerService],
 })

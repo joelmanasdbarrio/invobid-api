@@ -7,6 +7,7 @@ import {
 } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { In, Not, Repository } from 'typeorm';
+import { Bid } from '../bid/entities/bid.entity';
 import { InvoiceStatus } from '../invoice/enums/invoice-status.enum';
 import { InvoiceService } from '../invoice/invoice.service';
 import { User } from '../user/common/entities/user.entity';
@@ -29,12 +30,14 @@ export class AuctionService {
   constructor(
     @InjectRepository(Auction)
     private readonly auctionRepository: Repository<Auction>,
+    @InjectRepository(Bid)
+    private readonly bidRepository: Repository<Bid>,
     private readonly invoiceService: InvoiceService,
   ) {}
 
   async create(createAuctionDto: CreateAuctionDto, user: Investor) {
     const invoice = await this.invoiceService.findOne(
-      createAuctionDto.invoiceId,
+      createAuctionDto.invoiceUid,
       user,
     );
 
@@ -76,17 +79,19 @@ export class AuctionService {
 
     let auction: Auction | undefined;
     try {
+      const metrics = this.computeMetrics(
+        invoice.amount,
+        invoice.transactionFee.buyerPercentage,
+        createAuctionDto.startingPrice,
+      );
       auction = this.auctionRepository.create({
         invoice,
-        startingPrice: createAuctionDto.startingPrice,
-        auctionDate: {
-          auctionDateEnd: createAuctionDto.auctionDateEnd,
+        price: { start: createAuctionDto.startingPrice },
+        discount: { start: metrics.discount },
+        profitability: { start: metrics.profitability },
+        date: {
+          end: createAuctionDto.auctionDateEnd,
         },
-        ...this.computeMetrics(
-          invoice.amount,
-          invoice.transactionFee.buyerPercentage,
-          createAuctionDto.startingPrice,
-        ),
       });
 
       return await this.auctionRepository.save(auction);
@@ -127,9 +132,9 @@ export class AuctionService {
       }
     }
 
-    if (query.invoiceId) {
-      queryBuilder.andWhere('auction.invoiceId = :invoiceId', {
-        invoiceId: query.invoiceId,
+    if (query.invoiceUid) {
+      queryBuilder.andWhere('auction.invoiceUid = :invoiceUid', {
+        invoiceUid: query.invoiceUid,
       });
     }
 
@@ -176,37 +181,41 @@ export class AuctionService {
     }
 
     if (query.maxAmount) {
-      queryBuilder.andWhere('auction.startingPrice <= :maxAmount', {
-        maxAmount: query.maxAmount,
-      });
+      queryBuilder.andWhere(
+        `COALESCE((SELECT b.amount FROM bids b WHERE b."auctionId" = auction.id ORDER BY b."createdAt" DESC LIMIT 1), auction."priceStart") <= :maxAmount`,
+        { maxAmount: query.maxAmount },
+      );
     }
 
     if (query.minAmount) {
-      queryBuilder.andWhere('auction.startingPrice >= :minAmount', {
-        minAmount: query.minAmount,
-      });
+      queryBuilder.andWhere(
+        `COALESCE((SELECT b.amount FROM bids b WHERE b."auctionId" = auction.id ORDER BY b."createdAt" DESC LIMIT 1), auction."priceStart") >= :minAmount`,
+        { minAmount: query.minAmount },
+      );
     }
 
     if (query.minDiscount) {
-      queryBuilder.andWhere('auction.discount >= :minDiscount', {
-        minDiscount: query.minDiscount,
-      });
+      queryBuilder.andWhere(
+        `COALESCE((SELECT b.discount FROM bids b WHERE b."auctionId" = auction.id ORDER BY b."createdAt" DESC LIMIT 1), auction."discountStart") >= :minDiscount`,
+        { minDiscount: query.minDiscount },
+      );
     }
 
     if (query.minProfitability) {
-      queryBuilder.andWhere('auction.profitability >= :minProfitability', {
-        minProfitability: query.minProfitability,
-      });
+      queryBuilder.andWhere(
+        `COALESCE((SELECT b.profitability FROM bids b WHERE b."auctionId" = auction.id ORDER BY b."createdAt" DESC LIMIT 1), auction."profitabilityStart") >= :minProfitability`,
+        { minProfitability: query.minProfitability },
+      );
     }
 
     if (query.auctionDateStart) {
-      queryBuilder.andWhere('auction.auctionDateStart >= :auctionDateStart', {
+      queryBuilder.andWhere('auction.date.start >= :auctionDateStart', {
         auctionDateStart: query.auctionDateStart,
       });
     }
 
     if (query.auctionDateEnd) {
-      queryBuilder.andWhere('auction.auctionDateEnd <= :auctionDateEnd', {
+      queryBuilder.andWhere('auction.date.end <= :auctionDateEnd', {
         auctionDateEnd: query.auctionDateEnd,
       });
     }
@@ -255,7 +264,9 @@ export class AuctionService {
       .where('auction.id = :id', { id })
       .withDeleted();
 
-    if (user.type !== UserType.ADMIN) {
+    if (user.type === UserType.ADMIN) {
+      queryBuilder.leftJoinAndSelect('bids.investor', 'investor');
+    } else {
       queryBuilder.andWhere(
         '(sellerInvestor.id = :userId OR auction.status IN (:...publicStatuses))',
         {
@@ -309,13 +320,33 @@ export class AuctionService {
             `A transitioning auction can only be set to finished or cancelled`,
           );
         }
+
+        // When transitioning to FINISHED, populate ending values from latest bid
+        if (updateAuctionDto.status === AuctionStatus.FINISHED) {
+          const latestBid = await this.bidRepository.findOne({
+            where: { auction: { id } },
+            order: { createdAt: 'DESC' },
+          });
+
+          if (latestBid) {
+            auction.price.end = parseFloat(latestBid.amount.toString());
+            auction.discount.end = parseFloat(latestBid.discount.toString());
+            auction.profitability.end = parseFloat(
+              latestBid.profitability.toString(),
+            );
+          } else {
+            throw new BadRequestException(
+              `Auction must have at least one bid before finishing`,
+            );
+          }
+        }
       }
 
       if (
         updateAuctionDto.status === AuctionStatus.PUBLISHED &&
         auction.status === AuctionStatus.DRAFT
       ) {
-        auction.auctionDate.auctionDateStart = new Date();
+        auction.date.start = new Date();
       }
     } else {
       if (auction.status === AuctionStatus.TRANSITIONING) {
@@ -354,19 +385,27 @@ export class AuctionService {
       }
 
       if (updateAuctionDto.status === AuctionStatus.PUBLISHED) {
-        auction.auctionDate.auctionDateStart = new Date();
+        auction.date.start = new Date();
       }
+
+      updateAuctionDto.lastCommunication = auction.lastCommunication;
     }
 
-    Object.assign(auction, updateAuctionDto.removeUndefined());
-    Object.assign(
-      auction,
-      this.computeMetrics(
-        auction.invoice.amount,
-        auction.invoice.transactionFee.buyerPercentage,
-        auction.startingPrice,
-      ),
+    if (updateAuctionDto.status !== undefined)
+      auction.status = updateAuctionDto.status;
+    if (updateAuctionDto.lastCommunication !== undefined)
+      auction.lastCommunication = updateAuctionDto.lastCommunication;
+    if (updateAuctionDto.auctionDateEnd !== undefined)
+      auction.date.end = new Date(updateAuctionDto.auctionDateEnd);
+    if (updateAuctionDto.startingPrice !== undefined)
+      auction.price.start = updateAuctionDto.startingPrice;
+    const { discount, profitability } = this.computeMetrics(
+      auction.invoice.amount,
+      auction.invoice.transactionFee.buyerPercentage,
+      auction.price.start,
     );
+    auction.discount.start = discount;
+    auction.profitability.start = profitability;
     return await this.auctionRepository.save(auction);
   }
 

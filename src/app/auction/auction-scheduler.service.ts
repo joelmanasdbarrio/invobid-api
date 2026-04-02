@@ -25,7 +25,7 @@ export class AuctionSchedulerService {
       .update(Auction)
       .set({ status: AuctionStatus.TRANSITIONING })
       .where('status = :status', { status: AuctionStatus.PUBLISHED })
-      .andWhere('"auctionDateAuctiondateend" <= NOW()')
+      .andWhere('"dateEnd" <= NOW()')
       .execute();
 
     if (result.affected && result.affected > 0) {
