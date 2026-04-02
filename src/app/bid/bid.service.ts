@@ -48,9 +48,7 @@ export class BidService {
       .orderBy('bid.createdAt', 'DESC')
       .getOne();
 
-    const latestBidAmount = latestBid
-      ? latestBid.amount
-      : auction.startingPrice;
+    const latestBidAmount = latestBid ? latestBid.amount : auction.price.start;
 
     if (createBidDto.amount <= latestBidAmount) {
       throw new BadRequestException(
@@ -74,7 +72,6 @@ export class BidService {
 
     return this.bidRepository
       .createQueryBuilder('bid')
-      .addSelect('bid.createdAt')
       .leftJoinAndSelect('bid.investor', 'investor')
       .where('bid.id = :id', { id: saved.id })
       .getOne() as Promise<Bid>;
@@ -84,7 +81,6 @@ export class BidService {
     const queryBuilder = this.bidRepository.createQueryBuilder('bid');
 
     queryBuilder
-      .addSelect('bid.createdAt')
       .leftJoinAndSelect('bid.auction', 'auction')
       .orderBy('bid.createdAt', 'DESC');
 

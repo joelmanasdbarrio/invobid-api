@@ -35,7 +35,7 @@ export class Bid {
   @Column('decimal', { precision: 8, scale: 4, nullable: false })
   profitability: number;
 
-  @CreateDateColumn({ select: false, type: 'timestamptz' })
+  @CreateDateColumn({ type: 'timestamptz' })
   createdAt: Date;
 
   @DeleteDateColumn({ select: false, type: 'timestamptz' })

@@ -41,9 +41,9 @@ export class AuctionLookupService {
       }
     }
 
-    if (query.invoiceId) {
-      queryBuilder.andWhere('auction.invoiceId = :invoiceId', {
-        invoiceId: query.invoiceId,
+    if (query.invoiceUid) {
+      queryBuilder.andWhere('auction.invoiceUid = :invoiceUid', {
+        invoiceUid: query.invoiceUid,
       });
     }
 
@@ -102,13 +102,13 @@ export class AuctionLookupService {
     }
 
     if (query.auctionDateStart) {
-      queryBuilder.andWhere('auction.auctionDateStart >= :auctionDateStart', {
+      queryBuilder.andWhere('auction.date.start >= :auctionDateStart', {
         auctionDateStart: query.auctionDateStart,
       });
     }
 
     if (query.auctionDateEnd) {
-      queryBuilder.andWhere('auction.auctionDateEnd <= :auctionDateEnd', {
+      queryBuilder.andWhere('auction.date.end <= :auctionDateEnd', {
         auctionDateEnd: query.auctionDateEnd,
       });
     }
