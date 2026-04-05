@@ -110,7 +110,6 @@ export class AuctionService {
 
     queryBuilder
       .leftJoinAndSelect('auction.invoice', 'invoice')
-      .leftJoinAndSelect('auction.bids', 'bids')
       .leftJoinAndSelect('invoice.sellerInvestor', 'sellerInvestor')
       .leftJoinAndSelect('invoice.buyerInvestor', 'buyerInvestor')
       .leftJoinAndSelect('invoice.debtor', 'debtor');
@@ -243,6 +242,7 @@ export class AuctionService {
     }
 
     const data = await queryBuilder.getMany();
+    data.forEach((auction) => (auction.bids = []));
 
     return {
       data,
