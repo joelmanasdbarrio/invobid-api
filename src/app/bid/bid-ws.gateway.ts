@@ -63,6 +63,10 @@ export class BidWsGateway implements OnGatewayConnection, OnGatewayDisconnect {
       const user = (client.data as Record<string, unknown>).user as User;
       const bid = await this.bidService.create(payload, user);
       this.server.to(payload.auctionId).emit('new-bid', bid);
+      this.server.emit('auction-bid-update', {
+        auctionId: payload.auctionId,
+        bid,
+      });
       return { success: true };
     } catch (error) {
       return { success: false, message: (error as Error).message };

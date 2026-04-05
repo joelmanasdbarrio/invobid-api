@@ -80,7 +80,6 @@ export class Auction {
 
   @OneToMany(() => Bid, (bid) => bid.auction, {
     cascade: true,
-    eager: true,
   })
   bids: Bid[];
 

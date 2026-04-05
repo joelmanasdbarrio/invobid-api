@@ -944,17 +944,23 @@ export class SeedService {
     );
 
     for (const auction of auctions) {
-      // Each bid steps up from startingPrice toward invoice.amount,
-      // progressively closing the discount/profitability gap
-      const spread = auction.invoice.amount - auction.price.start;
-      const step = spread / 6; // divide gap into 6 steps, use steps 1–5
+      // Profitability = ((netInvoice - price) / price) * 100
+      // Profitability is positive when price < netInvoice.
+      // Bids step from the auction's starting price up to 99.9% of netInvoice,
+      // ensuring profitability is always strictly positive (≥ ~0.1%).
+      const buyerPercentage = auction.invoice.transactionFee.buyerPercentage;
+      const netInvoice = auction.invoice.amount * (1 - buyerPercentage / 100);
+      const lowerBound = auction.price.start;
+      const upperBound = netInvoice * 0.999; // keeps profitability ≥ ~0.1%
+      const spread = upperBound - lowerBound;
+      const step = spread / 6; // divide range into 6 steps, use steps 1–5
 
       for (let i = 1; i <= 5; i++) {
         const investor = buyerInvestors[i % buyerInvestors.length];
         // Add slight random noise (±5% of step) to avoid perfectly linear bids
         const noise = step * (Math.random() * 0.1 - 0.05);
 
-        const amount = auction.price.start + step * i + noise;
+        const amount = lowerBound + step * i + noise;
         const bid = this.bidRepository.create({
           auction: auction,
           investor: investor,
