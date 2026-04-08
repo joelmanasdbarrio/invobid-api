@@ -13,5 +13,6 @@ import { Auction } from './entities/auction.entity';
   imports: [TypeOrmModule.forFeature([Auction, Bid]), InvoiceModule],
   controllers: [AuctionController, AuctionLookupController],
   providers: [AuctionService, AuctionLookupService, AuctionSchedulerService],
+  exports: [AuctionService],
 })
 export class AuctionModule {}
