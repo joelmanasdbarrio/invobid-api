@@ -1,11 +1,15 @@
-import { BadRequestException, Injectable } from '@nestjs/common';
+import {
+  BadRequestException,
+  Injectable,
+  NotFoundException,
+} from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import {
   computeDiscount,
   computeProfitability,
 } from '../auction/auction-metrics.util';
-import { Auction } from '../auction/entities/auction.entity';
+import { AuctionService } from '../auction/auction.service';
 import { AuctionStatus } from '../auction/enums/auction-status.enum';
 import { User } from '../user/common/entities/user.entity';
 import { UserType } from '../user/common/enums/user-type.enum';
@@ -19,15 +23,14 @@ export class BidService {
   constructor(
     @InjectRepository(Bid)
     private readonly bidRepository: Repository<Bid>,
-    @InjectRepository(Auction)
-    private readonly auctionRepository: Repository<Auction>,
+    private readonly auctionService: AuctionService,
   ) {}
 
   async create(createBidDto: CreateBidDto, user: User): Promise<Bid> {
-    const auction = await this.auctionRepository.findOne({
-      where: { id: createBidDto.auctionId },
-      relations: { invoice: true },
-    });
+    const auction = await this.auctionService.findOne(
+      createBidDto.auctionId,
+      user,
+    );
 
     if (!auction) {
       throw new BadRequestException(
@@ -81,10 +84,16 @@ export class BidService {
     const queryBuilder = this.bidRepository.createQueryBuilder('bid');
 
     queryBuilder
-      .leftJoinAndSelect('bid.auction', 'auction')
+      .leftJoin('bid.auction', 'auction')
       .orderBy('bid.createdAt', 'DESC');
 
     if (user.type === UserType.ADMIN) {
+      if (!query.auctionId && !query.investorId) {
+        throw new BadRequestException([
+          'At least one of auctionId or investorId query parameters is required',
+        ]);
+      }
+
       queryBuilder.leftJoinAndSelect('bid.investor', 'investor');
 
       if (query.investorId) {
@@ -92,15 +101,21 @@ export class BidService {
           investorId: query.investorId,
         });
       }
-    }
+    } else {
+      if (!query.auctionId) {
+        throw new BadRequestException([
+          'auctionId query parameter is required',
+        ]);
+      }
 
-    if (user.type !== UserType.ADMIN) {
       queryBuilder.andWhere('auction.status IN (:...status)', {
         status: [AuctionStatus.PUBLISHED],
       });
     }
 
     if (query.auctionId) {
+      await this.auctionService.findOne(query.auctionId, user);
+
       queryBuilder.andWhere('auction.id = :auctionId', {
         auctionId: query.auctionId,
       });
@@ -123,7 +138,30 @@ export class BidService {
     };
   }
 
-  findOne(id: string) {
-    return `This action returns a #${id} bid`;
+  async findOne(id: string, user: User) {
+    const queryBuilder = this.bidRepository.createQueryBuilder('bid');
+
+    queryBuilder
+      .leftJoinAndSelect('bid.auction', 'auction')
+      .leftJoinAndSelect('bid.investor', 'investor')
+      .where('bid.id = :id', { id });
+
+    if (user.type !== UserType.ADMIN) {
+      queryBuilder.andWhere(
+        'auction.status IN (:...status) OR bid.investor.id = :userId',
+        {
+          status: [AuctionStatus.PUBLISHED],
+          userId: user.id,
+        },
+      );
+    }
+
+    const bid = await queryBuilder.getOne();
+
+    if (!bid) {
+      throw new NotFoundException(`Bid with id ${id} not found`);
+    }
+
+    return bid;
   }
 }

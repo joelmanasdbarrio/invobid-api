@@ -1,6 +1,7 @@
 import { Module } from '@nestjs/common';
 import { ConfigModule } from '@nestjs/config';
 import { TypeOrmModule } from '@nestjs/typeorm';
+import { AuctionModule } from '../auction/auction.module';
 import { Auction } from '../auction/entities/auction.entity';
 import { AuthModule } from '../user/auth/auth.module';
 import { User } from '../user/common/entities/user.entity';
@@ -16,6 +17,7 @@ import { Bid } from './entities/bid.entity';
     TypeOrmModule.forFeature([Bid, User, Auction]),
     AuthModule,
     InvestorModule,
+    AuctionModule,
   ],
   controllers: [BidController],
   providers: [BidService, BidWsGateway],
