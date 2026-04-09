@@ -59,6 +59,7 @@ const makeInvoice = (overrides: Partial<Invoice> = {}): Invoice =>
     status: InvoiceStatus.PENDING,
     lastCommunication: 'original message',
     rating: 4.5,
+    extRating: 4.4,
     amount: 5000,
     documents: [],
     sellerInvestor: { id: 'seller-id' } as Investor,
@@ -85,7 +86,7 @@ const makeCreateDto = (): CreateInvoiceDto => ({
   debtorId: 'debtor-id',
   amount: 5000,
   dueDate: '2026-06-01',
-  invoiceId: 'B12345678-F001-00001234-20260216-A9K3',
+  svc: 'B12345678-F001-00001234-20260216-A9K3',
 });
 
 const mockFile = { originalname: 'invoice.pdf' } as Express.Multer.File;
@@ -409,12 +410,14 @@ describe('InvoiceService', () => {
       const invoice = makeInvoice({
         status: InvoiceStatus.VERIFIED,
         rating: 4.5,
+        extRating: 4.4,
         lastCommunication: 'approved',
         sellerInvestor: { id: 'seller-id' } as Investor,
       });
       const sellerUser = { id: 'seller-id', type: UserType.INVESTOR } as User;
       const dto: UpdateInvoiceDto = {
         rating: 1,
+        extRating: 1,
         status: InvoiceStatus.VERIFIED,
       };
       mockQueryBuilder.getOne.mockResolvedValue(invoice);
@@ -423,6 +426,7 @@ describe('InvoiceService', () => {
       await service.update(invoice.id, dto, mockFile, sellerUser);
 
       expect(dto.rating).toBe(4.5);
+      expect(dto.extRating).toBe(4.4);
       expect(dto.status).toBe(InvoiceStatus.VERIFIED);
       expect(dto.lastCommunication).toBe('approved');
       expect(mockDocumentService.create).not.toHaveBeenCalled();

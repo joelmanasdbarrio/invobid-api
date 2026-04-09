@@ -26,10 +26,16 @@ export class Bid {
   })
   investor: Investor;
 
-  @Column('decimal', { precision: 10, scale: 2, nullable: false })
+  @Column('decimal', { precision: 15, scale: 2, nullable: false })
   amount: number;
 
-  @CreateDateColumn({ select: false, type: 'timestamptz' })
+  @Column('decimal', { precision: 8, scale: 4, nullable: false })
+  discount: number;
+
+  @Column('decimal', { precision: 8, scale: 4, nullable: false })
+  profitability: number;
+
+  @CreateDateColumn({ type: 'timestamptz' })
   createdAt: Date;
 
   @DeleteDateColumn({ select: false, type: 'timestamptz' })

@@ -1,6 +1,7 @@
 import { BadRequestException } from '@nestjs/common';
 import { Test, TestingModule } from '@nestjs/testing';
 import { getRepositoryToken } from '@nestjs/typeorm';
+import { Bid } from '../bid/entities/bid.entity';
 import { InvoiceStatus } from '../invoice/enums/invoice-status.enum';
 import { InvoiceService } from '../invoice/invoice.service';
 import { UserType } from '../user/common/enums/user-type.enum';
@@ -32,6 +33,10 @@ const mockAuctionRepository = {
   count: jest.fn().mockResolvedValue(0),
 };
 
+const mockBidRepository = {
+  findOne: jest.fn(),
+};
+
 const mockInvoiceService = {
   findOne: jest.fn(),
 };
@@ -46,15 +51,16 @@ const makeInvoice = (dueDate: string) => ({
   status: InvoiceStatus.VERIFIED,
   sellerInvestor: { id: 'seller-id' },
   dueDate,
+  amount: 10000,
+  transactionFee: { buyerPercentage: 2.5, sellerPercentage: 1.5 },
 });
 
 const makeDto = (
   overrides: Partial<CreateAuctionDto> = {},
 ): CreateAuctionDto => ({
-  invoiceId: 'invoice-id',
+  svc: 'invoice-id',
   startingPrice: 1000,
-  auctionDateStart: utcDateOffset(2), // tomorrow+1 — safely > today
-  auctionDateEnd: utcDateOffset(3), // 2 days ahead — safely > start
+  auctionDateEnd: utcDateOffset(4), // 4 days ahead — safely >= today+2
   ...overrides,
 });
 
@@ -72,6 +78,10 @@ describe('AuctionService', () => {
           provide: getRepositoryToken(Auction),
           useValue: mockAuctionRepository,
         },
+        {
+          provide: getRepositoryToken(Bid),
+          useValue: mockBidRepository,
+        },
         { provide: InvoiceService, useValue: mockInvoiceService },
       ],
     }).compile();
@@ -84,40 +94,36 @@ describe('AuctionService', () => {
   });
 
   describe('create — date validation', () => {
-    it('succeeds when start > today, end > start, and end <= oneMonthBeforeDue', async () => {
+    it('succeeds when end >= today+2 and end <= oneMonthBeforeDue', async () => {
       const dueDate = utcMonthOffset(2); // due in 2 months — gives plenty of room
       mockInvoiceService.findOne.mockResolvedValue(makeInvoice(dueDate));
       const savedAuction = { id: 'auction-id' };
       mockAuctionRepository.create.mockReturnValue(savedAuction);
       mockAuctionRepository.save.mockResolvedValue(savedAuction);
 
-      const dto = makeDto({
-        auctionDateStart: utcDateOffset(2),
-        auctionDateEnd: utcDateOffset(3),
-      });
+      const dto = makeDto({ auctionDateEnd: utcDateOffset(3) });
 
       await expect(service.create(dto, sellerInvestor)).resolves.toBe(
         savedAuction,
       );
     });
 
-    it('throws BadRequestException when startDate equals today (must be strictly in the future)', async () => {
+    it('throws BadRequestException when endDate equals today (must be at least 2 days ahead)', async () => {
       const dueDate = utcMonthOffset(2);
       mockInvoiceService.findOne.mockResolvedValue(makeInvoice(dueDate));
 
-      const dto = makeDto({ auctionDateStart: utcDateOffset(0) }); // today
+      const dto = makeDto({ auctionDateEnd: utcDateOffset(0) }); // today
 
       await expect(service.create(dto, sellerInvestor)).rejects.toThrow(
         BadRequestException,
       );
     });
 
-    it('throws BadRequestException when endDate <= startDate', async () => {
+    it('throws BadRequestException when endDate is only 1 day ahead (must be at least 2)', async () => {
       const dueDate = utcMonthOffset(2);
       mockInvoiceService.findOne.mockResolvedValue(makeInvoice(dueDate));
 
-      const start = utcDateOffset(3);
-      const dto = makeDto({ auctionDateStart: start, auctionDateEnd: start }); // equal
+      const dto = makeDto({ auctionDateEnd: utcDateOffset(1) }); // only 1 day ahead
 
       await expect(service.create(dto, sellerInvestor)).rejects.toThrow(
         BadRequestException,
@@ -130,7 +136,6 @@ describe('AuctionService', () => {
 
       // endDate 2 days ahead — which is AFTER today (= oneMonthBeforeDue)
       const dto = makeDto({
-        auctionDateStart: utcDateOffset(1),
         auctionDateEnd: utcDateOffset(2),
       });
 
@@ -148,14 +153,10 @@ describe('AuctionService', () => {
       mockAuctionRepository.create.mockReturnValue(savedAuction);
       mockAuctionRepository.save.mockResolvedValue(savedAuction);
 
-      const startDay = utcDateOffset(2);
-      const endDay = utcDateOffset(3);
+      const endDay = utcDateOffset(4);
 
-      // Pass full ISO strings with different time components — should still succeed
-      const dto = makeDto({
-        auctionDateStart: startDay + 'T23:30:00.000Z',
-        auctionDateEnd: endDay + 'T00:01:00.000Z',
-      });
+      // Pass a full ISO string with a time component — should still succeed
+      const dto = makeDto({ auctionDateEnd: endDay + 'T00:01:00.000Z' });
 
       await expect(service.create(dto, sellerInvestor)).resolves.toBe(
         savedAuction,

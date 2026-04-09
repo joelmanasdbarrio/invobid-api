@@ -33,7 +33,7 @@ export class AuctionLookupService {
         '(sellerInvestor.id = :userId OR auction.status IN (:...publicStatuses))',
         {
           userId: user.id,
-          publicStatuses: [AuctionStatus.PUBLISHED, AuctionStatus.LIVE],
+          publicStatuses: [AuctionStatus.PUBLISHED],
         },
       );
       if (query.includeDeleted && query.includeDeleted > 0) {
@@ -41,9 +41,9 @@ export class AuctionLookupService {
       }
     }
 
-    if (query.invoiceId) {
-      queryBuilder.andWhere('auction.invoiceId = :invoiceId', {
-        invoiceId: query.invoiceId,
+    if (query.invoiceSvc) {
+      queryBuilder.andWhere('invoice.svc = :invoiceSvc', {
+        invoiceSvc: query.invoiceSvc,
       });
     }
 
@@ -102,13 +102,13 @@ export class AuctionLookupService {
     }
 
     if (query.auctionDateStart) {
-      queryBuilder.andWhere('auction.auctionDateStart >= :auctionDateStart', {
+      queryBuilder.andWhere('auction.date.start >= :auctionDateStart', {
         auctionDateStart: query.auctionDateStart,
       });
     }
 
     if (query.auctionDateEnd) {
-      queryBuilder.andWhere('auction.auctionDateEnd <= :auctionDateEnd', {
+      queryBuilder.andWhere('auction.date.end <= :auctionDateEnd', {
         auctionDateEnd: query.auctionDateEnd,
       });
     }

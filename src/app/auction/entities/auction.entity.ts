@@ -14,10 +14,34 @@ import { AuctionStatus } from '../enums/auction-status.enum';
 
 class AuctionDate {
   @Column('timestamptz', { nullable: true })
-  auctionDateStart: Date;
+  start: Date;
 
   @Column('timestamptz', { nullable: true })
-  auctionDateEnd: Date;
+  end: Date;
+}
+
+class AuctionPrice {
+  @Column('decimal', { precision: 15, scale: 2, nullable: false })
+  start: number;
+
+  @Column('decimal', { precision: 15, scale: 2, nullable: true })
+  end: number;
+}
+
+class AuctionDiscount {
+  @Column('decimal', { precision: 4, scale: 2, nullable: false })
+  start: number;
+
+  @Column('decimal', { precision: 4, scale: 2, nullable: true })
+  end: number;
+}
+
+class AuctionProfitability {
+  @Column('decimal', { precision: 4, scale: 2, nullable: false })
+  start: number;
+
+  @Column('decimal', { precision: 4, scale: 2, nullable: true })
+  end: number;
 }
 
 @Entity('auctions')
@@ -31,22 +55,17 @@ export class Auction {
   })
   invoice: Invoice;
 
-  @Column('decimal', {
-    precision: 15,
-    scale: 2,
-    nullable: false,
-  })
-  startingPrice: number;
+  @Column(() => AuctionPrice)
+  price: AuctionPrice;
 
-  @Column('decimal', {
-    precision: 15,
-    scale: 2,
-    nullable: true,
-  })
-  endingPrice: number;
+  @Column(() => AuctionDiscount)
+  discount: AuctionDiscount;
+
+  @Column(() => AuctionProfitability)
+  profitability: AuctionProfitability;
 
   @Column(() => AuctionDate)
-  auctionDate: AuctionDate;
+  date: AuctionDate;
 
   @Column('enum', {
     enum: AuctionStatus,
@@ -59,12 +78,8 @@ export class Auction {
   })
   lastCommunication: string;
 
-  @Column('timestamptz', { nullable: true })
-  pausedAt: Date | null;
-
   @OneToMany(() => Bid, (bid) => bid.auction, {
     cascade: true,
-    eager: true,
   })
   bids: Bid[];
 

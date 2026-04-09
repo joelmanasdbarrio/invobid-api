@@ -1,6 +1,10 @@
 import { Injectable } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import * as bcrypt from 'bcrypt';
+import {
+  computeDiscount,
+  computeProfitability,
+} from 'src/app/auction/auction-metrics.util';
 import { Auction } from 'src/app/auction/entities/auction.entity';
 import { AuctionStatus } from 'src/app/auction/enums/auction-status.enum';
 import { BankAccount } from 'src/app/bank-account/entities/bank-account.entity';
@@ -44,8 +48,6 @@ export class SeedService {
     console.log('🌱 Starting database seeding...');
 
     try {
-      await this.clearDatabase();
-
       console.log('👤 Seeding admins...');
       const admins = await this.seedAdmins();
 
@@ -77,27 +79,6 @@ export class SeedService {
     } catch (error) {
       console.error('❌ Error seeding database:', error);
       throw error;
-    }
-  }
-
-  async clearDatabase() {
-    console.log('🗑️  Clearing existing data...');
-
-    try {
-      await this.bidRepository.query('TRUNCATE TABLE "bids" CASCADE');
-      await this.auctionRepository.query('TRUNCATE TABLE "auctions" CASCADE');
-      await this.invoiceRepository.query('TRUNCATE TABLE "invoices" CASCADE');
-      await this.documentRepository.query('TRUNCATE TABLE "documents" CASCADE');
-      await this.debtorRepository.query('TRUNCATE TABLE "debtors" CASCADE');
-      await this.bankAccountRepository.query(
-        'TRUNCATE TABLE "bank_accounts" CASCADE',
-      );
-      await this.adminRepository.query('TRUNCATE TABLE "users" CASCADE');
-    } catch (err) {
-      console.log(
-        '⚠️  Warning: Could not clear all tables. This might be okay on first run:\n',
-        err,
-      );
     }
   }
 
@@ -761,7 +742,7 @@ export class SeedService {
         const invoiceData: Partial<Invoice> = {
           sellerInvestor: seller,
           debtor: debtor,
-          amount: 500000 + Math.random() * 4500000,
+          amount: 10000 + Math.random() * 90000,
           dueDate: dueDate,
           status: status,
           transactionFee: {
@@ -769,7 +750,8 @@ export class SeedService {
             buyerPercentage: 1.5,
           },
           rating: 4.0 + i * 0.3,
-          invoiceId: uuidv4(),
+          extRating: 4.0 + i * 0.28,
+          svc: uuidv4(),
         };
 
         if (lastCommunication) {
@@ -823,25 +805,19 @@ export class SeedService {
     const DAY_MS = 24 * 60 * 60 * 1000;
     const now = new Date();
 
-    const statuses = [
-      AuctionStatus.PUBLISHED,
-      AuctionStatus.DRAFT,
-      AuctionStatus.FINISHED,
-      AuctionStatus.CANCELLED,
-      AuctionStatus.LIVE,
-      AuctionStatus.PAUSED,
-    ];
+    const statuses = [Object.values(AuctionStatus)].flat();
 
     for (let i = 0; i < invoices.length; i++) {
       const invoice = invoices[i];
       const status = statuses[i % statuses.length];
 
-      // Duration between 1 and 7 days
-      const durationMs = (1 + Math.floor(Math.random() * 7)) * DAY_MS;
+      const durationMs = (1 + Math.floor(Math.random() * 24)) * 60 * 60 * 1000;
 
-      let auctionDateStart: Date;
+      let auctionDateStart: Date | undefined;
       let auctionDateEnd: Date;
       let endingPrice: number | undefined;
+      let endingDiscount: number | undefined;
+      let endingProfitability: number | undefined;
 
       switch (status) {
         case AuctionStatus.FINISHED:
@@ -855,25 +831,46 @@ export class SeedService {
               invoice.amount * (1 - (Math.random() * 0.15 + 0.05));
             endingPrice =
               startingPrice + Math.random() * (invoice.amount - startingPrice);
+            endingDiscount = computeDiscount(invoice.amount, endingPrice);
+            endingProfitability = computeProfitability(
+              invoice.amount,
+              invoice.transactionFee.buyerPercentage,
+              endingPrice,
+            );
           }
           break;
         }
-        case AuctionStatus.LIVE:
-        case AuctionStatus.PAUSED: {
-          // Started in the past, ends in the future
-          const startDaysAgo = 1 + Math.floor(Math.random() * 5);
-          auctionDateStart = new Date(now.getTime() - startDaysAgo * DAY_MS);
-          auctionDateEnd = new Date(auctionDateStart.getTime() + durationMs);
-          if (auctionDateEnd <= now) {
-            auctionDateEnd = new Date(now.getTime() + DAY_MS);
+        case AuctionStatus.PUBLISHED:
+        case AuctionStatus.TRANSITIONING: {
+          // For PUBLISHED: started in the past, end is in the future
+          // For TRANSITIONING: started and ended in the past (waiting for admin close)
+          // Note: TRANSITIONING auctions do NOT have ending values persisted;
+          // they will be set only when explicitly moved to FINISHED status.
+          const elapsedMs = Math.random() * durationMs;
+          auctionDateStart = new Date(now.getTime() - elapsedMs);
+          if (status === AuctionStatus.PUBLISHED) {
+            auctionDateEnd = new Date(auctionDateStart.getTime() + durationMs);
+          } else {
+            // TRANSITIONING: end is in the past
+            const endDaysAgo = 1 + Math.floor(Math.random() * 3);
+            auctionDateEnd = new Date(
+              now.getTime() - endDaysAgo * DAY_MS * 0.5,
+            );
+            if (auctionDateEnd <= auctionDateStart) {
+              auctionDateEnd = new Date(
+                auctionDateStart.getTime() + durationMs * 0.1,
+              );
+            }
+            // TRANSITIONING: do not set ending values here; they will be populated
+            // only when the auction explicitly transitions to FINISHED
           }
           break;
         }
         default: {
-          // PUBLISHED / DRAFT — starts in the future (1–30 days from now)
-          const startDaysAhead = 1 + Math.floor(Math.random() * 30);
-          auctionDateStart = new Date(now.getTime() + startDaysAhead * DAY_MS);
-          auctionDateEnd = new Date(auctionDateStart.getTime() + durationMs);
+          // DRAFT — auctionDateStart is null (auto-set on publish);
+          // end date set 3–32 days from now
+          const endDaysAhead = 3 + Math.floor(Math.random() * 30);
+          auctionDateEnd = new Date(now.getTime() + endDaysAhead * DAY_MS);
           break;
         }
       }
@@ -886,11 +883,22 @@ export class SeedService {
       const startingPrice =
         invoice.amount * (1 - (Math.random() * 0.15 + 0.05));
 
+      const startingDiscount = computeDiscount(invoice.amount, startingPrice);
+      const startingProfitability = computeProfitability(
+        invoice.amount,
+        invoice.transactionFee.buyerPercentage,
+        startingPrice,
+      );
+
       const auction = this.auctionRepository.create({
         invoice,
-        startingPrice,
-        endingPrice,
-        auctionDate: { auctionDateStart, auctionDateEnd },
+        price: { start: startingPrice, end: endingPrice },
+        discount: { start: startingDiscount, end: endingDiscount },
+        profitability: {
+          start: startingProfitability,
+          end: endingProfitability,
+        },
+        date: { start: auctionDateStart, end: auctionDateEnd },
         status,
       });
 
@@ -936,21 +944,41 @@ export class SeedService {
     );
 
     for (const auction of auctions) {
+      // Profitability = ((netInvoice - price) / price) * 100
+      // Profitability is positive when price < netInvoice.
+      // Bids step from the auction's starting price up to 99.9% of netInvoice,
+      // ensuring profitability is always strictly positive (≥ ~0.1%).
+      const buyerPercentage = auction.invoice.transactionFee.buyerPercentage;
+      const netInvoice = auction.invoice.amount * (1 - buyerPercentage / 100);
+      const lowerBound = auction.price.start;
+      const upperBound = netInvoice * 0.999; // keeps profitability ≥ ~0.1%
+      const spread = upperBound - lowerBound;
+      const step = spread / 6; // divide range into 6 steps, use steps 1–5
+
       for (let i = 1; i <= 5; i++) {
         const investor = buyerInvestors[i % buyerInvestors.length];
+        // Add slight random noise (±5% of step) to avoid perfectly linear bids
+        const noise = step * (Math.random() * 0.1 - 0.05);
 
+        const amount = lowerBound + step * i + noise;
         const bid = this.bidRepository.create({
           auction: auction,
           investor: investor,
-          amount:
-            auction.startingPrice * 1.05 +
-            Math.random() * auction.startingPrice * 0.5,
+          amount,
+          discount: computeDiscount(auction.invoice.amount, amount),
+          profitability: computeProfitability(
+            auction.invoice.amount,
+            auction.invoice.transactionFee.buyerPercentage,
+            amount,
+          ),
         });
 
-        bids.push(bid);
+        // Save individually so each bid gets a distinct createdAt timestamp,
+        // ensuring chronological order reflects ascending bid amounts.
+        bids.push(await this.bidRepository.save(bid));
       }
     }
 
-    return await this.bidRepository.save(bids);
+    return bids;
   }
 }

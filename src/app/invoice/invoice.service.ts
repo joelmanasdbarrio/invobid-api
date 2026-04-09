@@ -88,7 +88,7 @@ export class InvoiceService {
       document = await this.documentService.create(
         {
           title: `${user.name}'s ${debtor.companyName} invoice document`,
-          value: createInvoiceDto.invoiceId,
+          value: createInvoiceDto.svc,
           type: DocumentType.INVOICE,
         },
         file,
@@ -121,34 +121,19 @@ export class InvoiceService {
     queryBuilder.leftJoinAndSelect('invoice.sellerInvestor', 'sellerInvestor');
     queryBuilder.leftJoinAndSelect('invoice.documents', 'documents');
 
-    if (user.type === UserType.ADMIN) {
-      if (query.includeDeleted && query.includeDeleted > 0) {
-        queryBuilder.withDeleted();
-      }
-    } else {
-      queryBuilder.andWhere(
-        '(invoice.sellerInvestorId = :investorId OR (invoice.status = :verifiedStatusInvoice AND debtor.status = :verifiedStatusDebtor))',
-        {
-          investorId: user.id,
-          verifiedStatusInvoice: InvoiceStatus.VERIFIED,
-          verifiedStatusDebtor: DebtorStatus.VERIFIED,
-        },
-      );
-
-      if (query.includeDeleted && query.includeDeleted > 0) {
-        queryBuilder.withDeleted();
-        queryBuilder.andWhere(
-          '(invoice.sellerInvestorId = :userId OR debtor.deletedAt IS NULL)',
-          {
-            userId: user.id,
-          },
-        );
-      }
+    if (user.type !== UserType.ADMIN) {
+      queryBuilder.andWhere('invoice.sellerInvestorId = :investorId', {
+        investorId: user.id,
+      });
     }
 
-    if (query.invoiceId) {
-      queryBuilder.andWhere('invoice.invoiceId ILIKE :invoiceId', {
-        invoiceId: `%${query.invoiceId}%`,
+    if (query.includeDeleted && query.includeDeleted > 0) {
+      queryBuilder.withDeleted();
+    }
+
+    if (query.invoiceSvc) {
+      queryBuilder.andWhere('invoice.svc ILIKE :invoiceSvc', {
+        invoiceSvc: `%${query.invoiceSvc}%`,
       });
     }
 
@@ -207,9 +192,12 @@ export class InvoiceService {
     }
 
     if (query.minRating) {
-      queryBuilder.andWhere('debtor.rating >= :minRating', {
-        minRating: query.minRating,
-      });
+      queryBuilder.andWhere(
+        'invoice.rating >= :minRating OR invoice.extRating >= :minRating',
+        {
+          minRating: query.minRating,
+        },
+      );
     }
 
     if (query.status) {
@@ -339,6 +327,7 @@ export class InvoiceService {
         );
       } else if (invoice.status === InvoiceStatus.VERIFIED) {
         updateInvoiceDto.rating = invoice.rating;
+        updateInvoiceDto.extRating = invoice.extRating;
         updateInvoiceDto.status = invoice.status;
         updateInvoiceDto.lastCommunication = invoice.lastCommunication;
         file = undefined;
@@ -353,7 +342,7 @@ export class InvoiceService {
         document = await this.documentService.create(
           {
             title: `${user.name}'s updated invoice document`,
-            value: updateInvoiceDto.invoiceId || invoice.invoiceId,
+            value: updateInvoiceDto.svc || invoice.svc,
             type: DocumentType.INVOICE,
           },
           file,
