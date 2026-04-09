@@ -86,7 +86,7 @@ const makeCreateDto = (): CreateInvoiceDto => ({
   debtorId: 'debtor-id',
   amount: 5000,
   dueDate: '2026-06-01',
-  invoiceUid: 'B12345678-F001-00001234-20260216-A9K3',
+  svc: 'B12345678-F001-00001234-20260216-A9K3',
 });
 
 const mockFile = { originalname: 'invoice.pdf' } as Express.Multer.File;

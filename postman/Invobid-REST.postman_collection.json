@@ -1,7 +1,7 @@
 {
   "info": {
     "_postman_id": "32c22e82-5da9-4d25-81df-6de65a6ad611",
-    "name": "Invobid",
+    "name": "Invobid REST",
     "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json",
     "_exporter_id": "24297190"
   },
@@ -1190,7 +1190,7 @@
               "variable": [
                 {
                   "key": "invoiceId",
-                  "value": "072600c3-ad5f-469b-b370-0df240685df7"
+                  "value": "2a296d18-c421-4e72-9f16-a97f71ab4901"
                 }
               ]
             }
@@ -1316,7 +1316,8 @@
               ],
               "variable": [
                 {
-                  "key": "auctionId"
+                  "key": "auctionId",
+                  "value": "35f57e85-2077-4f22-9979-07844423bc1d"
                 }
               ]
             }
@@ -1381,6 +1382,92 @@
               "variable": [
                 {
                   "key": "auctionId"
+                }
+              ]
+            }
+          },
+          "response": []
+        }
+      ]
+    },
+    {
+      "name": "Bids",
+      "item": [
+        {
+          "name": "Get All Bids",
+          "protocolProfileBehavior": {
+            "disableBodyPruning": true
+          },
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "formdata",
+              "formdata": []
+            },
+            "url": {
+              "raw": "{{url}}/bid?auctionId={{auctionId}}&page=1&limit=1",
+              "host": [
+                "{{url}}"
+              ],
+              "path": [
+                "bid"
+              ],
+              "query": [
+                {
+                  "key": "auctionId",
+                  "value": "{{auctionId}}"
+                },
+                {
+                  "key": "page",
+                  "value": "1",
+                  "type": "text"
+                },
+                {
+                  "key": "limit",
+                  "value": "1",
+                  "type": "text"
+                }
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Get Bid",
+          "protocolProfileBehavior": {
+            "disableBodyPruning": true
+          },
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "formdata",
+              "formdata": []
+            },
+            "url": {
+              "raw": "{{url}}/bid/:bidId",
+              "host": [
+                "{{url}}"
+              ],
+              "path": [
+                "bid",
+                ":bidId"
+              ],
+              "variable": [
+                {
+                  "key": "bidId",
+                  "value": "e8c23b18-418a-42a7-995b-0ddb7064d3c0"
                 }
               ]
             }

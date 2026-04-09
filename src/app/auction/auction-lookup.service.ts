@@ -41,9 +41,9 @@ export class AuctionLookupService {
       }
     }
 
-    if (query.invoiceUid) {
-      queryBuilder.andWhere('auction.invoiceUid = :invoiceUid', {
-        invoiceUid: query.invoiceUid,
+    if (query.invoiceSvc) {
+      queryBuilder.andWhere('invoice.svc = :invoiceSvc', {
+        invoiceSvc: query.invoiceSvc,
       });
     }
 

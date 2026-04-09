@@ -1,4 +1,4 @@
-import { Module } from '@nestjs/common';
+import { Module, forwardRef } from '@nestjs/common';
 import { ConfigModule } from '@nestjs/config';
 import { TypeOrmModule } from '@nestjs/typeorm';
 import { AuctionModule } from '../auction/auction.module';
@@ -17,9 +17,10 @@ import { Bid } from './entities/bid.entity';
     TypeOrmModule.forFeature([Bid, User, Auction]),
     AuthModule,
     InvestorModule,
-    AuctionModule,
+    forwardRef(() => AuctionModule),
   ],
   controllers: [BidController],
   providers: [BidService, BidWsGateway],
+  exports: [BidService],
 })
 export class BidModule {}

@@ -58,7 +58,7 @@ const makeInvoice = (dueDate: string) => ({
 const makeDto = (
   overrides: Partial<CreateAuctionDto> = {},
 ): CreateAuctionDto => ({
-  invoiceUid: 'invoice-id',
+  svc: 'invoice-id',
   startingPrice: 1000,
   auctionDateEnd: utcDateOffset(4), // 4 days ahead — safely >= today+2
   ...overrides,

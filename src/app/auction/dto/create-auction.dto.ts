@@ -2,7 +2,7 @@ import { IsDateString, IsNumber, IsPositive, IsUUID } from 'class-validator';
 
 export class CreateAuctionDto {
   @IsUUID()
-  invoiceUid: string;
+  svc: string;
 
   @IsNumber()
   @IsPositive()
