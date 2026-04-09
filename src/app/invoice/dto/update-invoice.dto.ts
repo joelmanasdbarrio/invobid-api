@@ -25,6 +25,16 @@ export class UpdateInvoiceDto extends PartialType(CreateInvoiceDto) {
   @IsOptional()
   extRating?: number;
 
+  /**
+   * Identificador del Registro de Facturación:
+   * NIF/CIF/DNI del emisor + Serie + Número factura + Fecha + Código de verificación
+   * [ID Emisor]-[Serie]-[Número]-[Fecha]-[CódigoVerificación]
+   * B12345678-F001-00001234-20260216-A9K3
+   */
+  @IsString()
+  @IsOptional()
+  svc?: string;
+
   @IsOptional()
   @IsIn(Object.values(InvoiceStatus))
   status?: InvoiceStatus;

@@ -31,5 +31,5 @@ export class CreateInvoiceDto {
    * B12345678-F001-00001234-20260216-A9K3
    */
   @IsString()
-  invoiceUid: string;
+  svc: string;
 }

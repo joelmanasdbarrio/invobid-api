@@ -14,7 +14,7 @@ import { AuctionStatus } from '../enums/auction-status.enum';
 export class GetAuctionsDto extends PaginationDto {
   @IsString()
   @IsOptional()
-  invoiceUid?: string;
+  invoiceSvc?: string;
 
   @IsString()
   @IsOptional()

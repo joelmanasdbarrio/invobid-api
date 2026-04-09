@@ -29,7 +29,7 @@ export class Invoice {
   id: string;
 
   @Column('text', { unique: true })
-  invoiceUid: string;
+  svc: string;
 
   @ManyToOne(() => Investor, (investor) => investor.listedInvoices, {
     onDelete: 'CASCADE',

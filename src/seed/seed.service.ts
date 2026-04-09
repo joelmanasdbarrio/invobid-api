@@ -751,7 +751,7 @@ export class SeedService {
           },
           rating: 4.0 + i * 0.3,
           extRating: 4.0 + i * 0.28,
-          invoiceUid: uuidv4(),
+          svc: uuidv4(),
         };
 
         if (lastCommunication) {

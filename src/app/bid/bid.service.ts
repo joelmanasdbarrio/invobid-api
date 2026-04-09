@@ -1,7 +1,9 @@
 import {
   BadRequestException,
+  Inject,
   Injectable,
   NotFoundException,
+  forwardRef,
 } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
@@ -23,6 +25,7 @@ export class BidService {
   constructor(
     @InjectRepository(Bid)
     private readonly bidRepository: Repository<Bid>,
+    @Inject(forwardRef(() => AuctionService))
     private readonly auctionService: AuctionService,
   ) {}
 
@@ -35,6 +38,12 @@ export class BidService {
     if (!auction) {
       throw new BadRequestException(
         `Auction with id ${createBidDto.auctionId} not found`,
+      );
+    }
+
+    if (auction.invoice.sellerInvestor.id === user.id) {
+      throw new BadRequestException(
+        'Sellers cannot place bids on their own auctions',
       );
     }
 
@@ -53,9 +62,13 @@ export class BidService {
 
     const latestBidAmount = latestBid ? latestBid.amount : auction.price.start;
 
-    if (createBidDto.amount <= latestBidAmount) {
+    if (
+      createBidDto.amount <=
+      latestBidAmount *
+        (1 + Number(process.env.SMALLEST_BID_INCREMENT_PERCENTAGE) / 100)
+    ) {
       throw new BadRequestException(
-        `Bid amount must be greater than the current highest bid of ${latestBidAmount}`,
+        `Bid amount must be at least ${Number(process.env.SMALLEST_BID_INCREMENT_PERCENTAGE)}% greater than the current highest bid of ${latestBidAmount}`,
       );
     }
 

@@ -1,18 +1,21 @@
 import {
   BadRequestException,
   ForbiddenException,
+  Inject,
   Injectable,
   InternalServerErrorException,
   NotFoundException,
+  forwardRef,
 } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { In, Not, Repository } from 'typeorm';
-import { Bid } from '../bid/entities/bid.entity';
+import { BidService } from '../bid/bid.service';
 import { InvoiceStatus } from '../invoice/enums/invoice-status.enum';
 import { InvoiceService } from '../invoice/invoice.service';
 import { User } from '../user/common/entities/user.entity';
 import { UserType } from '../user/common/enums/user-type.enum';
 import { Investor } from '../user/investor/entities/investor.entity';
+import { InvestorService } from '../user/investor/investor.service';
 import { computeDiscount, computeProfitability } from './auction-metrics.util';
 import { CreateAuctionDto } from './dto/create-auction.dto';
 import { GetAuctionsDto } from './dto/get-auctions.dto';
@@ -30,14 +33,15 @@ export class AuctionService {
   constructor(
     @InjectRepository(Auction)
     private readonly auctionRepository: Repository<Auction>,
-    @InjectRepository(Bid)
-    private readonly bidRepository: Repository<Bid>,
+    @Inject(forwardRef(() => BidService))
+    private readonly bidService: BidService,
     private readonly invoiceService: InvoiceService,
+    private readonly investorService: InvestorService,
   ) {}
 
   async create(createAuctionDto: CreateAuctionDto, user: Investor) {
     const invoice = await this.invoiceService.findOne(
-      createAuctionDto.invoiceUid,
+      createAuctionDto.svc,
       user,
     );
 
@@ -114,26 +118,36 @@ export class AuctionService {
       .leftJoinAndSelect('invoice.buyerInvestor', 'buyerInvestor')
       .leftJoinAndSelect('invoice.debtor', 'debtor');
 
-    if (user.type === UserType.ADMIN) {
-      if (query.includeDeleted && query.includeDeleted > 0) {
-        queryBuilder.withDeleted();
-      }
-    } else {
+    if (user.type !== UserType.ADMIN) {
       queryBuilder.andWhere(
-        '(sellerInvestor.id = :userId OR auction.status IN (:...publicStatuses))',
+        '((sellerInvestor.id = :investorId AND buyerInvestor.id IS NULL) OR buyerInvestor.id = :investorId OR auction.status IN (:...publicStatuses))',
         {
-          userId: query.includeSelf && query.includeSelf > 0 ? user.id : null,
+          investorId:
+            query.includeSelf && query.includeSelf > 0 ? user.id : null,
           publicStatuses: [AuctionStatus.PUBLISHED],
         },
       );
-      if (query.includeDeleted && query.includeDeleted > 0) {
-        queryBuilder.withDeleted();
+
+      if (!query.includeSelf || !(query.includeSelf > 0)) {
+        queryBuilder.andWhere('sellerInvestor.id != :investorId', {
+          investorId: user.id,
+        });
       }
     }
 
-    if (query.invoiceUid) {
-      queryBuilder.andWhere('auction.invoiceUid = :invoiceUid', {
-        invoiceUid: query.invoiceUid,
+    if (query.includeDeleted && query.includeDeleted > 0) {
+      queryBuilder.withDeleted();
+      queryBuilder.andWhere(
+        'sellerInvestor.id = :investorId OR debtor.deletedAt IS NULL',
+        {
+          investorId: user.id,
+        },
+      );
+    }
+
+    if (query.invoiceSvc) {
+      queryBuilder.andWhere('invoice.svc = :invoiceSvc', {
+        invoiceSvc: query.invoiceSvc,
       });
     }
 
@@ -242,7 +256,6 @@ export class AuctionService {
     }
 
     const data = await queryBuilder.getMany();
-    data.forEach((auction) => (auction.bids = []));
 
     return {
       data,
@@ -268,7 +281,7 @@ export class AuctionService {
       queryBuilder.leftJoinAndSelect('bids.investor', 'investor');
     } else {
       queryBuilder.andWhere(
-        '(sellerInvestor.id = :userId OR auction.status IN (:...publicStatuses))',
+        '((sellerInvestor.id = :userId AND buyerInvestor.id IS NULL) OR buyerInvestor.id = :userId OR auction.status IN (:...publicStatuses))',
         {
           userId: user.id,
           publicStatuses: [AuctionStatus.PUBLISHED],
@@ -290,22 +303,17 @@ export class AuctionService {
 
     if (
       auction.status === AuctionStatus.FINISHED ||
-      auction.status === AuctionStatus.CANCELLED
+      auction.status === AuctionStatus.CANCELLED ||
+      auction.status === AuctionStatus.PUBLISHED
     ) {
-      throw new BadRequestException(
+      throw new ForbiddenException(
         `Auction with id ${id} can no longer be updated`,
       );
     }
 
-    if (auction.status === AuctionStatus.PUBLISHED) {
-      throw new BadRequestException(
-        `Auction with id ${id} is published and cannot be modified`,
-      );
-    }
-
     if (updateAuctionDto.status === AuctionStatus.TRANSITIONING) {
-      throw new BadRequestException(
-        `Auction status cannot be set to transitioning manually`,
+      throw new ForbiddenException(
+        `Auction status cannot be set to ${AuctionStatus.TRANSITIONING} manually`,
       );
     }
 
@@ -317,16 +325,23 @@ export class AuctionService {
           updateAuctionDto.status !== AuctionStatus.CANCELLED
         ) {
           throw new BadRequestException(
-            `A transitioning auction can only be set to finished or cancelled`,
+            `A ${AuctionStatus.TRANSITIONING} auction can only be set to ${AuctionStatus.FINISHED} or ${AuctionStatus.CANCELLED}`,
           );
         }
 
-        // When transitioning to FINISHED, populate ending values from latest bid
+        if (
+          updateAuctionDto.status === AuctionStatus.CANCELLED &&
+          !updateAuctionDto.lastCommunication
+        ) {
+          throw new BadRequestException(
+            `lastCommunication is required when cancelling an auction`,
+          );
+        }
+
         if (updateAuctionDto.status === AuctionStatus.FINISHED) {
-          const latestBid = await this.bidRepository.findOne({
-            where: { auction: { id } },
-            order: { createdAt: 'DESC' },
-          });
+          const latestBid = await this.bidService
+            .findAll({ auctionId: auction.id, page: 1, limit: 1 }, user)
+            .then((res) => res.data[0]);
 
           if (latestBid) {
             auction.price.end = parseFloat(latestBid.amount.toString());
@@ -339,26 +354,33 @@ export class AuctionService {
               `Auction must have at least one bid before finishing`,
             );
           }
+
+          const buyerInvestor = await this.investorService.findOne(
+            latestBid.investor.id,
+            user,
+          );
+
+          if (!buyerInvestor) {
+            throw new NotFoundException(
+              `Buyer investor with id ${latestBid.investor.id} not found`,
+            );
+          }
+
+          auction.invoice.buyerInvestor = buyerInvestor;
         }
       }
-
-      if (
-        updateAuctionDto.status === AuctionStatus.PUBLISHED &&
-        auction.status === AuctionStatus.DRAFT
-      ) {
-        auction.date.start = new Date();
-      }
     } else {
-      if (auction.status === AuctionStatus.TRANSITIONING) {
+      if (
+        auction.invoice.sellerInvestor.id !== user.id ||
+        auction.status !== AuctionStatus.DRAFT
+      ) {
         throw new ForbiddenException(
           `You do not have permission to perform this action`,
         );
       }
 
-      if (auction.invoice.sellerInvestor.id !== user.id) {
-        throw new ForbiddenException(
-          `You do not have permission to perform this action`,
-        );
+      if (updateAuctionDto.status === AuctionStatus.PUBLISHED) {
+        auction.date.start = new Date();
       }
 
       if (updateAuctionDto.auctionDateEnd !== undefined) {
@@ -377,28 +399,10 @@ export class AuctionService {
         }
       }
 
-      if (
-        updateAuctionDto.status !== undefined &&
-        updateAuctionDto.status !== AuctionStatus.PUBLISHED
-      ) {
-        updateAuctionDto.status = auction.status;
-      }
-
-      if (updateAuctionDto.status === AuctionStatus.PUBLISHED) {
-        auction.date.start = new Date();
-      }
-
       updateAuctionDto.lastCommunication = auction.lastCommunication;
     }
 
-    if (updateAuctionDto.status !== undefined)
-      auction.status = updateAuctionDto.status;
-    if (updateAuctionDto.lastCommunication !== undefined)
-      auction.lastCommunication = updateAuctionDto.lastCommunication;
-    if (updateAuctionDto.auctionDateEnd !== undefined)
-      auction.date.end = new Date(updateAuctionDto.auctionDateEnd);
-    if (updateAuctionDto.startingPrice !== undefined)
-      auction.price.start = updateAuctionDto.startingPrice;
+    Object.assign(auction, updateAuctionDto.removeUndefined());
     const { discount, profitability } = this.computeMetrics(
       auction.invoice.amount,
       auction.invoice.transactionFee.buyerPercentage,
