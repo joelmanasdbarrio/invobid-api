@@ -341,7 +341,7 @@ export class InvoiceService {
       if (file) {
         document = await this.documentService.create(
           {
-            title: `${user.name}'s updated invoice document`,
+            title: `${user.name}'s ${invoice.debtor.companyName} invoice document`,
             value: updateInvoiceDto.svc || invoice.svc,
             type: DocumentType.INVOICE,
           },

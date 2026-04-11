@@ -15,8 +15,14 @@ export class CreateDebtorDto {
   taxId: string;
 
   @IsString()
-  modelo111Csv: string;
+  modelo111QuarterlyCsv: string;
 
   @IsString()
-  modelo303Csv: string;
+  modelo111AnnualCsv: string;
+
+  @IsString()
+  modelo303QuarterlyCsv: string;
+
+  @IsString()
+  modelo303AnnualCsv: string;
 }

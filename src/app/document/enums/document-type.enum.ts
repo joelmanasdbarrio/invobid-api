@@ -1,6 +1,9 @@
 export enum DocumentType {
-  IDENTIFICATION = 'identification',
+  ID = 'identification',
   INVOICE = 'invoice',
-  MODELO_111 = 'modelo111',
-  MODELO_303 = 'modelo303',
+  TAX = 'modelo',
+  TAX_111_QUARTERLY = `${DocumentType.TAX}-111-quarterly`,
+  TAX_111_ANNUAL = `${DocumentType.TAX}-111-annual`,
+  TAX_303_QUARTERLY = `${DocumentType.TAX}-303-quarterly`,
+  TAX_303_ANNUAL = `${DocumentType.TAX}-303-annual`,
 }

@@ -142,7 +142,7 @@ describe('InvestorService', () => {
       expect(mockBankAccountService.create).toHaveBeenCalled();
       expect(mockInvestorRepository.save).toHaveBeenCalled();
       expect(mockDocumentService.create).toHaveBeenCalledWith(
-        expect.objectContaining({ type: DocumentType.IDENTIFICATION }),
+        expect.objectContaining({ type: DocumentType.ID }),
         mockFile,
         investor,
       );
