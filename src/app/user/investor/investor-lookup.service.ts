@@ -22,7 +22,7 @@ export class InvestorLookupService {
       queryBuilder.leftJoinAndSelect('investor.documents', 'document');
       queryBuilder.leftJoinAndSelect('investor.bankAccount', 'bankAccount');
       queryBuilder.andWhere('document.type = :documentType', {
-        documentType: DocumentType.IDENTIFICATION,
+        documentType: DocumentType.ID,
       });
 
       if (query.status) {

@@ -396,7 +396,7 @@ export class SeedService {
         title: `${data.company} NIF/CIF Document`,
         filename: data.type === InvestorType.INDIVIDUAL ? `dni.jpg` : `cif.jpg`,
         value: data.taxId,
-        type: DocumentType.IDENTIFICATION,
+        type: DocumentType.ID,
       });
 
       const investor = this.investorRepository.create({
@@ -627,32 +627,57 @@ export class SeedService {
       const controlLetter = nifLetters[data.baseNumber % 23];
       const nif = `${data.baseNumber}${controlLetter}`;
 
-      const document111 = this.documentRepository.create({
+      const document111Quarterly = this.documentRepository.create({
         id: uuidv4(),
-        title: `${data.companyName} 111 tax document`,
+        title: `${data.companyName} 111 quarterly tax document`,
         filename: `modelo111.jpg`,
         value: nif,
-        type: DocumentType.MODELO_111,
+        type: DocumentType.TAX_111_QUARTERLY,
         investor: investor,
         debtor: debtor,
       });
 
-      const document303 = this.documentRepository.create({
+      const document111Annual = this.documentRepository.create({
         id: uuidv4(),
-        title: `${data.companyName} 303 tax document`,
+        title: `${data.companyName} 111 annual tax document`,
+        filename: `modelo111_annual.jpg`,
+        value: nif,
+        type: DocumentType.TAX_111_ANNUAL,
+        investor: investor,
+        debtor: debtor,
+      });
+
+      const document303Quarterly = this.documentRepository.create({
+        id: uuidv4(),
+        title: `${data.companyName} 303 quarterly tax document`,
         filename: `modelo303.jpg`,
         value: nif,
-        type: DocumentType.MODELO_303,
+        type: DocumentType.TAX_303_QUARTERLY,
         investor: investor,
         debtor: debtor,
       });
 
-      allDocuments.push(document111, document303);
+      const document303Annual = this.documentRepository.create({
+        id: uuidv4(),
+        title: `${data.companyName} 303 annual tax document`,
+        filename: `modelo303_annual.jpg`,
+        value: nif,
+        type: DocumentType.TAX_303_ANNUAL,
+        investor: investor,
+        debtor: debtor,
+      });
+
+      allDocuments.push(
+        document111Quarterly,
+        document111Annual,
+        document303Quarterly,
+        document303Annual,
+      );
     }
     await this.documentRepository.save(allDocuments);
 
     return await this.debtorRepository.find({
-      relations: ['documents', 'documents', 'investor'],
+      relations: ['documents', 'investor'],
     });
   }
 

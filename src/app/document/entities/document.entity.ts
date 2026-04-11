@@ -23,7 +23,7 @@ export class Document {
   @Column('text', { nullable: false })
   filename: string;
 
-  @Column('text', { nullable: false })
+  @Column('text', { nullable: true })
   value: string;
 
   @Column('text', { nullable: false })

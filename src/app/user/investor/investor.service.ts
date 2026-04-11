@@ -66,7 +66,7 @@ export class InvestorService {
         {
           title: `${createInvestorDto.companyName}'s ID document`,
           value: createInvestorDto.taxId,
-          type: DocumentType.IDENTIFICATION,
+          type: DocumentType.ID,
         },
         documentFile,
         investor,
@@ -121,7 +121,7 @@ export class InvestorService {
       queryBuilder.leftJoinAndSelect('investor.documents', 'document');
       queryBuilder.leftJoinAndSelect('investor.bankAccount', 'bankAccount');
       queryBuilder.andWhere('document.type = :documentType', {
-        documentType: DocumentType.IDENTIFICATION,
+        documentType: DocumentType.ID,
       });
 
       if (query.status) {
@@ -232,7 +232,7 @@ export class InvestorService {
   async update(
     id: string,
     updateInvestorDto: UpdateInvestorDto,
-    file: Express.Multer.File | undefined,
+    documentFile: Express.Multer.File | undefined,
     user: User,
   ) {
     const investor = await this.findOne(id, user);
@@ -266,10 +266,10 @@ export class InvestorService {
         updateInvestorDto.companyName = investor.companyName;
         updateInvestorDto.investorType = investor.investorType;
         updateInvestorDto.taxId = investor.taxId;
-        file = undefined;
+        documentFile = undefined;
       }
     } else {
-      file = undefined;
+      documentFile = undefined;
     }
 
     if (updateInvestorDto.password && updateInvestorDto.passwordRepeat) {
@@ -287,7 +287,7 @@ export class InvestorService {
         );
       }
 
-      if (user.type === UserType.INVESTOR && file) {
+      if (user.type === UserType.INVESTOR && documentFile) {
         if (!updateInvestorDto.taxId) {
           throw new BadRequestException(
             'taxId is required when uploading a new document file',
@@ -297,9 +297,9 @@ export class InvestorService {
             {
               title: `${investor.companyName}'s ID document`,
               value: updateInvestorDto.taxId,
-              type: DocumentType.IDENTIFICATION,
+              type: DocumentType.ID,
             },
-            file,
+            documentFile,
             investor,
           );
 

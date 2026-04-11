@@ -31,8 +31,10 @@ export class DebtorController {
   @Post()
   @UseInterceptors(
     FileFieldsInterceptor([
-      { name: DocumentType.MODELO_111, maxCount: 1 },
-      { name: DocumentType.MODELO_303, maxCount: 1 },
+      { name: DocumentType.TAX_111_QUARTERLY, maxCount: 1 },
+      { name: DocumentType.TAX_111_ANNUAL, maxCount: 1 },
+      { name: DocumentType.TAX_303_QUARTERLY, maxCount: 1 },
+      { name: DocumentType.TAX_303_ANNUAL, maxCount: 1 },
     ]),
   )
   @Auth([InvestorType.COMPANY])
@@ -91,8 +93,10 @@ export class DebtorController {
   @Patch(':id')
   @UseInterceptors(
     FileFieldsInterceptor([
-      { name: DocumentType.MODELO_111, maxCount: 1 },
-      { name: DocumentType.MODELO_303, maxCount: 1 },
+      { name: DocumentType.TAX_111_QUARTERLY, maxCount: 1 },
+      { name: DocumentType.TAX_111_ANNUAL, maxCount: 1 },
+      { name: DocumentType.TAX_303_QUARTERLY, maxCount: 1 },
+      { name: DocumentType.TAX_303_ANNUAL, maxCount: 1 },
     ]),
   )
   @Auth([UserType.ADMIN, InvestorType.COMPANY])
