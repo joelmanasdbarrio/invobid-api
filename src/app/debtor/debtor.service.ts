@@ -9,9 +9,6 @@ import {
 import { InjectRepository } from '@nestjs/typeorm';
 import { GetDebtorsDto } from 'src/app/debtor/dto/get-debtors.dto';
 import { Debtor } from 'src/app/debtor/entities/debtor.entity';
-import { DocumentService } from 'src/app/document/document.service';
-import { Document } from 'src/app/document/entities/document.entity';
-import { DocumentType } from 'src/app/document/enums/document-type.enum';
 import { User } from 'src/app/user/common/entities/user.entity';
 import { UserType } from 'src/app/user/common/enums/user-type.enum';
 import { Investor } from 'src/app/user/investor/entities/investor.entity';
@@ -25,46 +22,46 @@ export class DebtorService {
   constructor(
     @InjectRepository(Debtor)
     private readonly debtorRepository: Repository<Debtor>,
-    private readonly documentService: DocumentService,
+    // private readonly documentService: DocumentService,
   ) {}
 
   async create(
     createDebtorDto: CreateDebtorDto,
-    files: { [key: string]: Express.Multer.File[] },
+    // files: { [key: string]: Express.Multer.File[] },
     investor: Investor,
   ) {
-    const modelo111FileQuarterly =
-      files[DocumentType.TAX_111_QUARTERLY] &&
-      files[DocumentType.TAX_111_QUARTERLY][0];
+    // const modelo111FileQuarterly =
+    //   files[DocumentType.TAX_111_QUARTERLY] &&
+    //   files[DocumentType.TAX_111_QUARTERLY][0];
 
-    const modelo111FileAnnual =
-      files[DocumentType.TAX_111_ANNUAL] &&
-      files[DocumentType.TAX_111_ANNUAL][0];
+    // const modelo111FileAnnual =
+    //   files[DocumentType.TAX_111_ANNUAL] &&
+    //   files[DocumentType.TAX_111_ANNUAL][0];
 
-    const modelo303FileQuarterly =
-      files[DocumentType.TAX_303_QUARTERLY] &&
-      files[DocumentType.TAX_303_QUARTERLY][0];
+    // const modelo303FileQuarterly =
+    //   files[DocumentType.TAX_303_QUARTERLY] &&
+    //   files[DocumentType.TAX_303_QUARTERLY][0];
 
-    const modelo303FileAnnual =
-      files[DocumentType.TAX_303_ANNUAL] &&
-      files[DocumentType.TAX_303_ANNUAL][0];
+    // const modelo303FileAnnual =
+    //   files[DocumentType.TAX_303_ANNUAL] &&
+    //   files[DocumentType.TAX_303_ANNUAL][0];
 
-    if (
-      !modelo111FileQuarterly ||
-      !modelo111FileAnnual ||
-      !modelo303FileQuarterly ||
-      !modelo303FileAnnual
-    ) {
-      throw new BadRequestException(
-        `${DocumentType.TAX_111_QUARTERLY}, ${DocumentType.TAX_111_ANNUAL}, ${DocumentType.TAX_303_QUARTERLY}, and ${DocumentType.TAX_303_ANNUAL} must be valid AEAT documents`,
-      );
-    }
+    // if (
+    //   !modelo111FileQuarterly ||
+    //   !modelo111FileAnnual ||
+    //   !modelo303FileQuarterly ||
+    //   !modelo303FileAnnual
+    // ) {
+    //   throw new BadRequestException(
+    //     `${DocumentType.TAX_111_QUARTERLY}, ${DocumentType.TAX_111_ANNUAL}, ${DocumentType.TAX_303_QUARTERLY}, and ${DocumentType.TAX_303_ANNUAL} must be valid AEAT documents`,
+    //   );
+    // }
 
     let debtor: Debtor | undefined;
-    let modelo111Quarterly: Document | undefined;
-    let modelo111Annual: Document | undefined;
-    let modelo303Quarterly: Document | undefined;
-    let modelo303Annual: Document | undefined;
+    // let modelo111Quarterly: Document | undefined;
+    // let modelo111Annual: Document | undefined;
+    // let modelo303Quarterly: Document | undefined;
+    // let modelo303Annual: Document | undefined;
     try {
       debtor = await this.debtorRepository.save({
         ...createDebtorDto,
@@ -72,56 +69,56 @@ export class DebtorService {
         lastCommunication: 'Pendiente de revisión por usuario administrador',
       });
 
-      modelo111Quarterly = await this.documentService.create(
-        {
-          title: `${createDebtorDto.companyName}'s Modelo 111 trimestral`,
-          value: createDebtorDto.modelo111QuarterlyCsv,
-          type: DocumentType.TAX_111_QUARTERLY,
-        },
-        modelo111FileQuarterly,
-        investor,
-        debtor,
-      );
+      // modelo111Quarterly = await this.documentService.create(
+      //   {
+      //     title: `${createDebtorDto.companyName}'s Modelo 111 trimestral`,
+      //     value: createDebtorDto.modelo111QuarterlyCsv,
+      //     type: DocumentType.TAX_111_QUARTERLY,
+      //   },
+      //   modelo111FileQuarterly,
+      //   investor,
+      //   debtor,
+      // );
 
-      modelo111Annual = await this.documentService.create(
-        {
-          title: `${createDebtorDto.companyName}'s Modelo 111 anual`,
-          value: createDebtorDto.modelo111AnnualCsv,
-          type: DocumentType.TAX_111_ANNUAL,
-        },
-        modelo111FileAnnual,
-        investor,
-        debtor,
-      );
+      // modelo111Annual = await this.documentService.create(
+      //   {
+      //     title: `${createDebtorDto.companyName}'s Modelo 111 anual`,
+      //     value: createDebtorDto.modelo111AnnualCsv,
+      //     type: DocumentType.TAX_111_ANNUAL,
+      //   },
+      //   modelo111FileAnnual,
+      //   investor,
+      //   debtor,
+      // );
 
-      modelo303Quarterly = await this.documentService.create(
-        {
-          title: `${createDebtorDto.companyName}'s Modelo 303 trimestral`,
-          value: createDebtorDto.modelo303QuarterlyCsv,
-          type: DocumentType.TAX_303_QUARTERLY,
-        },
-        modelo303FileQuarterly,
-        investor,
-        debtor,
-      );
+      // modelo303Quarterly = await this.documentService.create(
+      //   {
+      //     title: `${createDebtorDto.companyName}'s Modelo 303 trimestral`,
+      //     value: createDebtorDto.modelo303QuarterlyCsv,
+      //     type: DocumentType.TAX_303_QUARTERLY,
+      //   },
+      //   modelo303FileQuarterly,
+      //   investor,
+      //   debtor,
+      // );
 
-      modelo303Annual = await this.documentService.create(
-        {
-          title: `${createDebtorDto.companyName}'s Modelo 303 anual`,
-          value: createDebtorDto.modelo303AnnualCsv,
-          type: DocumentType.TAX_303_ANNUAL,
-        },
-        modelo303FileAnnual,
-        investor,
-        debtor,
-      );
+      // modelo303Annual = await this.documentService.create(
+      //   {
+      //     title: `${createDebtorDto.companyName}'s Modelo 303 anual`,
+      //     value: createDebtorDto.modelo303AnnualCsv,
+      //     type: DocumentType.TAX_303_ANNUAL,
+      //   },
+      //   modelo303FileAnnual,
+      //   investor,
+      //   debtor,
+      // );
 
-      debtor.documents = [
-        modelo111Quarterly,
-        modelo111Annual,
-        modelo303Quarterly,
-        modelo303Annual,
-      ];
+      // debtor.documents = [
+      //   modelo111Quarterly,
+      //   modelo111Annual,
+      //   modelo303Quarterly,
+      //   modelo303Annual,
+      // ];
       await this.debtorRepository.save(debtor);
 
       return debtor;
@@ -130,30 +127,30 @@ export class DebtorService {
       if (debtor) {
         await this.debtorRepository.delete(debtor.id);
       }
-      if (modelo111Quarterly) {
-        await this.documentService.deleteFile(modelo111Quarterly.filename);
-        await this.documentService.remove(
-          modelo111Quarterly.id,
-          investor,
-          false,
-        );
-      }
-      if (modelo111Annual) {
-        await this.documentService.deleteFile(modelo111Annual.filename);
-        await this.documentService.remove(modelo111Annual.id, investor, false);
-      }
-      if (modelo303Quarterly) {
-        await this.documentService.deleteFile(modelo303Quarterly.filename);
-        await this.documentService.remove(
-          modelo303Quarterly.id,
-          investor,
-          false,
-        );
-      }
-      if (modelo303Annual) {
-        await this.documentService.deleteFile(modelo303Annual.filename);
-        await this.documentService.remove(modelo303Annual.id, investor, false);
-      }
+      // if (modelo111Quarterly) {
+      //   await this.documentService.deleteFile(modelo111Quarterly.filename);
+      //   await this.documentService.remove(
+      //     modelo111Quarterly.id,
+      //     investor,
+      //     false,
+      //   );
+      // }
+      // if (modelo111Annual) {
+      //   await this.documentService.deleteFile(modelo111Annual.filename);
+      //   await this.documentService.remove(modelo111Annual.id, investor, false);
+      // }
+      // if (modelo303Quarterly) {
+      //   await this.documentService.deleteFile(modelo303Quarterly.filename);
+      //   await this.documentService.remove(
+      //     modelo303Quarterly.id,
+      //     investor,
+      //     false,
+      //   );
+      // }
+      // if (modelo303Annual) {
+      //   await this.documentService.deleteFile(modelo303Annual.filename);
+      //   await this.documentService.remove(modelo303Annual.id, investor, false);
+      // }
       // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access
       if (error.code === '23505') {
         // eslint-disable-next-line
@@ -189,7 +186,7 @@ export class DebtorService {
     const queryBuilder = this.debtorRepository.createQueryBuilder('debtor');
 
     if (user.type === UserType.ADMIN) {
-      queryBuilder.leftJoinAndSelect('debtor.documents', 'documents');
+      // queryBuilder.leftJoinAndSelect('debtor.documents', 'documents');
       queryBuilder.leftJoinAndSelect('debtor.investor', 'investor');
 
       if (query.status) {
@@ -287,16 +284,16 @@ export class DebtorService {
       );
     }
 
-    if (user.type === UserType.ADMIN) {
-      queryBuilder.leftJoinAndSelect('debtor.documents', 'documents');
-    } else {
-      queryBuilder.leftJoinAndSelect(
-        'debtor.documents',
-        'documents',
-        'debtor.investorId = :userId',
-        { userId: user.id },
-      );
-    }
+    // if (user.type === UserType.ADMIN) {
+    //   queryBuilder.leftJoinAndSelect('debtor.documents', 'documents');
+    // } else {
+    //   queryBuilder.leftJoinAndSelect(
+    //     'debtor.documents',
+    //     'documents',
+    //     'debtor.investorId = :userId',
+    //     { userId: user.id },
+    //   );
+    // }
 
     const debtor = await queryBuilder.getOne();
 
@@ -310,9 +307,9 @@ export class DebtorService {
   async update(
     id: string,
     updateDebtorDto: UpdateDebtorDto,
-    files: {
-      [key: string]: [Express.Multer.File | undefined] | undefined;
-    } = {},
+    // files: {
+    //   [key: string]: [Express.Multer.File | undefined] | undefined;
+    // } = {},
     user: User,
   ) {
     const debtor: Debtor = await this.findOne(id, user);
@@ -323,23 +320,23 @@ export class DebtorService {
       );
     }
 
-    let modelo111FileQuarterly =
-      files[DocumentType.TAX_111_QUARTERLY] &&
-      files[DocumentType.TAX_111_QUARTERLY][0];
-    let modelo111FileAnnual =
-      files[DocumentType.TAX_111_ANNUAL] &&
-      files[DocumentType.TAX_111_ANNUAL][0];
-    let modelo303FileQuarterly =
-      files[DocumentType.TAX_303_QUARTERLY] &&
-      files[DocumentType.TAX_303_QUARTERLY][0];
-    let modelo303FileAnnual =
-      files[DocumentType.TAX_303_ANNUAL] &&
-      files[DocumentType.TAX_303_ANNUAL][0];
+    // let modelo111FileQuarterly =
+    //   files[DocumentType.TAX_111_QUARTERLY] &&
+    //   files[DocumentType.TAX_111_QUARTERLY][0];
+    // let modelo111FileAnnual =
+    //   files[DocumentType.TAX_111_ANNUAL] &&
+    //   files[DocumentType.TAX_111_ANNUAL][0];
+    // let modelo303FileQuarterly =
+    //   files[DocumentType.TAX_303_QUARTERLY] &&
+    //   files[DocumentType.TAX_303_QUARTERLY][0];
+    // let modelo303FileAnnual =
+    //   files[DocumentType.TAX_303_ANNUAL] &&
+    //   files[DocumentType.TAX_303_ANNUAL][0];
 
-    let modelo111Quarterly: Document | undefined;
-    let modelo111Annual: Document | undefined;
-    let modelo303Quarterly: Document | undefined;
-    let modelo303Annual: Document | undefined;
+    // let modelo111Quarterly: Document | undefined;
+    // let modelo111Annual: Document | undefined;
+    // let modelo303Quarterly: Document | undefined;
+    // let modelo303Annual: Document | undefined;
 
     if (user.type !== UserType.ADMIN) {
       if (debtor.status === DebtorStatus.CORRECTION) {
@@ -367,137 +364,137 @@ export class DebtorService {
         updateDebtorDto.taxId = debtor.taxId;
         updateDebtorDto.status = debtor.status;
         updateDebtorDto.lastCommunication = debtor.lastCommunication;
-        modelo111FileQuarterly = undefined;
-        modelo111FileAnnual = undefined;
-        modelo303FileQuarterly = undefined;
-        modelo303FileAnnual = undefined;
+        // modelo111FileQuarterly = undefined;
+        // modelo111FileAnnual = undefined;
+        // modelo303FileQuarterly = undefined;
+        // modelo303FileAnnual = undefined;
       }
     } else {
-      modelo111FileQuarterly = undefined;
-      modelo111FileAnnual = undefined;
-      modelo303FileQuarterly = undefined;
-      modelo303FileAnnual = undefined;
+      // modelo111FileQuarterly = undefined;
+      // modelo111FileAnnual = undefined;
+      // modelo303FileQuarterly = undefined;
+      // modelo303FileAnnual = undefined;
     }
 
     try {
-      if (user.type === UserType.INVESTOR) {
-        if (modelo111FileQuarterly) {
-          if (!updateDebtorDto.modelo111QuarterlyCsv) {
-            throw new BadRequestException(
-              'modelo111QuarterlyCsv is required when uploading a new file',
-            );
-          } else {
-            modelo111Quarterly = await this.documentService.create(
-              {
-                title: `${debtor.companyName}'s Modelo 111 Quarterly`,
-                value: updateDebtorDto.modelo111QuarterlyCsv,
-                type: DocumentType.TAX_111_QUARTERLY,
-              },
-              modelo111FileQuarterly,
-              user,
-              debtor,
-            );
+      // if (user.type === UserType.INVESTOR) {
+      //   if (modelo111FileQuarterly) {
+      //     if (!updateDebtorDto.modelo111QuarterlyCsv) {
+      //       throw new BadRequestException(
+      //         'modelo111QuarterlyCsv is required when uploading a new file',
+      //       );
+      //     } else {
+      //       modelo111Quarterly = await this.documentService.create(
+      //         {
+      //           title: `${debtor.companyName}'s Modelo 111 Quarterly`,
+      //           value: updateDebtorDto.modelo111QuarterlyCsv,
+      //           type: DocumentType.TAX_111_QUARTERLY,
+      //         },
+      //         modelo111FileQuarterly,
+      //         user,
+      //         debtor,
+      //       );
 
-            if (!debtor.documents) {
-              debtor.documents = [];
-            }
-            debtor.documents.push(modelo111Quarterly);
-          }
-        }
+      //       if (!debtor.documents) {
+      //         debtor.documents = [];
+      //       }
+      //       debtor.documents.push(modelo111Quarterly);
+      //     }
+      //   }
 
-        if (modelo111FileAnnual) {
-          if (!updateDebtorDto.modelo111AnnualCsv) {
-            throw new BadRequestException(
-              'modelo111AnnualCsv is required when uploading a new file',
-            );
-          } else {
-            modelo111Annual = await this.documentService.create(
-              {
-                title: `${debtor.companyName}'s Modelo 111 Annual`,
-                value: updateDebtorDto.modelo111AnnualCsv,
-                type: DocumentType.TAX_111_ANNUAL,
-              },
-              modelo111FileAnnual,
-              user,
-              debtor,
-            );
+      //   if (modelo111FileAnnual) {
+      //     if (!updateDebtorDto.modelo111AnnualCsv) {
+      //       throw new BadRequestException(
+      //         'modelo111AnnualCsv is required when uploading a new file',
+      //       );
+      //     } else {
+      //       modelo111Annual = await this.documentService.create(
+      //         {
+      //           title: `${debtor.companyName}'s Modelo 111 Annual`,
+      //           value: updateDebtorDto.modelo111AnnualCsv,
+      //           type: DocumentType.TAX_111_ANNUAL,
+      //         },
+      //         modelo111FileAnnual,
+      //         user,
+      //         debtor,
+      //       );
 
-            if (!debtor.documents) {
-              debtor.documents = [];
-            }
-            debtor.documents.push(modelo111Annual);
-          }
-        }
+      //       if (!debtor.documents) {
+      //         debtor.documents = [];
+      //       }
+      //       debtor.documents.push(modelo111Annual);
+      //     }
+      //   }
 
-        if (modelo303FileQuarterly) {
-          if (!updateDebtorDto.modelo303QuarterlyCsv) {
-            throw new BadRequestException(
-              'modelo303QuarterlyCsv is required when uploading a new file',
-            );
-          } else {
-            modelo303Quarterly = await this.documentService.create(
-              {
-                title: `${debtor.companyName}'s Modelo 303 Quarterly`,
-                value: updateDebtorDto.modelo303QuarterlyCsv,
-                type: DocumentType.TAX_303_QUARTERLY,
-              },
-              modelo303FileQuarterly,
-              user,
-              debtor,
-            );
+      //   if (modelo303FileQuarterly) {
+      //     if (!updateDebtorDto.modelo303QuarterlyCsv) {
+      //       throw new BadRequestException(
+      //         'modelo303QuarterlyCsv is required when uploading a new file',
+      //       );
+      //     } else {
+      //       modelo303Quarterly = await this.documentService.create(
+      //         {
+      //           title: `${debtor.companyName}'s Modelo 303 Quarterly`,
+      //           value: updateDebtorDto.modelo303QuarterlyCsv,
+      //           type: DocumentType.TAX_303_QUARTERLY,
+      //         },
+      //         modelo303FileQuarterly,
+      //         user,
+      //         debtor,
+      //       );
 
-            if (!debtor.documents) {
-              debtor.documents = [];
-            }
-            debtor.documents.push(modelo303Quarterly);
-          }
-        }
+      //       if (!debtor.documents) {
+      //         debtor.documents = [];
+      //       }
+      //       debtor.documents.push(modelo303Quarterly);
+      //     }
+      //   }
 
-        if (modelo303FileAnnual) {
-          if (!updateDebtorDto.modelo303AnnualCsv) {
-            throw new BadRequestException(
-              'modelo303AnnualCsv is required when uploading a new file',
-            );
-          } else {
-            modelo303Annual = await this.documentService.create(
-              {
-                title: `${debtor.companyName}'s Modelo 303 Annual`,
-                value: updateDebtorDto.modelo303AnnualCsv,
-                type: DocumentType.TAX_303_ANNUAL,
-              },
-              modelo303FileAnnual,
-              user,
-              debtor,
-            );
+      //   if (modelo303FileAnnual) {
+      //     if (!updateDebtorDto.modelo303AnnualCsv) {
+      //       throw new BadRequestException(
+      //         'modelo303AnnualCsv is required when uploading a new file',
+      //       );
+      //     } else {
+      //       modelo303Annual = await this.documentService.create(
+      //         {
+      //           title: `${debtor.companyName}'s Modelo 303 Annual`,
+      //           value: updateDebtorDto.modelo303AnnualCsv,
+      //           type: DocumentType.TAX_303_ANNUAL,
+      //         },
+      //         modelo303FileAnnual,
+      //         user,
+      //         debtor,
+      //       );
 
-            if (!debtor.documents) {
-              debtor.documents = [];
-            }
-            debtor.documents.push(modelo303Annual);
-          }
-        }
-      }
+      //       if (!debtor.documents) {
+      //         debtor.documents = [];
+      //       }
+      //       debtor.documents.push(modelo303Annual);
+      //     }
+      //   }
+      // }
 
       Object.assign(debtor, updateDebtorDto.removeUndefined());
       return await this.debtorRepository.save(debtor);
     } catch (error) {
       console.error(error);
-      if (modelo111Quarterly) {
-        await this.documentService.deleteFile(modelo111Quarterly.filename);
-        await this.documentService.remove(modelo111Quarterly.id, user, false);
-      }
-      if (modelo111Annual) {
-        await this.documentService.deleteFile(modelo111Annual.filename);
-        await this.documentService.remove(modelo111Annual.id, user, false);
-      }
-      if (modelo303Quarterly) {
-        await this.documentService.deleteFile(modelo303Quarterly.filename);
-        await this.documentService.remove(modelo303Quarterly.id, user, false);
-      }
-      if (modelo303Annual) {
-        await this.documentService.deleteFile(modelo303Annual.filename);
-        await this.documentService.remove(modelo303Annual.id, user, false);
-      }
+      // if (modelo111Quarterly) {
+      //   await this.documentService.deleteFile(modelo111Quarterly.filename);
+      //   await this.documentService.remove(modelo111Quarterly.id, user, false);
+      // }
+      // if (modelo111Annual) {
+      //   await this.documentService.deleteFile(modelo111Annual.filename);
+      //   await this.documentService.remove(modelo111Annual.id, user, false);
+      // }
+      // if (modelo303Quarterly) {
+      //   await this.documentService.deleteFile(modelo303Quarterly.filename);
+      //   await this.documentService.remove(modelo303Quarterly.id, user, false);
+      // }
+      // if (modelo303Annual) {
+      //   await this.documentService.deleteFile(modelo303Annual.filename);
+      //   await this.documentService.remove(modelo303Annual.id, user, false);
+      // }
 
       // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access
       if (error.code === '23505') {

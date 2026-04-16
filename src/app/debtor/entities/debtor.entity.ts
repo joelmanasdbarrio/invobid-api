@@ -1,6 +1,5 @@
 import { Length } from 'class-validator';
 import { DebtorStatus } from 'src/app/debtor/enums/debtor-status.enum';
-import { Document } from 'src/app/document/entities/document.entity';
 import { Invoice } from 'src/app/invoice/entities/invoice.entity';
 import { Investor } from 'src/app/user/investor/entities/investor.entity';
 import {
@@ -52,10 +51,10 @@ export class Debtor {
   @Column('text', { nullable: true })
   lastCommunication?: string;
 
-  @OneToMany(() => Document, (document) => document.debtor, {
-    cascade: true,
-  })
-  documents: Document[];
+  // @OneToMany(() => Document, (document) => document.debtor, {
+  //   cascade: true,
+  // })
+  // documents: Document[];
 
   @OneToMany(() => Invoice, (invoice) => invoice.debtor, {
     cascade: true,
