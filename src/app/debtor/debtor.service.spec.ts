@@ -70,17 +70,23 @@ const makeCreateDto = (): CreateDebtorDto => ({
   phoneNumber: '+34600000000',
   companyName: 'Debtor Co',
   taxId: 'B12345678',
-  modelo111Csv: 'csv-111-data',
-  modelo303Csv: 'csv-303-data',
+  modelo111QuarterlyCsv: 'csv-111-quarterly-data',
+  modelo111AnnualCsv: 'csv-111-annual-data',
+  modelo303QuarterlyCsv: 'csv-303-quarterly-data',
+  modelo303AnnualCsv: 'csv-303-annual-data',
 });
 
 const makeFile = (name: string) =>
   ({ originalname: name, filename: `${name}.pdf` }) as Express.Multer.File;
-const file111 = makeFile('modelo111');
-const file303 = makeFile('modelo303');
+const file111Quarterly = makeFile('modelo111-quarterly');
+const file111Annual = makeFile('modelo111-annual');
+const file303Quarterly = makeFile('modelo303-quarterly');
+const file303Annual = makeFile('modelo303-annual');
 const makeFiles = (): { [key: string]: Express.Multer.File[] } => ({
-  [DocumentType.MODELO_111]: [file111],
-  [DocumentType.MODELO_303]: [file303],
+  [DocumentType.TAX_111_QUARTERLY]: [file111Quarterly],
+  [DocumentType.TAX_111_ANNUAL]: [file111Annual],
+  [DocumentType.TAX_303_QUARTERLY]: [file303Quarterly],
+  [DocumentType.TAX_303_ANNUAL]: [file303Annual],
 });
 
 describe('DebtorService', () => {
@@ -116,7 +122,10 @@ describe('DebtorService', () => {
       await expect(
         service.create(
           makeCreateDto(),
-          { [DocumentType.MODELO_303]: [file303] },
+          {
+            [DocumentType.TAX_303_QUARTERLY]: [file303Quarterly],
+            [DocumentType.TAX_303_ANNUAL]: [file303Annual],
+          },
           ownerInvestor,
         ),
       ).rejects.toThrow(BadRequestException);
@@ -126,23 +135,44 @@ describe('DebtorService', () => {
       await expect(
         service.create(
           makeCreateDto(),
-          { [DocumentType.MODELO_111]: [file111] },
+          {
+            [DocumentType.TAX_111_QUARTERLY]: [file111Quarterly],
+            [DocumentType.TAX_111_ANNUAL]: [file111Annual],
+          },
           ownerInvestor,
         ),
       ).rejects.toThrow(BadRequestException);
     });
 
-    it('should save debtor, create both documents and return debtor on happy path', async () => {
+    it('should save debtor, create all four documents and return debtor on happy path', async () => {
       const debtor = makeDebtor();
-      const doc111 = { id: 'doc-111', filename: 'modelo111.pdf' };
-      const doc303 = { id: 'doc-303', filename: 'modelo303.pdf' };
+      const doc111Quarterly = {
+        id: 'doc-111q',
+        filename: 'modelo111-quarterly.pdf',
+      };
+      const doc111Annual = { id: 'doc-111a', filename: 'modelo111-annual.pdf' };
+      const doc303Quarterly = {
+        id: 'doc-303q',
+        filename: 'modelo303-quarterly.pdf',
+      };
+      const doc303Annual = { id: 'doc-303a', filename: 'modelo303-annual.pdf' };
 
       mockDebtorRepository.save
         .mockResolvedValueOnce(debtor)
-        .mockResolvedValueOnce({ ...debtor, documents: [doc111, doc303] });
+        .mockResolvedValueOnce({
+          ...debtor,
+          documents: [
+            doc111Quarterly,
+            doc111Annual,
+            doc303Quarterly,
+            doc303Annual,
+          ],
+        });
       mockDocumentService.create
-        .mockResolvedValueOnce(doc111)
-        .mockResolvedValueOnce(doc303);
+        .mockResolvedValueOnce(doc111Quarterly)
+        .mockResolvedValueOnce(doc111Annual)
+        .mockResolvedValueOnce(doc303Quarterly)
+        .mockResolvedValueOnce(doc303Annual);
 
       const result = await service.create(
         makeCreateDto(),
@@ -152,27 +182,44 @@ describe('DebtorService', () => {
 
       expect(mockDebtorRepository.save).toHaveBeenCalledTimes(2);
       expect(mockDocumentService.create).toHaveBeenCalledWith(
-        expect.objectContaining({ type: DocumentType.MODELO_111 }),
-        file111,
+        expect.objectContaining({ type: DocumentType.TAX_111_QUARTERLY }),
+        file111Quarterly,
         ownerInvestor,
         debtor,
       );
       expect(mockDocumentService.create).toHaveBeenCalledWith(
-        expect.objectContaining({ type: DocumentType.MODELO_303 }),
-        file303,
+        expect.objectContaining({ type: DocumentType.TAX_111_ANNUAL }),
+        file111Annual,
+        ownerInvestor,
+        debtor,
+      );
+      expect(mockDocumentService.create).toHaveBeenCalledWith(
+        expect.objectContaining({ type: DocumentType.TAX_303_QUARTERLY }),
+        file303Quarterly,
+        ownerInvestor,
+        debtor,
+      );
+      expect(mockDocumentService.create).toHaveBeenCalledWith(
+        expect.objectContaining({ type: DocumentType.TAX_303_ANNUAL }),
+        file303Annual,
         ownerInvestor,
         debtor,
       );
       expect(result).toBe(debtor);
     });
 
-    it('should rollback debtor and modelo111 when modelo303 creation fails', async () => {
+    it('should rollback debtor and created documents when modelo303 creation fails', async () => {
       const debtor = makeDebtor();
-      const doc111 = { id: 'doc-111', filename: 'modelo111.pdf' };
+      const doc111Quarterly = {
+        id: 'doc-111q',
+        filename: 'modelo111-quarterly.pdf',
+      };
+      const doc111Annual = { id: 'doc-111a', filename: 'modelo111-annual.pdf' };
 
       mockDebtorRepository.save.mockResolvedValueOnce(debtor);
       mockDocumentService.create
-        .mockResolvedValueOnce(doc111)
+        .mockResolvedValueOnce(doc111Quarterly)
+        .mockResolvedValueOnce(doc111Annual)
         .mockRejectedValueOnce(new Error('upload failed'));
 
       await expect(
@@ -181,10 +228,18 @@ describe('DebtorService', () => {
 
       expect(mockDebtorRepository.delete).toHaveBeenCalledWith(debtor.id);
       expect(mockDocumentService.deleteFile).toHaveBeenCalledWith(
-        doc111.filename,
+        doc111Quarterly.filename,
       );
       expect(mockDocumentService.remove).toHaveBeenCalledWith(
-        doc111.id,
+        doc111Quarterly.id,
+        ownerInvestor,
+        false,
+      );
+      expect(mockDocumentService.deleteFile).toHaveBeenCalledWith(
+        doc111Annual.filename,
+      );
+      expect(mockDocumentService.remove).toHaveBeenCalledWith(
+        doc111Annual.id,
         ownerInvestor,
         false,
       );
@@ -449,7 +504,7 @@ describe('DebtorService', () => {
       expect(mockDebtorRepository.save).toHaveBeenCalled();
     });
 
-    it('should create modelo111 document and push to debtor.documents when file and CSV are provided', async () => {
+    it('should create modelo111 quarterly document and push to debtor.documents when file and CSV are provided', async () => {
       const debtor = makeDebtor({
         status: DebtorStatus.PENDING,
         investor: { id: 'owner-id' } as Investor,
@@ -457,32 +512,35 @@ describe('DebtorService', () => {
       });
       const sellerUser = { id: 'owner-id', type: UserType.INVESTOR } as User;
       const dto: UpdateDebtorDto = {
-        modelo111Csv: 'new-csv-111',
+        modelo111QuarterlyCsv: 'new-csv-111-quarterly',
         status: DebtorStatus.PENDING,
       };
-      const doc111 = { id: 'doc-111', filename: 'modelo111.pdf' };
+      const doc111Quarterly = {
+        id: 'doc-111q',
+        filename: 'modelo111-quarterly.pdf',
+      };
 
       mockQueryBuilder.getOne.mockResolvedValue(debtor);
-      mockDocumentService.create.mockResolvedValue(doc111);
+      mockDocumentService.create.mockResolvedValue(doc111Quarterly);
       mockDebtorRepository.save.mockResolvedValue(debtor);
 
       await service.update(
         debtor.id,
         dto,
-        { [DocumentType.MODELO_111]: [file111] },
+        { [DocumentType.TAX_111_QUARTERLY]: [file111Quarterly] },
         sellerUser,
       );
 
       expect(mockDocumentService.create).toHaveBeenCalledWith(
-        expect.objectContaining({ type: DocumentType.MODELO_111 }),
-        file111,
+        expect.objectContaining({ type: DocumentType.TAX_111_QUARTERLY }),
+        file111Quarterly,
         sellerUser,
         debtor,
       );
-      expect(debtor.documents).toContain(doc111);
+      expect(debtor.documents).toContain(doc111Quarterly);
     });
 
-    it('should throw BadRequestException when modelo111 file is uploaded without modelo111Csv', async () => {
+    it('should throw BadRequestException when modelo111 quarterly file is uploaded without modelo111QuarterlyCsv', async () => {
       const debtor = makeDebtor({
         status: DebtorStatus.PENDING,
         investor: { id: 'owner-id' } as Investor,
@@ -496,13 +554,13 @@ describe('DebtorService', () => {
         service.update(
           debtor.id,
           dto,
-          { [DocumentType.MODELO_111]: [file111] },
+          { [DocumentType.TAX_111_QUARTERLY]: [file111Quarterly] },
           sellerUser,
         ),
       ).rejects.toThrow(BadRequestException);
     });
 
-    it('should throw BadRequestException when modelo303 file is uploaded without modelo303Csv', async () => {
+    it('should throw BadRequestException when modelo303 quarterly file is uploaded without modelo303QuarterlyCsv', async () => {
       const debtor = makeDebtor({
         status: DebtorStatus.PENDING,
         investor: { id: 'owner-id' } as Investor,
@@ -516,7 +574,7 @@ describe('DebtorService', () => {
         service.update(
           debtor.id,
           dto,
-          { [DocumentType.MODELO_303]: [file303] },
+          { [DocumentType.TAX_303_QUARTERLY]: [file303Quarterly] },
           sellerUser,
         ),
       ).rejects.toThrow(BadRequestException);
@@ -530,29 +588,32 @@ describe('DebtorService', () => {
       });
       const sellerUser = { id: 'owner-id', type: UserType.INVESTOR } as User;
       const dto: UpdateDebtorDto = {
-        modelo111Csv: 'new-csv-111',
+        modelo111QuarterlyCsv: 'new-csv-111-quarterly',
         status: DebtorStatus.PENDING,
       };
-      const doc111 = { id: 'doc-111', filename: 'modelo111.pdf' };
+      const doc111Quarterly = {
+        id: 'doc-111q',
+        filename: 'modelo111-quarterly.pdf',
+      };
 
       mockQueryBuilder.getOne.mockResolvedValue(debtor);
-      mockDocumentService.create.mockResolvedValue(doc111);
+      mockDocumentService.create.mockResolvedValue(doc111Quarterly);
       mockDebtorRepository.save.mockRejectedValue(new Error('DB error'));
 
       await expect(
         service.update(
           debtor.id,
           dto,
-          { [DocumentType.MODELO_111]: [file111] },
+          { [DocumentType.TAX_111_QUARTERLY]: [file111Quarterly] },
           sellerUser,
         ),
       ).rejects.toThrow(InternalServerErrorException);
 
       expect(mockDocumentService.deleteFile).toHaveBeenCalledWith(
-        doc111.filename,
+        doc111Quarterly.filename,
       );
       expect(mockDocumentService.remove).toHaveBeenCalledWith(
-        doc111.id,
+        doc111Quarterly.id,
         sellerUser,
         false,
       );
