@@ -14,15 +14,15 @@ export class CreateDebtorDto {
   @IsCifNif()
   taxId: string;
 
-  @IsString()
-  modelo111QuarterlyCsv: string;
+  // @IsString()
+  // modelo111QuarterlyCsv: string;
 
-  @IsString()
-  modelo111AnnualCsv: string;
+  // @IsString()
+  // modelo111AnnualCsv: string;
 
-  @IsString()
-  modelo303QuarterlyCsv: string;
+  // @IsString()
+  // modelo303QuarterlyCsv: string;
 
-  @IsString()
-  modelo303AnnualCsv: string;
+  // @IsString()
+  // modelo303AnnualCsv: string;
 }
