@@ -617,7 +617,7 @@ export class SeedService {
       });
       debtors.push(debtor);
     }
-    // const savedDebtors = await this.debtorRepository.save(debtors);
+    await this.debtorRepository.save(debtors);
 
     // const allDocuments: Document[] = [];
     // for (let i = 0; i < savedDebtors.length; i++) {

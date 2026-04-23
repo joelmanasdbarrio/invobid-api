@@ -82,8 +82,8 @@ export class DocumentService {
     const queryBuilder = this.documentRepository
       .createQueryBuilder('document')
       .leftJoinAndSelect('document.investor', 'investor')
-      .leftJoinAndSelect('document.invoice', 'invoice')
-      .leftJoinAndSelect('document.debtor', 'debtor');
+      .leftJoinAndSelect('document.invoice', 'invoice');
+    // .leftJoinAndSelect('document.debtor', 'debtor');
 
     if (user.type !== UserType.ADMIN) {
       queryBuilder.where('document.investorId = :investorId', {
@@ -103,11 +103,11 @@ export class DocumentService {
       });
     }
 
-    if (query.debtorId) {
-      queryBuilder.andWhere('debtor.id = :debtorId', {
-        debtorId: query.debtorId,
-      });
-    }
+    // if (query.debtorId) {
+    //   queryBuilder.andWhere('debtor.id = :debtorId', {
+    //     debtorId: query.debtorId,
+    //   });
+    // }
 
     if (query.title) {
       queryBuilder.andWhere('document.title LIKE :title', {
