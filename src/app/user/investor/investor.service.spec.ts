@@ -1,8 +1,8 @@
 import {
   BadRequestException,
+  ForbiddenException,
   InternalServerErrorException,
   NotFoundException,
-  UnauthorizedException,
 } from '@nestjs/common';
 import { Test, TestingModule } from '@nestjs/testing';
 import { getRepositoryToken } from '@nestjs/typeorm';
@@ -142,7 +142,7 @@ describe('InvestorService', () => {
       expect(mockBankAccountService.create).toHaveBeenCalled();
       expect(mockInvestorRepository.save).toHaveBeenCalled();
       expect(mockDocumentService.create).toHaveBeenCalledWith(
-        expect.objectContaining({ type: DocumentType.IDENTIFICATION }),
+        expect.objectContaining({ type: DocumentType.ID }),
         mockFile,
         investor,
       );
@@ -266,7 +266,7 @@ describe('InvestorService', () => {
       );
     });
 
-    it('should throw UnauthorizedException for non-admin, non-owner investor with PENDING status', async () => {
+    it('should throw NotFoundException for non-admin, non-owner investor with PENDING status', async () => {
       const pendingInvestor = makeInvestor({ status: InvestorStatus.PENDING });
       const otherUser = {
         id: 'other-id',
@@ -276,7 +276,7 @@ describe('InvestorService', () => {
 
       await expect(
         service.findOne(pendingInvestor.id, otherUser),
-      ).rejects.toThrow(UnauthorizedException);
+      ).rejects.toThrow(NotFoundException);
     });
 
     it('should throw NotFoundException when investor does not exist', async () => {
@@ -289,7 +289,7 @@ describe('InvestorService', () => {
   });
 
   describe('update', () => {
-    it('should throw UnauthorizedException when non-admin tries to update another investor', async () => {
+    it('should throw ForbiddenException when non-admin tries to update another investor', async () => {
       const investor = makeInvestor({ id: 'other-investor-id' });
       const selfUser = {
         id: 'different-id',
@@ -304,7 +304,7 @@ describe('InvestorService', () => {
           undefined,
           selfUser,
         ),
-      ).rejects.toThrow(UnauthorizedException);
+      ).rejects.toThrow(ForbiddenException);
     });
 
     it('should throw BadRequestException when non-admin investor is PENDING', async () => {
@@ -467,13 +467,13 @@ describe('InvestorService', () => {
   });
 
   describe('remove', () => {
-    it('should throw UnauthorizedException when non-admin tries to remove another investor', async () => {
+    it('should throw ForbiddenException when non-admin tries to remove another investor', async () => {
       const investor = makeInvestor({ id: 'inv-id' });
       const otherUser = { id: 'other-id', type: UserType.INVESTOR } as User;
       mockInvestorRepository.findOne.mockResolvedValue(investor);
 
       await expect(service.remove(investor.id, otherUser)).rejects.toThrow(
-        UnauthorizedException,
+        ForbiddenException,
       );
     });
 

@@ -1,4 +1,3 @@
-import { Debtor } from 'src/app/debtor/entities/debtor.entity';
 import { Invoice } from 'src/app/invoice/entities/invoice.entity';
 import { Investor } from 'src/app/user/investor/entities/investor.entity';
 import {
@@ -23,7 +22,7 @@ export class Document {
   @Column('text', { nullable: false })
   filename: string;
 
-  @Column('text', { nullable: false })
+  @Column('text', { nullable: true })
   value: string;
 
   @Column('text', { nullable: false })
@@ -43,10 +42,10 @@ export class Document {
   })
   investor: Investor;
 
-  @ManyToOne(() => Debtor, (debtor) => debtor.documents, {
-    nullable: true,
-  })
-  debtor: Debtor;
+  // @ManyToOne(() => Debtor, (debtor) => debtor.documents, {
+  //   nullable: true,
+  // })
+  // debtor: Debtor;
 
   @ManyToOne(() => Invoice, (invoice) => invoice.documents, {
     nullable: true,

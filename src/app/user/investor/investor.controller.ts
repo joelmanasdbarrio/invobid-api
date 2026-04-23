@@ -17,6 +17,7 @@ import { FileTypePipe } from 'src/pipes/file-type.pipe';
 import { Auth } from '../auth/decorators/auth.decorator';
 import { GetUser } from '../auth/decorators/get-user.decorator';
 import { User } from '../common/entities/user.entity';
+import { UserType } from '../common/enums/user-type.enum';
 import { UpdateInvestorDto } from './dto/update-investor.dto';
 import { InvestorService } from './investor.service';
 
@@ -25,7 +26,7 @@ export class InvestorController {
   constructor(private readonly investorService: InvestorService) {}
 
   @Get()
-  @Auth()
+  @Auth([], [InvestorStatus.VERIFIED])
   async findAll(@Query() query: GetInvestorsDto, @GetUser() user: User) {
     const { data, total, page, limit } = await this.investorService.findAll(
       {
@@ -49,7 +50,7 @@ export class InvestorController {
   }
 
   @Get(':id')
-  @Auth([], [])
+  @Auth([], [InvestorStatus.VERIFIED])
   async findOne(@Param('id', ParseUUIDPipe) id: string, @GetUser() user: User) {
     const investor = await this.investorService.findOne(id, user);
     return {
@@ -84,7 +85,7 @@ export class InvestorController {
 
   @Delete(':id')
   @Auth(
-    [],
+    [UserType.INVESTOR],
     [
       InvestorStatus.CORRECTION,
       InvestorStatus.PENDING,

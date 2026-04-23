@@ -18,7 +18,7 @@ export class DebtorLookupService {
     const queryBuilder = this.debtorRepository.createQueryBuilder('debtor');
 
     if (user.type === UserType.ADMIN) {
-      queryBuilder.leftJoinAndSelect('debtor.documents', 'documents');
+      // queryBuilder.leftJoinAndSelect('debtor.documents', 'documents');
       queryBuilder.leftJoinAndSelect('debtor.investor', 'investor');
 
       if (query.status) {

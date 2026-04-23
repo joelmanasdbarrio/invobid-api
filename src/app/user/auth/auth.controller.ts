@@ -8,7 +8,7 @@ import {
   UseInterceptors,
 } from '@nestjs/common';
 import { FileInterceptor } from '@nestjs/platform-express';
-import { Response } from 'express';
+import { type Response } from 'express';
 import { FileTypePipe } from 'src/pipes/file-type.pipe';
 import { CreateAdminDto } from '../admin/dto/create-admin.dto';
 import { CreateInvestorDto } from '../investor/dto/create-investor.dto';

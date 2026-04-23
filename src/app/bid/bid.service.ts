@@ -63,7 +63,7 @@ export class BidService {
     const latestBidAmount = latestBid ? latestBid.amount : auction.price.start;
 
     if (
-      createBidDto.amount <=
+      createBidDto.amount <
       latestBidAmount *
         (1 + Number(process.env.SMALLEST_BID_INCREMENT_PERCENTAGE) / 100)
     ) {
