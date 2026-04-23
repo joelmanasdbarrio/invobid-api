@@ -244,9 +244,8 @@ export class InvoiceService {
   }
 
   async findOne(id: string, user: User) {
-    const queryBuilder = this.invoiceRepository.createQueryBuilder('invoice');
-
-    queryBuilder
+    const queryBuilder = this.invoiceRepository
+      .createQueryBuilder('invoice')
       .leftJoinAndSelect('invoice.sellerInvestor', 'sellerInvestor')
       .leftJoinAndSelect('invoice.buyerInvestor', 'buyerInvestor')
       .leftJoinAndSelect('invoice.auctions', 'auctions')
@@ -294,7 +293,7 @@ export class InvoiceService {
     const invoice = await this.findOne(id, user);
 
     if (invoice.buyerInvestor && invoice.buyerInvestor.id !== null) {
-      throw new BadRequestException(
+      throw new ForbiddenException(
         `Invoice with id ${id} can no longer be updated`,
       );
     }
@@ -372,7 +371,7 @@ export class InvoiceService {
     const invoice = await this.findOne(id, user);
 
     if (invoice.buyerInvestor && invoice.buyerInvestor.id !== null) {
-      throw new BadRequestException(
+      throw new ForbiddenException(
         `Invoice with id ${id} can no longer be updated`,
       );
     }

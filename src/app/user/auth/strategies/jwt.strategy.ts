@@ -1,6 +1,7 @@
 import {
   HttpException,
   Injectable,
+  ServiceUnavailableException,
   UnauthorizedException,
 } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
@@ -40,33 +41,40 @@ export class JwtStrategy extends PassportStrategy(Strategy) {
 
   async validate(payload: JwtPayload): Promise<User | Investor> {
     const { email } = payload;
-    let user = await this.userRepository.findOne({
-      where: { email },
-      select: {
-        id: true,
-        email: true,
-        password: false,
-        name: true,
-        createdAt: true,
-        updatedAt: true,
-        deletedAt: true,
-        type: true,
-      },
-      withDeleted: true,
-    });
 
-    if (!user) {
-      throw new UnauthorizedException('Token is not valid');
+    try {
+      let user = await this.userRepository.findOne({
+        where: { email },
+        select: {
+          id: true,
+          email: true,
+          password: false,
+          name: true,
+          createdAt: true,
+          updatedAt: true,
+          deletedAt: true,
+          type: true,
+        },
+        withDeleted: true,
+      });
+
+      if (!user) {
+        throw new UnauthorizedException('Token is not valid');
+      }
+
+      if (user.deletedAt) {
+        throw new HttpException('User has been disabled', 423);
+      }
+
+      if (user.type === UserType.INVESTOR) {
+        user = await this.investorService.findOne(user.id);
+      }
+
+      return user;
+    } catch {
+      throw new ServiceUnavailableException(
+        'Failed to connect to the database',
+      );
     }
-
-    if (user.deletedAt) {
-      throw new HttpException('User has been disabled', 423);
-    }
-
-    if (user.type === UserType.INVESTOR) {
-      user = await this.investorService.findOne(user.id);
-    }
-
-    return user;
   }
 }

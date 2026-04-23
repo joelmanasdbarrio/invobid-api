@@ -14,6 +14,7 @@ import { GetUser } from '../user/auth/decorators/get-user.decorator';
 import { User } from '../user/common/entities/user.entity';
 import { UserType } from '../user/common/enums/user-type.enum';
 import { Investor } from '../user/investor/entities/investor.entity';
+import { InvestorStatus } from '../user/investor/enums/investor-status.enum';
 import { InvestorType } from '../user/investor/enums/investor-type.enum';
 import { AuctionService } from './auction.service';
 import { CreateAuctionDto } from './dto/create-auction.dto';
@@ -25,7 +26,7 @@ export class AuctionController {
   constructor(private readonly auctionService: AuctionService) {}
 
   @Post()
-  @Auth([InvestorType.COMPANY])
+  @Auth([InvestorType.COMPANY], [InvestorStatus.VERIFIED])
   async create(
     @Body() createAuctionDto: CreateAuctionDto,
     @GetUser() user: Investor,
@@ -39,7 +40,7 @@ export class AuctionController {
   }
 
   @Get()
-  @Auth()
+  @Auth([], [InvestorStatus.VERIFIED])
   async findAll(@Query() query: GetAuctionsDto, @GetUser() user: User) {
     const { data, total, page, limit } = await this.auctionService.findAll(
       {
@@ -63,7 +64,7 @@ export class AuctionController {
   }
 
   @Get(':id')
-  @Auth()
+  @Auth([], [InvestorStatus.VERIFIED])
   async findOne(@Param('id', ParseUUIDPipe) id: string, @GetUser() user: User) {
     const auction = await this.auctionService.findOne(id, user);
 
@@ -74,7 +75,7 @@ export class AuctionController {
   }
 
   @Patch(':id')
-  @Auth([UserType.ADMIN, InvestorType.COMPANY])
+  @Auth([UserType.ADMIN, InvestorType.COMPANY], [InvestorStatus.VERIFIED])
   async update(
     @Param('id', ParseUUIDPipe) id: string,
     @Body() updateAuctionDto: UpdateAuctionDto,
@@ -93,7 +94,7 @@ export class AuctionController {
   }
 
   @Delete(':id')
-  @Auth([UserType.ADMIN, InvestorType.COMPANY])
+  @Auth([UserType.ADMIN, InvestorType.COMPANY], [InvestorStatus.VERIFIED])
   async remove(@Param('id', ParseUUIDPipe) id: string, @GetUser() user: User) {
     await this.auctionService.remove(id, user);
 

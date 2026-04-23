@@ -15,6 +15,7 @@ import { User } from 'src/app/user/common/entities/user.entity';
 import { UserType } from 'src/app/user/common/enums/user-type.enum';
 import { Investor } from 'src/app/user/investor/entities/investor.entity';
 import { InvestorType } from 'src/app/user/investor/enums/investor-type.enum';
+import { InvestorStatus } from '../user/investor/enums/investor-status.enum';
 import { DebtorService } from './debtor.service';
 import { CreateDebtorDto } from './dto/create-debtor.dto';
 import { UpdateDebtorDto } from './dto/update-debtor.dto';
@@ -32,7 +33,7 @@ export class DebtorController {
   //     { name: DocumentType.TAX_303_ANNUAL, maxCount: 1 },
   //   ]),
   // )
-  @Auth([InvestorType.COMPANY])
+  @Auth([InvestorType.COMPANY], [InvestorStatus.VERIFIED])
   async create(
     @Body() createDebtorDto: CreateDebtorDto,
     // @UploadedFiles(FilesTypePipe)
@@ -53,7 +54,7 @@ export class DebtorController {
   }
 
   @Get()
-  @Auth()
+  @Auth([], [InvestorStatus.VERIFIED])
   async findAll(@Query() query: GetDebtorsDto, @GetUser() user: User) {
     const { data, total, page, limit } = await this.debtorService.findAll(
       {
@@ -77,7 +78,7 @@ export class DebtorController {
   }
 
   @Get(':id')
-  @Auth()
+  @Auth([], [InvestorStatus.VERIFIED])
   async findOne(@Param('id') id: string, @GetUser() user: User) {
     const debtor = await this.debtorService.findOne(id, user);
     return {
@@ -95,7 +96,7 @@ export class DebtorController {
   //     { name: DocumentType.TAX_303_ANNUAL, maxCount: 1 },
   //   ]),
   // )
-  @Auth([UserType.ADMIN, InvestorType.COMPANY])
+  @Auth([UserType.ADMIN, InvestorType.COMPANY], [InvestorStatus.VERIFIED])
   async update(
     @Param('id') id: string,
     @Body() updateDebtorDto: UpdateDebtorDto,
@@ -117,7 +118,7 @@ export class DebtorController {
   }
 
   @Delete(':id')
-  @Auth([UserType.ADMIN, InvestorType.COMPANY])
+  @Auth([InvestorType.COMPANY], [InvestorStatus.VERIFIED])
   async remove(@Param('id') id: string, @GetUser() user: User) {
     await this.debtorService.remove(id, user);
     return {

@@ -617,67 +617,70 @@ export class SeedService {
       });
       debtors.push(debtor);
     }
-    const savedDebtors = await this.debtorRepository.save(debtors);
+    // const savedDebtors = await this.debtorRepository.save(debtors);
 
-    const allDocuments: Document[] = [];
-    for (let i = 0; i < savedDebtors.length; i++) {
-      const debtor = savedDebtors[i];
-      const data = debtorData[i];
-      const investor = debtor.investor;
-      const controlLetter = nifLetters[data.baseNumber % 23];
-      const nif = `${data.baseNumber}${controlLetter}`;
+    // const allDocuments: Document[] = [];
+    // for (let i = 0; i < savedDebtors.length; i++) {
+    //   const debtor = savedDebtors[i];
+    //   const data = debtorData[i];
+    //   const investor = debtor.investor;
+    //   const controlLetter = nifLetters[data.baseNumber % 23];
+    //   const nif = `${data.baseNumber}${controlLetter}`;
 
-      const document111Quarterly = this.documentRepository.create({
-        id: uuidv4(),
-        title: `${data.companyName} 111 quarterly tax document`,
-        filename: `modelo111.jpg`,
-        value: nif,
-        type: DocumentType.TAX_111_QUARTERLY,
-        investor: investor,
-        debtor: debtor,
-      });
+    //   const document111Quarterly = this.documentRepository.create({
+    //     id: uuidv4(),
+    //     title: `${data.companyName} 111 quarterly tax document`,
+    //     filename: `modelo111.jpg`,
+    //     value: nif,
+    //     type: DocumentType.TAX_111_QUARTERLY,
+    //     investor: investor,
+    //     debtor: debtor,
+    //   });
 
-      const document111Annual = this.documentRepository.create({
-        id: uuidv4(),
-        title: `${data.companyName} 111 annual tax document`,
-        filename: `modelo111_annual.jpg`,
-        value: nif,
-        type: DocumentType.TAX_111_ANNUAL,
-        investor: investor,
-        debtor: debtor,
-      });
+    //   const document111Annual = this.documentRepository.create({
+    //     id: uuidv4(),
+    //     title: `${data.companyName} 111 annual tax document`,
+    //     filename: `modelo111_annual.jpg`,
+    //     value: nif,
+    //     type: DocumentType.TAX_111_ANNUAL,
+    //     investor: investor,
+    //     debtor: debtor,
+    //   });
 
-      const document303Quarterly = this.documentRepository.create({
-        id: uuidv4(),
-        title: `${data.companyName} 303 quarterly tax document`,
-        filename: `modelo303.jpg`,
-        value: nif,
-        type: DocumentType.TAX_303_QUARTERLY,
-        investor: investor,
-        debtor: debtor,
-      });
+    //   const document303Quarterly = this.documentRepository.create({
+    //     id: uuidv4(),
+    //     title: `${data.companyName} 303 quarterly tax document`,
+    //     filename: `modelo303.jpg`,
+    //     value: nif,
+    //     type: DocumentType.TAX_303_QUARTERLY,
+    //     investor: investor,
+    //     debtor: debtor,
+    //   });
 
-      const document303Annual = this.documentRepository.create({
-        id: uuidv4(),
-        title: `${data.companyName} 303 annual tax document`,
-        filename: `modelo303_annual.jpg`,
-        value: nif,
-        type: DocumentType.TAX_303_ANNUAL,
-        investor: investor,
-        debtor: debtor,
-      });
+    //   const document303Annual = this.documentRepository.create({
+    //     id: uuidv4(),
+    //     title: `${data.companyName} 303 annual tax document`,
+    //     filename: `modelo303_annual.jpg`,
+    //     value: nif,
+    //     type: DocumentType.TAX_303_ANNUAL,
+    //     investor: investor,
+    //     debtor: debtor,
+    //   });
 
-      allDocuments.push(
-        document111Quarterly,
-        document111Annual,
-        document303Quarterly,
-        document303Annual,
-      );
-    }
-    await this.documentRepository.save(allDocuments);
+    //   allDocuments.push(
+    //     document111Quarterly,
+    //     document111Annual,
+    //     document303Quarterly,
+    //     document303Annual,
+    //   );
+    // }
+    // await this.documentRepository.save(allDocuments);
 
     return await this.debtorRepository.find({
-      relations: ['documents', 'investor'],
+      relations: [
+        'investor',
+        // 'documents'
+      ],
     });
   }
 
