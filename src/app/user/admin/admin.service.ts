@@ -1,16 +1,18 @@
 import {
   BadRequestException,
+  ForbiddenException,
   Injectable,
+  InternalServerErrorException,
   NotFoundException,
 } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import * as bcrypt from 'bcrypt';
+import { UserType } from 'src/app/user/common/enums/user-type.enum';
 import 'src/utils/object.extensions';
 import { Repository } from 'typeorm';
 import { CreateAdminDto } from './dto/create-admin.dto';
 import { UpdateAdminDto } from './dto/update-admin.dto';
 import { Admin } from './entities/admin.entity';
-import { UserType } from 'src/app/user/common/enums/user-type.enum';
 
 @Injectable()
 export class AdminService {
@@ -24,15 +26,13 @@ export class AdminService {
       throw new BadRequestException('Passwords do not match');
     }
 
-    createAdminDto.password = await bcrypt.hash(createAdminDto.password, 10);
-
     try {
-      const admin = this.adminRepository.create({
+      createAdminDto.password = await bcrypt.hash(createAdminDto.password, 10);
+
+      return await this.adminRepository.save({
         ...createAdminDto,
         type: UserType.ADMIN,
       });
-
-      return await this.adminRepository.save(admin);
     } catch (error) {
       console.error(error);
       // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access
@@ -41,11 +41,14 @@ export class AdminService {
           `User with email '${createAdminDto.email}' already exists`,
         );
       }
+
+      // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access
+      throw new InternalServerErrorException(error.message);
     }
   }
 
-  findAll() {
-    return this.adminRepository.find();
+  async findAll() {
+    return await this.adminRepository.find();
   }
 
   async findOne(id: string) {
@@ -56,15 +59,21 @@ export class AdminService {
     return admin;
   }
 
-  async update(id: string, updateAdminDto: UpdateAdminDto) {
+  async update(id: string, updateAdminDto: UpdateAdminDto, user: Admin) {
+    const admin = await this.findOne(id);
+
+    if (user.id !== admin.id) {
+      throw new ForbiddenException(
+        "You don't have permission to perform this action",
+      );
+    }
+
     if (updateAdminDto.password && updateAdminDto.passwordRepeat) {
       if (updateAdminDto.password !== updateAdminDto.passwordRepeat) {
         throw new BadRequestException('Passwords do not match');
       }
       updateAdminDto.password = await bcrypt.hash(updateAdminDto.password, 10);
     }
-
-    const admin = await this.findOne(id);
 
     const updatedAdmin = this.adminRepository.merge(
       admin,
@@ -81,13 +90,22 @@ export class AdminService {
           `Admin with email '${updateAdminDto.email}' already exists`,
         );
       }
+
+      // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access
+      throw new InternalServerErrorException(error.message);
     }
 
     return { ...admin, ...updateAdminDto.removeUndefined() };
   }
 
-  async remove(id: string) {
-    await this.findOne(id);
+  async remove(id: string, user: Admin) {
+    const admin = await this.findOne(id);
+
+    if (user.id !== admin.id) {
+      throw new ForbiddenException(
+        "You don't have permission to perform this action",
+      );
+    }
 
     return this.adminRepository.softDelete(id);
   }

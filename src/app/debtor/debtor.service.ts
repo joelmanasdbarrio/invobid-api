@@ -183,11 +183,12 @@ export class DebtorService {
   }
 
   async findAll(query: GetDebtorsDto, user: User) {
-    const queryBuilder = this.debtorRepository.createQueryBuilder('debtor');
+    const queryBuilder = this.debtorRepository
+      .createQueryBuilder('debtor')
+      .leftJoinAndSelect('debtor.investor', 'investor');
 
     if (user.type === UserType.ADMIN) {
       // queryBuilder.leftJoinAndSelect('debtor.documents', 'documents');
-      queryBuilder.leftJoinAndSelect('debtor.investor', 'investor');
 
       if (query.status) {
         queryBuilder.andWhere('debtor.status = :status', {
@@ -199,8 +200,6 @@ export class DebtorService {
         queryBuilder.withDeleted();
       }
     } else {
-      queryBuilder.leftJoinAndSelect('debtor.investor', 'investor');
-
       queryBuilder.andWhere(
         '(debtor.investorId = :userId OR debtor.status = :verifiedStatus)',
         {
@@ -269,10 +268,10 @@ export class DebtorService {
   }
 
   async findOne(id: string, user: User) {
-    const queryBuilder = this.debtorRepository.createQueryBuilder('debtor');
-
-    queryBuilder.leftJoinAndSelect('debtor.investor', 'investor');
-    queryBuilder.where('debtor.id = :id', { id });
+    const queryBuilder = this.debtorRepository
+      .createQueryBuilder('debtor')
+      .leftJoinAndSelect('debtor.investor', 'investor')
+      .where('debtor.id = :id', { id });
 
     if (user.type !== UserType.ADMIN) {
       queryBuilder.andWhere(

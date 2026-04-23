@@ -1,0 +1,1138 @@
+_Use case_: Call ANY endpoint while the database service is down
+- **Given that**: I'm an existing user of the platform who wants to access any endpoint
+  - **When**: I make a request to any endpoint with a valid access token while the database service is down
+    - **Then**:
+      - [ ] It should fail to authenticate my access
+      - [ ] It should return a 503 Service Unavailable response with an error message indicating that a service is currently unavailable
+
+# User
+
+_Use case_: Call POST `/auth/login` endpoint
+- **Given that**: I'm an existing user of the platform who wants to log in
+  - **When**: I fill out the login form with my email and password and submit it
+    - **Then**:
+      - [x] It should authenticate my credentials
+      - [x] It should create a valid access token with 1 day expiration time
+      - [x] It should return a 200 OK response with a valid access token and my user information in the response body
+  - **When**: I fill out the login form with my email, password, and rememberMe option and submit it
+    - **Then**:
+      - [x] It should authenticate my credentials
+      - [x] It should create a valid access token with 30 days expiration time
+      - [x] It should return a 200 OK response with a valid access token and my user information in the response body
+  - **When**: I fill out the login form with an incorrect email or password and submit it
+    - **Then**:
+      - [x] It should not authenticate my credentials
+      - [x] It should return a 401 Unauthorized response with an error message indicating credentials are invalid
+  - **When**: I fill out the login form with missing email and/or password and submit it
+    - **Then**:
+      - [x] It should not authenticate my credentials
+      - [x] It should return a 400 Bad Request response with an error message indicating that email and password are required
+  - **When**: I fill out the login form with email and password and subtmit it but my user account is soft deleted
+    - **Then**:
+      - [x] It should not authenticate my credentials
+      - [x] It should return a 423 Locked response with an error message indicating the account is locked
+  - **When**: I fill out the login form with email, password, and include `x-activate-account=true` header and subtmit it while my user account is soft deleted
+    - **Then**:
+      - [x] It should authenticate my credentials
+      - [x] It should reactivate my user account by removing the deletedAt timestamp
+      - [x] It should return a 200 OK response with a valid access token and my user information in the response body
+
+_Use case_: Call protected endpoint
+- **Given that**: I'm an existing user of the platform who wants to access a protected endpoint
+  - **When**: I make a request to a protected endpoint with a valid access token
+    - **Then**:
+      - [x] It should authenticate my credentials
+      - [x] It should proceed to call next expected action for that endpoint successfully
+  - **When**: I make a request to a protected endpoint with an invalid access token (expired or missing)
+    - **Then**:
+      - [x] It should not authenticate my credentials
+      - [x] It should return a 401 Unauthorized response with an error message indicating the access token is invalid
+
+_Use case_: Call role-protected (`UserType`) endpoint
+- **Given that**: I'm an existing user of the platform who wants to access a role-protected (`UserType`) endpoint
+  - **When**: I make a request to a role-protected (`UserType`) endpoint that does not match my current role with a valid access token
+    - **Then**:
+      - [x] It should not authorize my access
+      - [x] It should return a 403 Forbidden response with an error message indicating that I do not have the necessary permissions to perform this action
+  - **When**: I make a request to a role-protected (`UserType`) endpoint that matches my current role with a valid access token
+    - **Then**:
+      - [x] It should authorize my access
+      - [x] It should proceed to call next expected action for that endpoint successfully
+
+## Administrator
+
+_Use case_: Call POST `/auth/register/admin` endpoint
+- **Given that**: I'm a new user who wants to register as an administrator
+  - **When**: I fill out the registration form with valid information (`CreateAdminDto`) and submit it
+    - **Then**:
+      - [x] It should create a new administrator user profile, ignoring fields not specified in `CreateAdminDto`
+      - [x] It should return a 201 Created response with a valid access token and my user information in the response body
+  - **When**: I fill out the registration form with an email that is already registered and submit it
+    - **Then**:
+      - [x] It should not create a new administrator user profile
+      - [x] It should return a 400 Bad Request response with an error message indicating that the email is already in use
+  - **When**: I fill out the registration form with a password and passwordRepeat that do not match and submit it
+    - **Then**:
+      - [x] It should not create a new administrator user profile
+      - [x] It should return a 400 Bad Request response with an error message indicating that the passwords do not match
+  - **When**: I fill out the registration form with invalid values for one or more fields in `CreateAdminDto` in the request body
+    - **Then**:
+      - [x] It should not create a new administrator user profile
+      - [x] It should return a 400 Bad Request response with an error message list indicating which fields are invalid
+
+_Use case_: Call GET `/admins` endpoint
+- **Given that**: I'm an existing administrator user of the platform who wants to access the GET `/admins` endpoint
+  - **When**: I make a request to the GET `/admins` endpoint with a valid access token with 1 or more administrator users in the system
+    - **Then**:
+      - [x] It should authorize my access
+      - [x] It should return a successful response with a list of all administrator users in the system
+
+_Use case_: Call GET `/admins/:id` endpoint
+- **Given that**: I'm an existing administrator user of the platform who wants to access the GET `/admins/:id` endpoint
+  - **When**: I make a request to the GET `/admins/:id` endpoint with a valid access token and a valid administrator user ID
+    - **Then**:
+      - [x] It should authorize my access
+      - [x] It should return a successful response with the information of the specified administrator user
+  - **When**: I make a request to the GET `/admins/:id` endpoint with a valid access token and an invalid ID
+    - **Then**:
+      - [x] It should authorize my access
+      - [x] It should return a 400 Bad Request response with an error message indicating that the specified ID is malformed
+  - **When**: I make a request to the GET `/admins/:id` endpoint with a valid access token and a non-existent administrator user ID
+    - **Then**:
+      - [x] It should authorize my access
+      - [x] It should return a 404 Not Found response with an error message indicating that the specified administrator user was not found
+
+_Use case_: Call PATCH `/admins/:id` endpoint
+- **Given that**: I'm an existing administrator user of the platform who wants to update an administrator profile
+  - **When**: I make a request to the PATCH `/admins/:id` endpoint with a valid access token, a valid administrator user ID that matches my own ID, and valid updated information in the request body (`UpdateAdminDto`)
+    - **Then**:
+      - [x] It should authorize my access
+      - [x] It should update the specified administrator user's profile information with the provided data
+      - [x] It should return a successful response with the updated information of the specified administrator user
+  - **When**: I make a request to the PATCH `/admins/:id` endpoint with a valid access token, a valid administrator user ID that matches my own ID, and a password and passwordRepeat that do not match in the request body (`UpdateAdminDto`)
+    - **Then**:
+      - [x] It should authorize my access
+      - [x] It should return a 400 Bad Request response with an error message indicating that the passwords do not match
+  - **When**: I make a request to the PATCH `/admins/:id` endpoint with a valid access token, a valid administrator user ID that matches my own ID, and an email that is already registered by another user in the request body (`UpdateAdminDto`)
+    - **Then**:
+      - [x] It should authorize my access
+      - [x] It should return a 400 Bad Request response with an error message indicating that the email is already in use
+  - **When**: I make a request to the PATCH `/admins/:id` endpoint with a valid access token, an invalid ID, and valid updated information in the request body (`UpdateAdminDto`)
+    - **Then**:
+      - [x] It should authorize my access
+      - [x] It should return a 400 Bad Request response with an error message indicating that the specified ID is malformed
+  - **When**: I make a request to the PATCH `/admins/:id` endpoint with a valid access token, a valid administrator user ID that matches my own ID, using wrong type values for one or more fields in `UpdateAdminDto` in the request body
+    - **Then**:
+      - [x] It should authorize my access
+      - [x] It should return a 400 Bad Request response with an error message list indicating which fields are invalid
+  - **When**: I make a request to the PATCH `/admins/:id` endpoint with a valid access token, a valid administrator user ID that does not match my own ID, and valid updated information in the request body (`UpdateAdminDto`)
+    - **Then**:
+      - [x] It should authorize my access
+      - [x] It should return a 403 Forbidden response with an error message indicating that I don't have permission to perform this action
+  - **When**: I make a request to the PATCH `/admins/:id` endpoint with a valid access token, a non-existent administrator user ID, and valid updated information in the request body (`UpdateAdminDto`)
+    - **Then**:
+      - [x] It should authorize my access
+      - [x] It should return a 404 Not Found response with an error message indicating that the specified administrator user was not found
+
+_Use case_: Call DELETE `/admins/:id` endpoint
+- **Given that**: I'm an existing administrator user of the platform who wants to delete an administrator profile
+  - **When**: I make a request to the DELETE `/admins/:id` endpoint with a valid access token and a valid administrator user ID that matches my own ID
+    - **Then**:
+      - [x] It should authorize my access
+      - [x] It should soft delete the specified administrator user profile
+      - [x] It should return a successful response indicating that the administrator user was deleted
+  - **When**: I make a request to the DELETE `/admins/:id` endpoint with a valid access token and an invalid ID
+    - **Then**:
+      - [x] It should authorize my access
+      - [x] It should return a 400 Bad Request response with an error message indicating that the specified ID is malformed
+  - **When**: I make a request to the DELETE `/admins/:id` endpoint with a valid access token and a valid administrator user ID that does not match my own ID
+    - **Then**:
+      - [x] It should authorize my access
+      - [x] It should return a 403 Forbidden response with an error message indicating that I don't have permission to perform this action
+  - **When**: I make a request to the DELETE `/admins/:id` endpoint with a valid access token and a non-existent administrator user ID
+    - **Then**:
+      - [x] It should authorize my access
+      - [x] It should return a 404 Not Found response with an error message indicating that the specified administrator user was not found
+
+## Investor
+
+_Use case_: Register as an investor
+- **Given that**: I'm a new user who wants to register as an investor
+  - **When**: I fill out the registration form with valid information (`CreateInvestorDto`) and submit it
+    - **Then**:
+      - [x] It should create a new investor user profile, ignoring fields not specified in `CreateInvestorDto`
+      - [x] It should create a new bank account related to the investor user profile
+      - [x] It should create a new ID document related to the investor user profile
+      - [x] It should return a 201 Created response with a valid access token and my user information in the response body
+  - **When**: I fill out the registration form with missing one or more required fields from `CreateInvestorDto` and submit it
+    - **Then**: 
+      - [x] It should not create a new investor user profile
+      - [x] It should not create a new bank account
+      - [x] It should not create a new ID document
+      - [x] It should return a 400 Bad Request response with an error message listing which fields are missing
+  - **When**: I fill out the registration form with an email, companyName, phoneNumber, and/or taxId that is already registered and submit it
+    - **Then**:
+      - [x] It should not create a new investor user profile
+      - [x] It should not create a new bank account
+      - [x] It should not create a new ID document
+      - [x] It should return a 400 Bad Request response with an error message indicating that the email, companyName, phoneNumber, or taxId is already in use
+  - **When**: I fill out the registration form with a password and passwordRepeat that do not match and submit it
+    - **Then**:
+      - [x] It should not create a new investor user profile
+      - [x] It should not create a new bank account
+      - [x] It should not create a new ID document
+      - [x] It should return a 400 Bad Request response with an error message indicating that the passwords do not match
+  - **When**: I fill out the registration form with invalid values for one or more fields in `CreateInvestorDto` in the request body
+    - **Then**:
+      - [x] It should not create a new investor user profile
+      - [x] It should not create a new bank account
+      - [x] It should not create a new ID document
+      - [x] It should return a 400 Bad Request response with an error message list indicating which fields are invalid
+  - **When**: I fill out the registration form with an invalid file for the ID document and submit it
+    - **Then**:
+      - [x] It should not create a new investor user profile
+      - [x] It should not create a new bank account
+      - [x] It should not create a new ID document
+      - [x] It should return a 400 Bad Request response with an error message indicating that the file is invalid
+  - **When**: I fill out the registration form with valid information and submit it while the external document service is down
+    - **Then**:
+      - [x] It should create a new investor user profile
+      - [x] It should create a new bank account related to the investor user profile
+      - [x] It should fail to create a new ID document related to the investor user profile
+      - [x] It should call to remove the created investor user profile and bank account, ensuring that no incomplete investor user profile is left in the system
+      - [x] It should return a 503 Service Unavailable response with an error message indicating that a service is currently unavailable
+
+_Use case_: Call type-protected (`InvestorType`) endpoint as an investor
+- **Given that**: I'm an existing investor user of the platform who wants to access a type-protected (`InvestorType`) endpoint
+  - **When**: I make a request to a type-protected (`InvestorType`) endpoint that does not include my current type with a valid access token
+    - **Then**:
+      - [x] It should not authorize my access
+      - [x] It should return a 403 Forbidden response with an error message indicating that I do not have the necessary permissions to perform this action
+  - **When**: I make a request to a type-protected (`InvestorType`) endpoint that includes my current type with a valid access token
+    - **Then**:
+      - [x] It should authorize my access
+      - [x] It should proceed to call next expected action for that endpoint successfully
+
+_Use case_: Call status-protected (`InvestorStatus`) endpoint as an investor
+- **Given that**: I'm an existing investor user of the platform who wants to access a status-protected (`InvestorStatus`) endpoint
+  - **When**: I make a request to a status-protected (`InvestorStatus`) endpoint that does not include my current status with a valid access token
+    - **Then**:
+      - [x] It should not authorize my access
+      - [x] It should return a 403 Forbidden response with an error message indicating that I do not have the necessary permissions to perform this action
+  - **When**: I make a request to a status-protected (`InvestorStatus`) endpoint that includes my current status with a valid access token
+    - **Then**:
+      - [x] It should authorize my access
+      - [x] It should proceed to call next expected action for that endpoint successfully
+
+_Use case_: Call type and status-protected (`InvestorType` and `InvestorStatus`) endpoint as an investor
+- **Given that**: I'm an existing investor user of the platform who wants to access a type and status-protected (`InvestorType` and `InvestorStatus`) endpoint
+  - **When**: I make a request to a type and status-protected (`InvestorType` and `InvestorStatus`) endpoint that does not include my current type and/or status with a valid access token
+    - **Then**:
+      - [x] It should not authorize my access
+      - [x] It should return a 403 Forbidden response with an error message indicating that I do not have the necessary permissions to perform this action
+  - **When**: I make a request to a type and status-protected (`InvestorType` and `InvestorStatus`) endpoint that includes my current type and status with a valid access token
+    - **Then**:
+      - [x] It should authorize my access
+      - [x] It should proceed to call next expected action for that endpoint successfully
+
+_Use case_: Call GET `/investors` endpoint
+- **Given that**: I'm an existing user of the platform (admin or verified investor) who wants to access the GET `/investors` endpoint
+  - **When**: I make a request to the GET `/investors` endpoint with a valid access token and I query with `GetInvestorsDto` parameters using wrong type values to filter the results
+    - **Then**:
+      - [x] It should authorize my access
+      - [x] It should fail type validation for the provided filters in `GetInvestorsDto`
+      - [x] It should return a 400 Bad Request response with an error message list indicating that the provided filters are invalid
+- **Given that**: I'm an existing verified investor user of the platform who wants to access the GET `/investors` endpoint
+  - **When**: I make a request to the GET `/investors` endpoint with a valid access token while there are 1 or more investor users in the system
+    - **Then**:
+      - [x] It should authorize my access
+      - [x] It should query the database ONLY for verified investor users (`InvestorStatus.VERIFIED`) including only non-sensitive properties (id, email, companyName, phoneNumber, investorType)
+      - [x] It should return a 200 OK response with a paginated list of all found investor users in the system
+  - **When**: I make a request to the GET `/investors` endpoint with a valid access token and there are no verified investor users in the system
+    - **Then**:
+      - [x] It should authorize my access
+      - [x] It should query the database for verified investor users (`InvestorStatus.VERIFIED`) and find none
+      - [x] It should return a 200 OK response with an empty paginated list of investor users
+  - **When**: I make a request to the GET `/investors` endpoint with a valid access token and I query with `GetInvestorsDto` parameters to filter the results while there are 1 or more investor users in the system
+    - **Then**:
+      - [x] It should authorize my access
+      - [x] It should query the database for verified investor users (`InvestorStatus.VERIFIED`) that match the provided filters in `GetInvestorsDto`, ignoring fields not specified in `GetInvestorsDto`
+      - [x] It should include only non-sensitive properties (id, email, companyName, phoneNumber, investorType)
+      - [x] It should return a 200 OK response with a paginated list of all found investor users in the system that match the provided filters
+  - **When**: I make a request to the GET `/investors` endpoint with a valid access token and I query using parameters not specified in `GetInvestorsDto` to filter the results while there are 1 or more investor users in the system
+    - **Then**:
+      - [x] It should authorize my access
+      - [x] It should ignore the invalid filters and return results based only on the valid filters provided in `GetInvestorsDto`
+      - [x] It should query the database for verified investor users (`InvestorStatus.VERIFIED`) that match the provided filters in `GetInvestorsDto`, ignoring fields not specified in `GetInvestorsDto`
+      - [x] It should include only non-sensitive properties (id, email, companyName, phoneNumber, investorType)
+      - [x] It should return a 200 OK response with a paginated list of all found investor users in the system that match the provided filters
+- **Given that**: I'm an existing administrator user of the platform who wants to access the GET `/investors` endpoint
+  - **When**: I make a request to the GET `/investors` endpoint with a valid access token while there are 1 or more investor users in the system
+    - **Then**:
+      - [x] It should authorize my access
+      - [x] It should query the database for all investor users and return all user properties (except the password), including related bank account and documents
+      - [x] It should return a 200 OK response with a paginated list of all found investor users in the system
+  - **When**: I make a request to the GET `/investors` endpoint with a valid access token and there are no investor users in the system
+    - **Then**:
+      - [x] It should authorize my access
+      - [x] It should query the database for all investor users and find none
+      - [x] It should return a 200 OK response with an empty paginated list of investor users
+  - **When**: I make a request to the GET `/investors` endpoint with a valid access token and I query with `GetInvestorsDto` parameters to filter the results while there are 1 or more investor users in the system
+    - **Then**:
+      - [x] It should authorize my access
+      - [x] It should query the database for all investor users that match the provided filters in `GetInvestorsDto`, ignoring fields not specified in `GetInvestorsDto`, and return all user properties (except the password), including related bank account and documents
+      - [x] It should return a 200 OK response with a paginated list of all found investor users in the system that match the provided filters
+  - **When**: I make a request to the GET `/investors` endpoint with a valid access token and I query using parameters not specified in `GetInvestorsDto` to filter the results while there are 1 or more investor users in the system
+    - **Then**:
+      - [x] It should authorize my access
+      - [x] It should ignore the invalid filters and return results based only on the valid filters provided in `GetInvestorsDto`
+      - [x] It should query the database for all investor users that match the provided filters in `GetInvestorsDto`, ignoring fields not specified in `GetInvestorsDto`, and return all user properties (except the password), including related bank account and documents
+      - [x] It should return a 200 OK response with a paginated list of all found investor users in the system that match the provided filters
+  - **When**: I make a request to the GET `/investors` endpoint with a valid access token and I include `includeDeleted=1` in the query parameters to include soft deleted users in the results while there are soft deleted users in the system
+    - **Then**:
+      - [x] It should authorize my access
+      - [x] It should query the database for all investor users, including soft deleted users, that match the provided filters in `GetInvestorsDto` and return all user properties (except the password), including related bank account and documents
+      - [x] It should return a 200 OK response with a paginated list of all found investor users in the system that match the provided filters, including soft deleted users
+
+_Use case_: Call GET `/investors/:id` endpoint
+- **Given that**: I'm an existing verified investor user of the platform who wants to access the GET `/investors/:id` endpoint
+  - **When**: I make a request to the GET `/investors/:id` endpoint with a valid access token and a valid investor user ID that matches my own ID
+    - **Then**:
+      - [x] It should authorize my access
+      - [x] It should query the database for the specified investor user by ID and return all user properties (except the password), including related bank account and documents
+      - [x] It should return a 200 OK response with the information of the specified investor user
+  - **When**: I make a request to the GET `/investors/:id` endpoint with a valid access token and a valid investor user ID that does not match my own ID
+    - **Then**:
+      - [x] It should authorize my access
+      - [x] It should query the database for the specified investor user by ID including only non-sensitive properties (id, email, companyName, phoneNumber, investorType)
+  - **When**: I make a request to the GET `/investors/:id` endpoint with a valid access token and an invalid ID
+    - **Then**:
+      - [x] It should authorize my access
+      - [x] It should return a 400 Bad Request response with an error message indicating that the specified ID is malformed
+  - **When**: I make a request to the GET `/investors/:id` endpoint with a valid access token and a non-existent investor user ID
+    - **Then**:
+      - [x] It should authorize my access
+      - [x] It should return a 404 Not Found response with an error message indicating that the specified investor user was not found
+- **Given that**: I'm an existing administrator user of the platform who wants to access the GET `/investors/:id` endpoint
+  - **When**: I make a request to the GET `/investors/:id` endpoint with a valid access token and a valid investor user ID
+    - **Then**:
+      - [x] It should authorize my access
+      - [x] It should query the database for the specified investor user by ID and return all user properties (except the password), including related bank account and documents
+      - [x] It should return a 200 OK response with the information of the specified investor user
+  - **When**: I make a request to the GET `/investors/:id` endpoint with a valid access token and an invalid ID
+    - **Then**:
+      - [x] It should authorize my access
+      - [x] It should return a 400 Bad Request response with an error message indicating that the specified ID is malformed
+  - **When**: I make a request to the GET `/investors/:id` endpoint with a valid access token and a non-existent investor user ID
+    - **Then**:
+      - [x] It should authorize my access
+      - [x] It should return a 404 Not Found response with an error message indicating that the specified investor user was not found
+
+_Use case_: Call PATCH `/investors/:id` endpoint
+- **Given that**: I'm an existing user of the platform (admin or verified investor) who wants to access the PATCH `/investors/:id` endpoint
+  - **When**: I make a request to the PATCH `/investors/:id` endpoint with a valid access token, an invalid ID, and valid updated information in the request body (`UpdateInvestorDto`)
+    - **Then**:
+      - [x] It should authorize my access
+      - [x] It should return a 400 Bad Request response with an error message indicating that the specified ID is malformed
+  - **When**: I make a request to the PATCH `/investors/:id` endpoint with a valid access token, a valid investor user ID, using wrong type values for one or more fields in `UpdateInvestorDto` in the request body
+    - **Then**:
+      - [x] It should authorize my access
+      - [x] It should return a 400 Bad Request response with an error message list indicating which fields are invalid
+  - **When**: I make a request to the PATCH `/investors/:id` endpoint with a valid access token, a valid investor user ID that does not match my own ID, and valid updated information in the request body (`UpdateInvestorDto`)
+    - **Then**:
+      - [x] It should authorize my access
+      - [x] It should return a 403 Forbidden response with an error message indicating that I don't have permission to perform this action
+  - **When**: I make a request to the PATCH `/investors/:id` endpoint with a valid access token, a non-existent investor user ID, and valid updated information in the request body (`UpdateInvestorDto`)
+    - **Then**:
+      - [x] It should authorize my access
+      - [x] It should return a 404 Not Found response with an error message indicating that the specified investor user was not found
+- **Given that**: I'm an existing investor user of the platform - verified - who wants to access the PATCH `/investors/:id` endpoint
+  - **When**: I make a request to the PATCH `/investors/:id` endpoint with a valid access token, a valid investor user ID that matches my own ID, and valid updated information in the request body (`UpdateInvestorDto`)
+    - **Then**:
+      - [x] It should authorize my access
+      - [x] It should update the specified investor user's profile information with the provided data, ignoring fields not specified in `UpdateInvestorDto`
+      - [x] It should ignore sensitive fields not allowed to be updated by the user once verified (name, companyName, investorType, taxId, related document)
+      - [x] It should return a 200 OK response with the updated information of the specified investor user
+  - **When**: I make a request to the PATCH `/investors/:id` endpoint with a valid access token, a valid investor user ID that matches my own ID, and an email, companyName, phoneNumber, and/or taxId that is already registered by another user in the request body (`UpdateInvestorDto`)
+    - **Then**:
+      - [x] It should authorize my access
+      - [x] It should return a 400 Bad Request response with an error message indicating that the email, companyName, phoneNumber, or taxId is already in use
+  - **When**: I make a request to the PATCH `/investors/:id` endpoint with a valid access token, a valid investor user ID, and valid updated information in the request body (`UpdateInvestorDto`) while the external document service is down
+    - **Then**:
+      - [x] It should authorize my access
+      - [x] It should update the specified investor user's profile information with the provided data, ignoring fields not specified in `UpdateInvestorDto`
+      - [x] It should fail to update the related document if included in the update data
+      - [x] It should return a 503 Service Unavailable response with an error message indicating that a service is currently unavailable
+- **Given that**: I'm an existing investor user of the platform - flagged for correction - who wants to access the PATCH `/investors/:id` endpoint
+  - **When**: I make a request to the PATCH `/investors/:id` endpoint with a valid access token, a valid investor user ID that matches my own ID, and valid updated information in the request body (`UpdateInvestorDto`)
+    - **Then**:
+      - [x] It should authorize my access
+      - [x] It should update all specified investor user's profile information with the provided data, ignoring fields not specified in `UpdateInvestorDto`
+      - [x] It should return a 200 OK response with the updated information of the specified investor user
+  - **When**: I make a request to the PATCH `/investors/:id` endpoint with a valid access token, a valid investor user ID that matches my own ID, and an email, companyName, phoneNumber, and/or taxId that is already registered by another user in the request body (`UpdateInvestorDto`)
+    - **Then**:
+      - [x] It should authorize my access
+      - [x] It should return a 400 Bad Request response with an error message indicating that the email, companyName, phoneNumber, or taxId is already in use
+- **Given that**: I'm an existing investor user of the platform - flagged pending or denied - who wants to access the PATCH `/investors/:id` endpoint
+  - **When**: I make a request to the PATCH `/investors/:id` endpoint with a valid access token, a valid investor user ID that matches my own ID, and valid updated information in the request body (`UpdateInvestorDto`)
+    - **Then**:
+      - [x] It should authorize my access
+      - [x] It should return a 403 Forbidden response with an error message indicating that I don't have permission to perform this action
+- **Given that**: I'm an existing administrator user of the platform who wants to access the PATCH `/investors/:id` endpoint
+  - **When**: I make a request to the PATCH `/investors/:id` endpoint with a valid access token, a valid investor user ID, and valid updated information in the request body (`UpdateInvestorDto`)
+    - **Then**:
+      - [x] It should authorize my access
+      - [x] It should update the specified investor user's status and lastCommunication properties with the provided data
+      - [x] It should ignore all other fields not allowed to be updated by the administrator
+      - [x] It should return a 200 OK response with the updated information of the specified investor user
+
+_Use case_: Call DELETE `/investors/:id` endpoint
+- **Given that**: I'm an existing investor user of the platform who wants to access the DELETE `/investors/:id` endpoint
+  - **When**: I make a request to the DELETE `/investors/:id` endpoint with a valid access token and a valid investor user ID that matches my own ID
+    - **Then**:
+      - [x] It should authorize my access
+      - [x] It should soft delete the specified investor user profile
+      - [x] It should return a 200 OK response indicating that the investor user was deleted
+  - **When**: I make a request to the DELETE `/investors/:id` endpoint with a valid access token and an invalid ID
+    - **Then**:
+      - [x] It should authorize my access
+      - [x] It should return a 400 Bad Request response with an error message indicating that the specified ID is malformed
+  - **When**: I make a request to the DELETE `/investors/:id` endpoint with a valid access token and a valid investor user ID that does not match my own ID
+    - **Then**:
+      - [x] It should authorize my access
+      - [x] It should return a 403 Forbidden response with an error message indicating that I don't have permission to perform this action
+  - **When**: I make a request to the DELETE `/investors/:id` endpoint with a valid access token and a non-existent investor user ID
+    - **Then**:
+      - [x] It should authorize my access
+      - [x] It should return a 404 Not Found response with an error message indicating that the specified investor user was not found
+
+- **Given that**: I'm an existing administrator user of the platform who wants to access the DELETE `/investors/:id` endpoint
+  - **When**: I make a request to the DELETE `/investors/:id` endpoint with a valid access token and an invalid ID
+    - **Then**:
+      - [x] It should authorize my access
+      - [x] It should return a 400 Bad Request response with an error message indicating that the specified ID is malformed
+  - **When**: I make a request to the DELETE `/investors/:id` endpoint with a valid access token and a valid investor user ID
+    - **Then**:
+      - [x] It should authorize my access
+      - [x] It should return a 403 Forbidden response with an error message indicating that I don't have permission to perform this action
+  - **When**: I make a request to the DELETE `/investors/:id` endpoint with a valid access token and a non-existent investor user ID
+    - **Then**:
+      - [x] It should authorize my access
+      - [x] It should return a 404 Not Found response with an error message indicating that the specified investor user was not found
+
+> _TODO_: `GET /investors/lookup/count` endpoint test cases are not covered in this document.
+
+# Document
+
+> _TODO_
+
+# Debtor
+
+_Use case_: Call POST `/debtors` endpoint
+- **Given that**: I'm an existing verified company investor user of the platform who wants to create a debtor by accessing the POST `/debtors` endpoint
+  - **When**: I make a request to the POST `/debtors` endpoint with a valid access token and valid information in the request body (`CreateDebtorDto`)
+    - **Then**:
+      - [x] It should authorize my access
+      - [x] It should create a new debtor related to my investor user profile with the provided information, ignoring fields not specified in `CreateDebtorDto`
+      - [x] It should return a 201 Created response with the created debtor's information in the response body
+  - **When**: I make a request to the POST `/debtors` endpoint with a valid access token and missing one or more required fields from `CreateDebtorDto` in the request body
+    - **Then**:
+      - [x] It should authorize my access
+      - [x] It should not create a new debtor
+      - [x] It should return a 400 Bad Request response with an error message listing which fields are missing
+  - **When**: I make a request to the POST `/debtors` endpoint with a valid access token using wrong type values for one or more fields in `CreateDebtorDto` in the request body
+    - **Then**:
+      - [x] It should authorize my access
+      - [x] It should fail validation for the provided fields in `CreateDebtorDto`
+      - [x] It should return a 400 Bad Request response with an error message list indicating which fields are invalid
+  - **When**: I make a request to the POST `/debtors` endpoint with a valid access token and valid information in the request body (`CreateDebtorDto`) with an email, phoneNumber, companyName, and/or taxId that is already registered by me and submit it
+    - **Then**:
+      - [x] It should authorize my access
+      - [x] It should return a 400 Bad Request response with an error message indicating that the email, phoneNumber, companyName, or taxId is already in use by me for another debtor
+
+_Use case_: Call GET `/debtors` endpoint
+- **Given that**: I'm an existing user of the platform (admin or verified investor) who wants to access the GET `/debtors` endpoint
+  - **When**: I make a request to the GET `/debtors` endpoint with a valid access token and I query with `GetDebtorsDto` parameters using wrong type values to filter the results
+    - **Then**:
+      - [x] It should authorize my access
+      - [x] It should fail type validation for the provided filters in `GetDebtorsDto`
+      - [x] It should return a 400 Bad Request response with an error message list indicating that the provided filters are invalid
+- **Given that**: I'm an existing verified investor user of the platform who wants to access the GET `/debtors` endpoint
+  - **When**: I make a request to the GET `/debtors` endpoint with a valid access token while there are 1 or more debtors in the system
+    - **Then**:
+      - [x] It should authorize my access
+      - [x] It should query the database for all verified debtors, including my own no matter the status
+      - [x] It should return a 200 OK response with a paginated list of all found debtors in the system
+  - **When**: I make a request to the GET `/debtors` endpoint with a valid access token and there are no debtors in the system
+    - **Then**:
+      - [x] It should authorize my access
+      - [x] It should query the database for all verified debtors and find none
+      - [x] It should return a 200 OK response with an empty paginated list of debtors
+  - **When**: I make a request to the GET `/debtors` endpoint with a valid access token and I query with `GetDebtorsDto` parameters to filter the results while there are 1 or more debtors in the system
+    - **Then**:
+      - [x] It should authorize my access
+      - [x] It should query the database for verified debtors that match the provided filters in `GetDebtorsDto`, ignoring fields not specified in `GetDebtorsDto`
+      - [x] It should return a 200 OK response with a paginated list of all found debtors in the system that match the provided filters
+- **Given that**: I'm an existing administrator user of the platform who wants to access the GET `/debtors` endpoint
+  - **When**: I make a request to the GET `/debtors` endpoint with a valid access token while there are 1 or more debtors in the system
+    - **Then**:
+      - [x] It should authorize my access
+      - [x] It should query the database for all debtors
+      - [x] It should return a 200 OK response with a paginated list of all found debtors in the system
+  - **When**: I make a request to the GET `/debtors` endpoint with a valid access token and there are no debtors in the system
+    - **Then**:
+      - [x] It should authorize my access
+      - [x] It should query the database for all debtors and find none
+      - [x] It should return a 200 OK response with an empty paginated list of debtors
+  - **When**: I make a request to the GET `/debtors` endpoint with a valid access token and I query with `GetDebtorsDto` parameters to filter the results while there are 1 or more debtors in the system
+    - **Then**:
+      - [x] It should authorize my access
+      - [x] It should query the database for all debtors that match the provided filters in `GetDebtorsDto`
+      - [x] It should return a 200 OK response with a paginated list of all found debtors in the system that match the provided filters
+  - **When**: I make a request to the GET `/debtors` endpoint with a valid access token and I query using parameters not specified in `GetDebtorsDto` to filter the results while there are 1 or more debtors in the system
+    - **Then**:
+      - [x] It should authorize my access
+      - [x] It should ignore the invalid filters and return results based only on the valid filters provided in `GetDebtorsDto`
+      - [x] It should query the database for all debtors that match the provided filters in `GetDebtorsDto`, ignoring fields not specified in `GetDebtorsDto`
+      - [x] It should return a 200 OK response with a paginated list of all found debtors in the system that match the provided filters
+  - **When**: I make a request to the GET `/debtors` endpoint with a valid access token and I include `includeDeleted=1` in the query parameters to include soft deleted debtors in the results while there are soft deleted debtors in the system
+    - **Then**:
+      - [x] It should authorize my access
+      - [x] It should query the database for all debtors, including soft deleted debtors, that match the provided filters in `GetDebtorsDto`, ignoring fields not specified in `GetDebtorsDto`, returning all debtor properties including related investor
+      - [x] It should return a 200 OK response with a paginated list of all found debtors in the system that match the provided filters, including soft deleted debtors
+
+_Use case_: Call GET `/debtors/:id` endpoint
+- **Given that**: I'm an existing user of the platform (admin or verified investor) who wants to access the GET `/debtors/:id` endpoint
+  - **When**: I make a request to the GET `/debtors/:id` endpoint with a valid access token and a valid debtor ID
+    - **Then**:
+      - [x] It should authorize my access
+      - [x] It should query the database for the specified debtor by ID and return all properties, including related investor
+      - [x] It should return a 200 OK response with the information of the specified debtor
+  - **When**: I make a request to the GET `/debtors/:id` endpoint with a valid access token and an invalid ID
+    - **Then**:
+      - [x] It should authorize my access
+      - [x] It should return a 400 Bad Request response with an error message indicating that the specified ID is malformed
+  - **When**: I make a request to the GET `/debtors/:id` endpoint with a valid access token and a non-existent debtor ID
+    - **Then**:
+      - [x] It should authorize my access
+      - [x] It should return a 404 Not Found response with an error message indicating that the specified debtor was not found
+
+_Use case_: Call PATCH `/debtors/:id` endpoint
+- **Given that**: I'm an existing verified company investor user of the platform who wants to access the PATCH `/debtors/:id` endpoint
+  - **When**: I make a request to the PATCH `/debtors/:id` endpoint with a valid access token, a valid debtor ID that belongs to my investor user profile, and valid updated information in the request body (`UpdateDebtorDto`)
+    - **Then**:
+      - [x] It should authorize my access
+      - [x] It should update the specified debtor's information with the provided data, ignoring fields not specified in `UpdateDebtorDto`
+      - [x] It should return a 200 OK response with the updated information of the specified debtor
+  - **When**: I make a request to the PATCH `/debtors/:id` endpoint with a valid access token, an invalid ID, and valid updated information in the request body (`UpdateDebtorDto`)
+    - **Then**:
+      - [x] It should authorize my access
+      - [x] It should return a 400 Bad Request response with an error message indicating that the specified ID is malformed
+  - **When**: I make a request to the PATCH `/debtors/:id` endpoint with a valid access token, a valid debtor ID, using wrong type values for one or more fields in `UpdateDebtorDto` in the request body
+    - **Then**:
+      - [x] It should authorize my access
+      - [x] It should fail validation for the provided fields in `UpdateDebtorDto`
+      - [x] It should return a 400 Bad Request response with an error message list indicating which fields are invalid
+  - **When**: I make a request to the PATCH `/debtors/:id` endpoint with a valid access token, a valid debtor ID that does not belong to my investor user profile, and valid updated information in the request body (`UpdateDebtorDto`)
+    - **Then**:
+      - [x] It should authorize my access
+      - [x] It should return a 403 Forbidden response with an error message indicating that I don't have permission to perform this action
+  - **When**: I make a request to the PATCH `/debtors/:id` endpoint with a valid access token, a non-existent debtor ID, and valid updated information in the request body (`UpdateDebtorDto`)
+    - **Then**:
+      - [x] It should authorize my access
+      - [x] It should return a 404 Not Found response with an error message indicating that the specified debtor was not found
+- **Given that**: I'm an existing administrator user of the platform who wants to access the PATCH `/debtors/:id` endpoint
+  - **When**: I make a request to the PATCH `/debtors/:id` endpoint with a valid access token, a valid debtor ID, and valid updated information in the request body (`UpdateDebtorDto`)
+    - **Then**:
+      - [x] It should authorize my access
+      - [x] It should update the specified debtor's information with the provided data, ignoring fields not specified in `UpdateDebtorDto`
+      - [x] It should return a 200 OK response with the updated information of the specified debtor
+  - **When**: I make a request to the PATCH `/debtors/:id` endpoint with a valid access token, an invalid ID, and valid updated information in the request body (`UpdateDebtorDto`)
+    - **Then**:
+      - [x] It should authorize my access
+      - [x] It should return a 400 Bad Request response with an error message indicating that the specified ID is malformed
+  - **When**: I make a request to the PATCH `/debtors/:id` endpoint with a valid access token, a valid debtor ID, using wrong type values for one or more fields in `UpdateDebtorDto` in the request body
+    - **Then**:
+      - [x] It should authorize my access
+      - [x] It should fail validation for the provided fields in `UpdateDebtorDto`
+      - [x] It should return a 400 Bad Request response with an error message list indicating which fields are invalid
+  - **When**: I make a request to the PATCH `/debtors/:id` endpoint with a valid access token, a non-existent debtor ID, and valid updated information in the request body (`UpdateDebtorDto`)
+    - **Then**:
+      - [x] It should authorize my access
+      - [x] It should return a 404 Not Found response with an error message indicating that the specified debtor was not found
+
+_Use case_: Call DELETE `/debtors/:id` endpoint
+- **Given that**: I'm an existing verified company investor user of the platform who wants to access the DELETE `/debtors/:id` endpoint
+  - **When**: I make a request to the DELETE `/debtors/:id` endpoint with a valid access token and a valid debtor ID that belongs to my investor user profile
+    - **Then**:
+      - [x] It should authorize my access
+      - [x] It should soft delete the specified debtor
+      - [x] It should return a 200 OK response indicating that the debtor was deleted
+  - **When**: I make a request to the DELETE `/debtors/:id` endpoint with a valid access token and an invalid ID
+    - **Then**:
+      - [x] It should authorize my access
+      - [x] It should return a 400 Bad Request response with an error message indicating that the specified ID is malformed
+  - **When**: I make a request to the DELETE `/debtors/:id` endpoint with a valid access token and a valid debtor ID that does not belong to my investor user profile
+    - **Then**:
+      - [x] It should authorize my access
+      - [x] It should return a 404 Not Found response with an error message indicating that the specified debtor was not found
+  - **When**: I make a request to the DELETE `/debtors/:id` endpoint with a valid access token and a non-existent debtor ID
+    - **Then**:
+      - [x] It should authorize my access
+      - [x] It should return a 404 Not Found response with an error message indicating that the specified debtor was not found
+
+> _TODO_: `GET /debtors/lookup/count` endpoint test cases are not covered in this document.
+
+# Invoice
+
+_Use case_: Call POST `/invoices` endpoint
+- **Given that**: I'm an existing verified company investor user of the platform who wants to create an invoice by accessing the POST `/invoices` endpoint
+  - **When**: I make a request to the POST `/invoices` endpoint with a valid access token and valid information in the request body (`CreateInvoiceDto`) using a verified debtor ID that belongs to my investor user profile
+    - **Then**:
+      - [x] It should authorize my access
+      - [x] It should create a new invoice related to a debtor of my investor user profile with the provided information, ignoring fields not specified in `CreateInvoiceDto`
+      - [x] It should return a 201 Created response with the created invoice's information in the response body
+  - **When**: I make a request to the POST `/invoices` endpoint with a valid access token and missing one or more required fields from `CreateInvoiceDto` in the request body
+    - **Then**:
+      - [x] It should authorize my access
+      - [x] It should not create a new invoice
+      - [x] It should return a 400 Bad Request response with an error message listing which fields are missing
+  - **When**: I make a request to the POST `/invoices` endpoint with a valid access token using wrong type values for one or more fields in `CreateInvoiceDto` in the request body
+    - **Then**:
+      - [x] It should authorize my access
+      - [x] It should fail validation for the provided fields in `CreateInvoiceDto`
+      - [x] It should return a 400 Bad Request response with an error message list indicating which fields are invalid
+  - **When**: I make a request to the POST `/invoices` endpoint with a valid access token and a non-verified debtor ID in the request body (`CreateInvoiceDto`)
+    - **Then**:
+      - [x] It should authorize my access
+      - [x] It should return a 400 Bad Request response with an error message indicating that the specified debtor is not verified
+  - **When**: I make a request to the POST `/invoices` endpoint with a valid access token and a debtor ID in the request body (`CreateInvoiceDto`) that does not belong to my investor user profile
+    - **Then**:
+      - [x] It should authorize my access
+      - [x] It should return a 404 Not Found response with an error message indicating that the specified debtor was not found
+  - **When**: I make a request to the POST `/invoices` endpoint with a valid access token and a non-existent debtor ID in the request body (`CreateInvoiceDto`)
+    - **Then**:
+      - [x] It should authorize my access
+      - [x] It should return a 404 Not Found response with an error message indicating that the specified debtor was not found
+  - **When**: I make a request to the POST `/invoices` endpoint with a valid access token and valid information in the request body (`CreateInvoiceDto`) while the external document service is down
+    - **Then**:
+      - [x] It should authorize my access
+      - [x] It should create a new invoice related to a debtor of my investor user profile with the provided information, ignoring fields not specified in `CreateInvoiceDto`
+      - [x] It should fail to create the related document for the invoice
+      - [x] It should call to remove the created invoice, ensuring that no incomplete invoice is left in the system
+      - [x] It should return a 503 Service Unavailable response with an error message indicating that a service is currently unavailable
+
+_Use case_: Call GET `/invoices` endpoint
+- **Given that**: I'm an existing user of the platform (admin or verified investor) who wants to access the GET `/invoices` endpoint
+- **When**: I make a request to the GET `/invoices` endpoint with a valid access token and I query with `GetInvoicesDto` parameters using wrong type values to filter the results while there are 1 or more invoices in the system
+    - **Then**:
+      - [x] It should authorize my access
+      - [x] It should fail type validation for the provided filters in `GetInvoicesDto`
+      - [x] It should return a 400 Bad Request response with an error message list indicating that the provided filters are invalid
+  - **When**: I make a request to the GET `/invoices` endpoint with a valid access token and there are no invoices in the system
+    - **Then**:
+      - [x] It should authorize my access
+      - [x] It should query the database for all verified invoices and find none
+      - [x] It should return a 200 OK response with an empty paginated list of invoices
+- **Given that**: I'm an existing verified investor user of the platform who wants to access the GET `/invoices` endpoint
+  - **When**: I make a request to the GET `/invoices` endpoint with a valid access token while there are 1 or more invoices in the system
+    - **Then**:
+      - [x] It should authorize my access
+      - [x] It should query the database for all verified invoices, including my own no matter the status, returning all properties including related debtor, investor, transferor, and/or documents
+      - [x] It should return a 200 OK response with a paginated list of all found invoices in the system
+  - **When**: I make a request to the GET `/invoices` endpoint with a valid access token and I query with `GetInvoicesDto` parameters to filter the results while there are 1 or more invoices in the system
+    - **Then**:
+      - [x] It should authorize my access
+      - [x] It should query the database for verified invoices that match the provided filters in `GetInvoicesDto`, including my own no matter the status, ignoring fields not specified in `GetInvoicesDto`, returning all properties including related debtor, investor, transferor, and/or documents
+      - [x] It should return a 200 OK response with a paginated list of all found invoices in the system that match the provided filters
+  - **When**: I make a request to the GET `/invoices` endpoint with a valid access token and I query using parameters not specified in `GetInvoicesDto` to filter the results while there are 1 or more invoices in the system
+    - **Then**:
+      - [x] It should authorize my access
+      - [x] It should ignore the invalid filters and return results based only on the valid filters provided in `GetInvoicesDto`
+      - [x] It should query the database for verified invoices that match the provided filters in `GetInvoicesDto`, including my own no matter the status, ignoring fields not specified in `GetInvoicesDto`, returning all properties including related debtor, investor, transferor, and/or documents
+      - [x] It should return a 200 OK response with a paginated list of all found invoices in the system that match the provided filters
+- **Given that**: I'm an existing administrator user of the platform who wants to access the GET `/invoices` endpoint
+  - **When**: I make a request to the GET `/invoices` endpoint with a valid access token while there are 1 or more invoices in the system
+    - **Then**:
+      - [x] It should authorize my access
+      - [x] It should query the database for all invoices, returning all properties including related debtor, investor, transferor, and/or documents
+      - [x] It should return a 200 OK response with a paginated list of all found invoices in the system
+  - **When**: I make a request to the GET `/invoices` endpoint with a valid access token and I query with `GetInvoicesDto` parameters to filter the results while there are 1 or more invoices in the system
+    - **Then**:
+      - [x] It should authorize my access
+      - [x] It should query the database for all invoices that match the provided filters in `GetInvoicesDto`, ignoring fields not specified in `GetInvoicesDto`, returning all properties including related debtor, investor, transferor, and/or documents
+      - [x] It should return a 200 OK response with a paginated list of all found invoices in the system that match the provided filters
+  - **When**: I make a request to the GET `/invoices` endpoint with a valid access token and I query using parameters not specified in `GetInvoicesDto` to filter the results while there are 1 or more invoices in the system
+    - **Then**:
+      - [x] It should authorize my access
+      - [x] It should ignore the invalid filters and return results based only on the valid filters provided in `GetInvoicesDto`
+      - [x] It should query the database for all invoices that match the provided filters in `GetInvoicesDto`, ignoring fields not specified in `GetInvoicesDto`, returning all properties including related debtor, investor, transferor, and/or documents
+      - [x] It should return a 200 OK response with a paginated list of all found invoices in the system that match the provided filters
+  - **When**: I make a request to the GET `/invoices` endpoint with a valid access token and I include `includeDeleted=1` in the query parameters to include soft deleted invoices in the results while there are soft deleted invoices in the system
+    - **Then**:
+      - [x] It should authorize my access
+      - [x] It should query the database for all invoices, including soft deleted invoices, that match the provided filters in `GetInvoicesDto`, ignoring fields not specified in `GetInvoicesDto`, returning all properties including related debtor, investor, transferor, and/or documents
+      - [x] It should return a 200 OK response with a paginated list of all found invoices in the system that match the provided filters, including soft deleted invoices
+
+_Use case_: Call GET `/invoices/:id` endpoint
+- **Given that**: I'm an existing user of the platform (admin or verified investor) who wants to access the GET `/invoices/:id` endpoint
+  - **When**: I make a request to the GET `/invoices/:id` endpoint with a valid access token and an invalid ID
+    - **Then**:
+      - [x] It should authorize my access
+      - [x] It should return a 400 Bad Request response with an error message indicating that the specified ID is malformed
+  - **When**: I make a request to the GET `/invoices/:id` endpoint with a valid access token and a non-existent invoice ID
+    - **Then**:
+      - [x] It should authorize my access
+      - [x] It should return a 404 Not Found response with an error message indicating that the specified invoice was not found
+- **Given that**: I'm an existing verified investor user of the platform who wants to access the GET `/invoices/:id` endpoint
+  - **When**: I make a request to the GET `/invoices/:id` endpoint with a valid access token and a valid invoice ID that belongs to my investor profile (buy or sell)
+    - **Then**:
+      - [x] It should authorize my access
+      - [x] It should query the database for the specified invoice by ID, returning all properties including related debtor, investor, transferor, and/or documents
+      - [x] It should return a 200 OK response with the information of the specified invoice
+  - **When**: I make a request to the GET `/invoices/:id` endpoint with a valid access token and a valid invoice ID that does not belong to my investor profile
+    - **Then**:
+      - [x] It should authorize my access
+      - [x] It should return a 404 Not Found response with an error message indicating that the specified invoice was not found
+- **Given that**: I'm an existing administrator user of the platform who wants to access the GET `/invoices/:id` endpoint
+  - **When**: I make a request to the GET `/invoices/:id` endpoint with a valid access token and a valid invoice ID
+    - **Then**:
+      - [x] It should authorize my access
+      - [x] It should query the database for the specified invoice by ID, returning all properties including related debtor, investor, transferor, and/or documents
+      - [x] It should return a 200 OK response with the information of the specified invoice
+
+_Use case_: Call PATCH `/invoices/:id` endpoint
+- **Given that**: I'm an existing user of the platform (admin or verified company investor) who wants to access the PATCH `/invoices/:id` endpoint
+  - **When**: I make a request to the PATCH `/invoices/:id` endpoint with a valid access token, an invalid ID, and valid updated information in the request body (`UpdateInvoiceDto`)
+    - **Then**:
+      - [x] It should authorize my access
+      - [x] It should return a 400 Bad Request response with an error message indicating that the specified ID is malformed
+  - **When**: I make a request to the PATCH `/invoices/:id` endpoint with a valid access token, a valid invoice ID, using wrong type values for one or more fields in `UpdateInvoiceDto` in the request body
+    - **Then**:
+      - [x] It should authorize my access
+      - [x] It should fail validation for the provided fields in `UpdateInvoiceDto`
+      - [x] It should return a 400 Bad Request response with an error message list indicating which fields are invalid
+  - **When**: I make a request to the PATCH `/invoices/:id` endpoint with a valid access token, a valid invoice ID that has already been sold, and valid updated information in the request body (`UpdateInvoiceDto`)
+    - **Then**:
+      - [x] It should authorize my access
+      - [x] It should return a 403 Forbidden response with an error message indicating that the specified invoice has already been sold and cannot be updated
+  - **When**: I make a request to the PATCH `/invoices/:id` endpoint with a valid access token, a non-existent invoice ID, and valid updated information in the request body (`UpdateInvoiceDto`)
+    - **Then**:
+      - [x] It should authorize my access
+      - [x] It should return a 404 Not Found response with an error message indicating that the specified invoice was not found
+- **Given that**: I'm an existing verified company investor user of the platform who wants to access the PATCH `/invoices/:id` endpoint
+  - **When**: I make a request to the PATCH `/invoices/:id` endpoint with a valid access token, a valid invoice ID that belongs to my investor profile, and valid updated information in the request body (`UpdateInvoiceDto`) using a verified debtor ID that belongs to my investor user profile
+    - **Then**:
+      - [x] It should authorize my access
+      - [x] It should update the specified invoice's information with the provided data, ignoring fields not specified in `UpdateInvoiceDto`
+      - [x] It should return a 200 OK response with the updated information of the specified invoice
+  - **When**: I make a request to the PATCH `/invoices/:id` endpoint with a valid access token, a valid invoice ID, using a non-verified debtor ID in the request body (`UpdateInvoiceDto`)
+    - **Then**:
+      - [x] It should authorize my access
+      - [x] It should return a 400 Bad Request response with an error message indicating that the specified debtor is not verified
+  - **When**: I make a request to the PATCH `/invoices/:id` endpoint with a valid access token, a valid invoice ID that belongs to my investor profile, and a debtor ID in the request body (`UpdateInvoiceDto`) that does not belong to my investor user profile
+    - **Then**:
+      - [x] It should authorize my access
+      - [x] It should return a 404 Not Found response with an error message indicating that the specified invoice was not found
+  - **When**: I make a request to the PATCH `/invoices/:id` endpoint with a valid access token, a valid invoice ID, using a non-existent debtor ID in the request body (`UpdateInvoiceDto`)
+    - **Then**:
+      - [x] It should authorize my access
+      - [x] It should return a 404 Not Found response with an error message indicating that the specified debtor was not found
+  - **When**: I make a request to the PATCH `/invoices/:id` endpoint with a valid access token, a valid invoice ID that does not belong to a debtor of my investor user profile, and valid updated information in the request body (`UpdateInvoiceDto`)
+    - **Then**:
+      - [x] It should authorize my access
+      - [x] It should return a 403 Forbidden response with an error message indicating that I don't have permission to perform this action
+  - **When**: I make a request to the PATCH `/invoices/:id` endpoint with a valid access token, a valid invoice ID that belongs to my investor profile, and valid updated information in the request body (`UpdateInvoiceDto`) while the external document service is down
+    - **Then**:
+      - [x] It should authorize my access
+      - [x] It should update the specified invoice's information with the provided data, ignoring fields not specified in `UpdateInvoiceDto`
+      - [x] It should fail to update the related document for the invoice
+      - [x] It should return a 503 Service Unavailable response with an error message indicating that a service is currently unavailable
+- **Given that**: I'm an existing administrator user of the platform who wants to access the PATCH `/invoices/:id` endpoint
+  - **When**: I make a request to the PATCH `/invoices/:id` endpoint with a valid access token, a valid invoice ID, and valid updated information in the request body (`UpdateInvoiceDto`)
+    - **Then**:
+      - [x] It should authorize my access
+      - [x] It should update the specified invoice's information with the provided data, ignoring fields not specified in `UpdateInvoiceDto` and documents
+      - [x] It should return a 200 OK response with the updated information of the specified invoice
+
+_Use case_: Call DELETE `/invoices/:id` endpoint
+- **Given that**: I'm an existing verified company investor user of the platform who wants to access the DELETE `/invoices/:id` endpoint
+  - **When**: I make a request to the DELETE `/invoices/:id` endpoint with a valid access token and a valid invoice ID that belongs to a debtor of my investor user profile
+    - **Then**:
+      - [x] It should authorize my access
+      - [x] It should soft delete the specified invoice
+      - [x] It should return a 200 OK response indicating that the invoice was deleted
+  - **When**: I make a request to the DELETE `/invoices/:id` endpoint with a valid access token and an invalid ID
+    - **Then**:
+      - [x] It should authorize my access
+      - [x] It should return a 400 Bad Request response with an error message indicating that the specified ID is malformed
+  - **When**: I make a request to the DELETE `/invoices/:id` endpoint with a valid access token and a valid invoice ID that does not belong to a debtor of my investor user profile
+    - **Then**:
+      - [x] It should authorize my access
+      - [x] It should return a 403 Forbidden response with an error message indicating that I don't have permission to perform this action
+  - **When**: I make a request to the DELETE `/invoices/:id` endpoint with a valid access token and a valid invoice ID that belongs to a debtor of my investor user profile but has already been sold
+    - **Then**:
+      - [x] It should authorize my access
+      - [x] It should return a 403 Forbidden response with an error message indicating that the specified invoice has already been sold and cannot be deleted
+  - **When**: I make a request to the DELETE `/invoices/:id` endpoint with a valid access token and a non-existent invoice ID
+    - **Then**:
+      - [x] It should authorize my access
+      - [x] It should return a 404 Not Found response with an error message indicating that the specified invoice was not found
+
+> _TODO_: `GET /invoices/lookup/count` endpoint test cases are not covered in this document.
+
+# Auction
+
+_Use case_: Call POST `/auctions` endpoint
+- **Given that**: I'm an existing verified company investor user of the platform who wants to create an auction by accessing the POST `/auctions` endpoint
+  - **When**: I make a request to the POST `/auctions` endpoint with a valid access token and valid information in the request body (`CreateAuctionDto`) using a verified invoice ID that belongs to my investor user profile
+    - **Then**:
+      - [x] It should authorize my access
+      - [x] It should create a new draft auction related to an invoice of my investor user profile with the provided information, ignoring fields not specified in `CreateAuctionDto`
+      - [x] It should return a 201 Created response with the created auction's information in the response body
+  - **When**: I make a request to the POST `/auctions` endpoint with a valid access token and missing one or more required fields from `CreateAuctionDto` in the request body
+    - **Then**:
+      - [x] It should authorize my access
+      - [x] It should not create a new auction
+      - [x] It should return a 400 Bad Request response with an error message listing which fields are missing
+  - **When**: I make a request to the POST `/auctions` endpoint with a valid access token using wrong type values for one or more fields in `CreateAuctionDto` in the request body
+    - **Then**:
+      - [x] It should authorize my access
+      - [x] It should fail validation for the provided fields in `CreateAuctionDto`
+      - [x] It should return a 400 Bad Request response with an error message list indicating which fields are invalid
+  - **When**: I make a request to the POST `/auctions` endpoint with a valid access token and a non-verified invoice ID in the request body (`CreateAuctionDto`)
+    - **Then**:
+      - [x] It should authorize my access
+      - [x] It should return a 400 Bad Request response with an error message indicating that the specified invoice is not verified
+  - **When**: I make a request to the POST `/auctions` endpoint with a valid access token and an invalid invoice ID in the request body (`CreateAuctionDto`)
+    - **Then**:
+      - [x] It should authorize my access
+      - [x] It should return a 400 Bad Request response with an error message indicating that the specified invoice ID is malformed
+  - **When**: I make a request to the POST `/auctions` endpoint with a valid access token and a valid invoice ID in the request body (`CreateAuctionDto`) using auctionDateEnd value that is earlier than 2 days from now, and/or earlier than 1 month before the invoice's due date
+    - **Then**:
+      - [x] It should authorize my access
+      - [x] It should return a 400 Bad Request response with an error message indicating that the specified dates are invalid
+  - **When**: I make a request to the POST `/auctions` endpoint with a valid access token and an invoice ID in the request body (`CreateAuctionDto`) that does not belong to my investor user profile or has already been sold
+    - **Then**:
+      - [x] It should authorize my access
+      - [x] It should return a 404 Not Found response with an error message indicating that the specified invoice was not found
+  - **When**: I make a request to the POST `/auctions` endpoint with a valid access token and a non-existent invoice ID in the request body (`CreateAuctionDto`)
+    - **Then**:
+      - [x] It should authorize my access
+      - [x] It should return a 404 Not Found response with an error message indicating that the specified invoice was not found
+  - **When**: I make a request to the POST `/auctions` endpoint with a valid access token and an invoice ID in the request body (`CreateAuctionDto`) that belongs to my investor user profile and already has an active (non-cancelled) auction
+    - **Then**:
+      - [x] It should authorize my access
+      - [x] It should return a 400 Bad Request response with an error message indicating that there is already an active auction for the specified invoice
+
+_Use case_: Call GET `/auctions` endpoint
+- **Given that**: I'm an existing user of the platform (admin or verified investor) who wants to access the GET `/auctions` endpoint
+- **When**: I make a request to the GET `/auctions` endpoint with a valid access token and I query with `GetAuctionsDto` parameters using wrong type values to filter the results while there are 1 or more auctions in the system
+    - **Then**:
+      - [x] It should authorize my access
+      - [x] It should fail type validation for the provided filters in `GetAuctionsDto`
+      - [x] It should return a 400 Bad Request response with an error message list indicating that the provided filters are invalid
+  - **When**: I make a request to the GET `/auctions` endpoint with a valid access token and there are no auctions in the system
+    - **Then**:
+      - [x] It should authorize my access
+      - [x] It should query the database for all verified auctions and find none
+      - [x] It should return a 200 OK response with an empty paginated list of auctions
+- **Given that**: I'm an existing verified investor user of the platform who wants to access the GET `/auctions` endpoint
+  - **When**: I make a request to the GET `/auctions` endpoint with a valid access token while there are 1 or more auctions in the system
+    - **Then**:
+      - [x] It should authorize my access
+      - [x] It should query the database for all verified auctions, including my own no matter the status
+      - [x] It should return a 200 OK response with a paginated list of all found auctions in the system
+  - **When**: I make a request to the GET `/auctions` endpoint with a valid access token and I query with `GetAuctionsDto` parameters to filter the results while there are 1 or more auctions in the system
+    - **Then**:
+      - [x] It should authorize my access
+      - [x] It should query the database for verified auctions that match the provided filters in `GetAuctionsDto`, including my own no matter the status, ignoring fields not specified in `GetAuctionsDto`
+      - [x] It should return a 200 OK response with a paginated list of all found auctions in the system that match the provided filters
+  - **When**: I make a request to the GET `/auctions` endpoint with a valid access token and I query using parameters not specified in `GetAuctionsDto` to filter the results while there are 1 or more auctions in the system
+    - **Then**:
+      - [x] It should authorize my access
+      - [x] It should ignore the invalid filters and return results based only on the valid filters provided in `GetAuctionsDto`
+      - [x] It should query the database for verified auctions that match the provided filters in `GetAuctionsDto`, including my own no matter the status, ignoring fields not specified in `GetAuctionsDto`
+      - [x] It should return a 200 OK response with a paginated list of all found auctions in the system that match the provided filters
+- **Given that**: I'm an existing administrator user of the platform who wants to access the GET `/auctions` endpoint
+  - **When**: I make a request to the GET `/auctions` endpoint with a valid access token while there are 1 or more auctions in the system
+    - **Then**:
+      - [x] It should authorize my access
+      - [x] It should query the database for all auctions
+      - [x] It should return a 200 OK response with a paginated list of all found auctions in the system
+  - **When**: I make a request to the GET `/auctions` endpoint with a valid access token and I query with `GetAuctionsDto` parameters to filter the results while there are 1 or more auctions in the system
+    - **Then**:
+      - [x] It should authorize my access
+      - [x] It should query the database for all auctions that match the provided filters in `GetAuctionsDto`, ignoring fields not specified in `GetAuctionsDto`
+      - [x] It should return a 200 OK response with a paginated list of all found auctions in the system that match the provided filters
+  - **When**: I make a request to the GET `/auctions` endpoint with a valid access token and I query using parameters not specified in `GetAuctionsDto` to filter the results while there are 1 or more auctions in the system
+    - **Then**:
+      - [x] It should authorize my access
+      - [x] It should ignore the invalid filters and return results based only on the valid filters provided in `GetAuctionsDto`
+      - [x] It should query the database for all auctions that match the provided filters in `GetAuctionsDto`, ignoring fields not specified in `GetAuctionsDto`
+      - [x] It should return a 200 OK response with a paginated list of all found auctions in the system that match the provided filters
+  - **When**: I make a request to the GET `/auctions` endpoint with a valid access token and I include `includeDeleted=1` in the query parameters to include soft deleted auctions in the results while there are soft deleted auctions in the system
+    - **Then**:
+      - [x] It should authorize my access
+      - [x] It should query the database for all auctions, including soft deleted auctions, that match the provided filters in `GetAuctionsDto`, ignoring fields not specified in `GetAuctionsDto`, returning all properties including related invoice, debtor, investor, and documents
+      - [x] It should return a 200 OK response with a paginated list of all found auctions in the system that match the provided filters, including soft deleted auctions
+
+_Use case_: Call GET `/auctions/:id` endpoint
+- **Given that**: I'm an existing user of the platform (admin or verified investor) who wants to access the GET `/auctions/:id` endpoint
+  - **When**: I make a request to the GET `/auctions/:id` endpoint with a valid access token and an invalid ID
+    - **Then**:
+      - [x] It should authorize my access
+      - [x] It should return a 400 Bad Request response with an error message indicating that the specified ID is malformed
+  - **When**: I make a request to the GET `/auctions/:id` endpoint with a valid access token and a non-existent auction ID
+    - **Then**:
+      - [x] It should authorize my access
+      - [x] It should return a 404 Not Found response with an error message indicating that the specified auction was not found
+- **Given that**: I'm an existing verified company investor user of the platform who wants to access the GET `/auctions/:id` endpoint
+  - **When**: I make a request to the GET `/auctions/:id` endpoint with a valid access token and a valid auction ID that belongs to my investor profile
+    - **Then**:
+      - [x] It should authorize my access
+      - [x] It should query the database for the specified auction by ID, returning all properties including related invoice, debtor, investor, and documents
+      - [x] It should return a 200 OK response with the information of the specified auction
+  - **When**: I make a request to the GET `/auctions/:id` endpoint with a valid access token and a valid auction ID that does not belong to my investor user profile OR is not in PUBLISHED status (`AuctionStatus`)
+    - **Then**:
+      - [x] It should authorize my access
+      - [x] It should return a 404 Not Found response with an error message indicating that the specified auction was not found
+- **Given that**: I'm an existing administrator user of the platform who wants to access the GET `/auctions/:id` endpoint
+  - **When**: I make a request to the GET `/auctions/:id` endpoint with a valid access token and a valid auction ID
+    - **Then**:
+      - [x] It should authorize my access
+      - [x] It should query the database for the specified auction by ID, returning all properties including related invoice, debtor, investor, and documents
+      - [x] It should return a 200 OK response with the information of the specified auction
+
+_Use case_: Call PATCH `/auctions/:id` endpoint
+- **Given that**: I'm an existing user of the platform (admin or verified company investor) who wants to access the PATCH `/auctions/:id` endpoint
+  - **When**: I make a request to the PATCH `/auctions/:id` endpoint with a valid access token, an invalid ID, and valid updated information in the request body (`UpdateAuctionDto`)
+    - **Then**:
+      - [x] It should authorize my access
+      - [x] It should return a 400 Bad Request response with an error message indicating that the specified ID is malformed
+  - **When**: I make a request to the PATCH `/auctions/:id` endpoint with a valid access token, a valid auction ID, using wrong type values for one or more fields in `UpdateAuctionDto` in the request body
+    - **Then**:
+      - [x] It should authorize my access
+      - [x] It should fail validation for the provided fields in `UpdateAuctionDto`
+      - [x] It should return a 400 Bad Request response with an error message list indicating which fields are invalid
+  - **When**: I make a request to the PATCH `/auctions/:id` endpoint with a valid access token, a non-existent auction ID, and valid updated information in the request body (`UpdateAuctionDto`)
+    - **Then**:
+      - [x] It should authorize my access
+      - [x] It should return a 404 Not Found response with an error message indicating that the specified auction was not found
+- **Given that**: I'm an existing verified company investor user of the platform who wants to access the PATCH `/auctions/:id` endpoint
+  - **When**: I make a request to the PATCH `/auctions/:id` endpoint with a valid access token, a valid auction ID that belongs to my investor profile, and valid updated information in the request body (`UpdateAuctionDto`) using a verified invoice ID that belongs to my investor user profile
+    - **Then**:
+      - [x] It should authorize my access
+      - [x] It should update the specified auction's information with the provided data, ignoring fields not specified in `UpdateAuctionDto`
+      - [x] It should return a 200 OK response with the updated information of the specified auction
+  - **When**: I make a request to the PATCH `/auctions/:id` endpoint with a valid access token, a valid auction ID that is not in DRAFT status (`AuctionStatus`), and valid updated information in the request body (`UpdateAuctionDto`)
+    - **Then**:
+      - [x] It should authorize my access
+      - [x] It should return a 400 Bad Request response with an error message indicating that only auctions in DRAFT status can be updated
+  - **When**: I make a request to the PATCH `/auctions/:id` endpoint with a valid access token, a valid auction ID, using a non-verified invoice ID in the request body (`UpdateAuctionDto`)
+    - **Then**:
+      - [x] It should authorize my access
+      - [x] It should return a 400 Bad Request response with an error message indicating that the specified invoice is not verified
+  - **When**: I make a request to the PATCH `/auctions/:id` endpoint with a valid access token, a valid auction ID that belongs to my investor profile, and using auctionDateEnd value in the request body (`UpdateAuctionDto`) that is earlier than 2 days from now, and/or earlier than 1 month before the invoice's due date
+    - **Then**:
+      - [x] It should authorize my access
+      - [x] It should return a 400 Bad Request response with an error message indicating that the specified dates are invalid
+  - **When**: I make a request to the PATCH `/auctions/:id` endpoint with a valid access token, a valid auction ID that does not belong to my investor user profile, and valid updated information in the request body (`UpdateAuctionDto`)
+    - **Then**:
+      - [x] It should authorize my access
+      - [x] It should return a 403 Forbidden response with an error message indicating that I don't have permission to perform this action
+  - **When**: I make a request to the PATCH `/auctions/:id` endpoint with a valid access token, a valid auction ID that belongs to my investor profile, and an invoice ID in the request body (`UpdateAuctionDto`) that does not belong to my investor user profile
+    - **Then**:
+      - [x] It should authorize my access
+      - [x] It should return a 404 Not Found response with an error message indicating that the specified invoice was not found
+  - **When**: I make a request to the PATCH `/auctions/:id` endpoint with a valid access token, a valid auction ID, using a non-existent invoice ID in the request body (`UpdateAuctionDto`)
+    - **Then**:
+      - [x] It should authorize my access
+      - [x] It should return a 404 Not Found response with an error message indicating that the specified invoice was not found
+
+- **Given that**: I'm an existing administrator user of the platform who wants to access the PATCH `/auctions/:id` endpoint
+  - **When**: I make a request to the PATCH `/auctions/:id` endpoint with a valid access token, a valid auction ID, and valid updated information in the request body (`UpdateAuctionDto`)
+    - **Then**:
+      - [x] It should authorize my access
+      - [x] It should update the specified auction's status and lastCommunication properties with the provided data
+      - [x] It should ignore all other fields not allowed to be updated by the administrator
+      - [x] It should return a 200 OK response with the updated information of the specified auction
+  - **When**: I make a request to the PATCH `/auctions/:id` endpoint with a valid access token, a valid auction ID that is not in TRANSITIONING status (`AuctionStatus`), and valid updated information in the request body (`UpdateAuctionDto`)
+    - **Then**:
+      - [x] It should authorize my access
+      - [x] It should return a 400 Bad Request response with an error message indicating that only auctions in TRANSITIONING status can be updated
+  - **When**: I make a request to the PATCH `/auctions/:id` endpoint with a valid access token, a valid auction ID that is in TRANSITIONING status (`AuctionStatus`), and valid updated information in the request body (`UpdateAuctionDto`) setting the status to `FINISHED` while there are no bids on the auction
+    - **Then**:
+      - [x] It should authorize my access
+      - [x] It should return a 400 Bad Request response with an error message indicating that an auction cannot be finished without any bids
+  - **When**: I make a request to the PATCH `/auctions/:id` endpoint with a valid access token, a valid auction ID that is in TRANSITIONING status (`AuctionStatus`), and valid updated information in the request body (`UpdateAuctionDto`) setting the status to `CANCELLED` without providing `lastCommunication`
+    - **Then**:
+      - [x] It should authorize my access
+      - [x] It should return a 400 Bad Request response with an error message indicating that `lastCommunication` is required when cancelling an auction
+
+_Use case_: Call DELETE `/auctions/:id` endpoint
+- **Given that**: I'm an existing verified company investor user of the platform who wants to access the DELETE `/auctions/:id` endpoint
+  - **When**: I make a request to the DELETE `/auctions/:id` endpoint with a valid access token and a valid auction ID that belongs to my investor profile and is in DRAFT status (`AuctionStatus`)
+    - **Then**:
+      - [x] It should authorize my access
+      - [x] It should soft delete the specified auction
+      - [x] It should return a 200 OK response indicating that the auction was deleted
+  - **When**: I make a request to the DELETE `/auctions/:id` endpoint with a valid access token and an invalid ID
+    - **Then**:
+      - [x] It should authorize my access
+      - [x] It should return a 400 Bad Request response with an error message indicating that the specified ID is malformed
+  - **When**: I make a request to the DELETE `/auctions/:id` endpoint with a valid access token and a valid auction ID that does not belong to my investor profile OR is not in DRAFT status (`AuctionStatus`)
+    - **Then**:
+      - [x] It should authorize my access
+      - [x] It should return a 404 Not Found response with an error message indicating that the specified auction was not found
+  - **When**: I make a request to the DELETE `/auctions/:id` endpoint with a valid access token and a non-existent auction ID
+    - **Then**:
+      - [x] It should authorize my access
+      - [x] It should return a 404 Not Found response with an error message indicating that the specified auction was not found
+
+> _TODO_: `GET /auctions/lookup/count` endpoint test cases are not covered in this document.
+
+# Bid
+
+_Use case_: Call GET `/bid` endpoint
+- **Given that**: I'm an existing user of the platform (admin or verified investor) who wants to access the GET `/bid` endpoint
+  - **When**: I make a request to the GET `/bid` endpoint with a valid access token and I query with `GetBidsDto` parameters using wrong type values to filter the results
+    - **Then**:
+      - [x] It should authorize my access
+      - [x] It should fail type validation for the provided filters in `GetBidsDto`
+      - [x] It should return a 400 Bad Request response with an error message list indicating that the provided filters are invalid
+- **Given that**: I'm an existing verified investor user of the platform who wants to access the GET `/bid` endpoint
+  - **When**: I make a request to the GET `/bid` endpoint with a valid access token and a valid `auctionId` of a `PUBLISHED` auction that has 1 or more bids
+    - **Then**:
+      - [x] It should authorize my access
+      - [x] It should query the database for all bids on the specified auction, returning only bid scalar fields (amount, discount, profitability, createdAt) without investor information
+      - [x] It should return a 200 OK response with a paginated list of all found bids on the specified auction
+  - **When**: I make a request to the GET `/bid` endpoint with a valid access token and a valid `auctionId` of an auction that is **not** in `PUBLISHED` status
+    - **Then**:
+      - [x] It should authorize my access
+      - [x] It should query the database for bids on the specified auction and find none (visibility restricted to published auctions)
+      - [x] It should return a 200 OK response with an empty paginated list of bids
+  - **When**: I make a request to the GET `/bid` endpoint with a valid access token and a valid `auctionId` of a `PUBLISHED` auction that has no bids
+    - **Then**:
+      - [x] It should authorize my access
+      - [x] It should query the database for bids on the specified auction and find none
+      - [x] It should return a 200 OK response with an empty paginated list of bids
+  - **When**: I make a request to the GET `/bid` endpoint with a valid access token and I do not provide an `auctionId` query parameter
+    - **Then**:
+      - [x] It should authorize my access
+      - [x] It should return a 400 Bad Request response with an error message indicating that `auctionId` is required
+- **Given that**: I'm an existing administrator user of the platform who wants to access the GET `/bid` endpoint
+  - **When**: I make a request to the GET `/bid` endpoint with a valid access token and a valid `auctionId`
+    - **Then**:
+      - [x] It should authorize my access
+      - [x] It should query the database for all bids on the specified auction regardless of auction status, including the related investor information
+      - [x] It should return a 200 OK response with a paginated list of all found bids on the specified auction
+  - **When**: I make a request to the GET `/bid` endpoint with a valid access token and a valid `investorId`
+    - **Then**:
+      - [x] It should authorize my access
+      - [x] It should query the database for all bids placed by the specified investor regardless of auction status, including the related investor information
+      - [x] It should return a 200 OK response with a paginated list of all found bids placed by the specified investor
+  - **When**: I make a request to the GET `/bid` endpoint with a valid access token and both a valid `auctionId` and a valid `investorId`
+    - **Then**:
+      - [x] It should authorize my access
+      - [x] It should query the database for all bids on the specified auction placed by the specified investor, including the related investor information
+      - [x] It should return a 200 OK response with a paginated list of all found bids matching both filters
+  - **When**: I make a request to the GET `/bid` endpoint with a valid access token and I provide neither `auctionId` nor `investorId` query parameters
+    - **Then**:
+      - [x] It should authorize my access
+      - [x] It should return a 400 Bad Request response with an error message indicating that at least one of `auctionId` or `investorId` is required
+
+_Use case_: Call GET `/bid/:id` endpoint
+- **Given that**: I'm an existing user of the platform (admin or verified investor) who wants to access the GET `/bid/:id` endpoint
+  - **When**: I make a request to the GET `/bid/:id` endpoint with a valid access token and an invalid ID
+    - **Then**:
+      - [x] It should authorize my access
+      - [x] It should return a 400 Bad Request response with an error message indicating that the specified ID is malformed
+  - **When**: I make a request to the GET `/bid/:id` endpoint with a valid access token and a non-existent bid ID
+    - **Then**:
+      - [x] It should authorize my access
+      - [x] It should return a 404 Not Found response with an error message indicating that the specified bid was not found
+- **Given that**: I'm an existing verified investor user of the platform who wants to access the GET `/bid/:id` endpoint
+  - **When**: I make a request to the GET `/bid/:id` endpoint with a valid access token and a valid bid ID that belongs to my investor profile (regardless of auction status)
+    - **Then**:
+      - [x] It should authorize my access
+      - [x] It should query the database for the specified bid by ID, including the related investor information
+      - [x] It should return a 200 OK response with the information of the specified bid
+  - **When**: I make a request to the GET `/bid/:id` endpoint with a valid access token and a valid bid ID placed by another investor on a `PUBLISHED` auction
+    - **Then**:
+      - [x] It should authorize my access
+      - [x] It should query the database for the specified bid by ID, including the related investor information
+      - [x] It should return a 200 OK response with the information of the specified bid
+  - **When**: I make a request to the GET `/bid/:id` endpoint with a valid access token and a valid bid ID placed by another investor on a **non-`PUBLISHED`** auction
+    - **Then**:
+      - [x] It should authorize my access
+      - [x] It should return a 404 Not Found response with an error message indicating that the specified bid was not found
+- **Given that**: I'm an existing administrator user of the platform who wants to access the GET `/bid/:id` endpoint
+  - **When**: I make a request to the GET `/bid/:id` endpoint with a valid access token and any valid bid ID
+    - **Then**:
+      - [x] It should authorize my access
+      - [x] It should query the database for the specified bid by ID regardless of auction status, including the related investor information
+      - [x] It should return a 200 OK response with the information of the specified bid
+
+## Bid WebSocket Gateway
+
+_Use case_: Connect to the `/auctions` WebSocket namespace
+- **Given that**: I'm a user who wants to connect to the `/auctions` WebSocket namespace
+  - **When**: I attempt to connect without a valid access token
+    - **Then**:
+      - [x] It should reject the connection with an unauthorized error
+  - **When**: I attempt to connect as an administrator user with a valid access token
+    - **Then**:
+      - [x] It should reject the connection with an error indicating that only investor users are allowed
+
+_Use case_: Send `join-auction` event on the `/auctions` namespace
+- **Given that**: I'm an existing verified investor user of the platform connected to the `/auctions` namespace
+  - **When**: I send a `join-auction` event with a valid `auctionId`
+    - **Then**:
+      - [x] It should join me to the Socket.IO room for that auction
+      - [x] It should emit a `viewer-count` event to all users in the auction room with the updated viewer count
+  - **When**: I send a `join-auction` event with a valid `auctionId` from a second connection using the same user account (duplicate connection)
+    - **Then**:
+      - [x] It should join the second connection to the Socket.IO room for that auction
+      - [x] It should emit a `viewer-count` event to all users in the auction room without incrementing the unique viewer count (deduplication by user)
+  - **When**: I disconnect from the namespace after having joined an auction room
+    - **Then**:
+      - [x] It should remove me from the viewer tracking for the auction room
+      - [x] It should emit a `viewer-count` event to all remaining users in the auction room with the decremented viewer count
+
+_Use case_: Send `place-bid` event on the `/auctions` namespace
+- **Given that**: I'm an existing verified investor user of the platform connected to the `/auctions` namespace who wants to place a bid
+  - **When**: I send a `place-bid` event with a valid `CreateBidDto` on a `PUBLISHED` auction that does not belong to me, and the bid amount meets the minimum increment requirement
+    - **Then**:
+      - [x] It should create a new bid on the specified auction
+      - [x] It should emit a `new-bid` event to all users in the auction room with the new bid information
+      - [x] It should emit an `auction-bid-update` event to all connected clients
+      - [x] It should return `{ success: true }` to the sender
+  - **When**: I send a `place-bid` event with a valid `auctionId` of an auction that belongs to me (I am the seller)
+    - **Then**:
+      - [x] It should not create a new bid
+      - [x] It should return `{ success: false, message }` indicating that sellers cannot place bids on their own auctions
+  - **When**: I send a `place-bid` event with a valid `auctionId` of an auction that is **not** in `PUBLISHED` status (e.g., `DRAFT`, `TRANSITIONING`, `FINISHED`, or `CANCELLED`)
+    - **Then**:
+      - [x] It should not create a new bid
+      - [x] It should return `{ success: false, message }` indicating that bids can only be placed on published auctions
+  - **When**: I send a `place-bid` event with a bid amount that is less than the minimum increment over the current highest bid on a `PUBLISHED` auction
+    - **Then**:
+      - [x] It should not create a new bid
+      - [x] It should return `{ success: false, message }` indicating the minimum required bid amount based on the configured `SMALLEST_BID_INCREMENT_PERCENTAGE`
+  - **When**: I send a `place-bid` event with a bid amount that is less than the minimum increment over the auction's starting price (no prior bids exist) on a `PUBLISHED` auction
+    - **Then**:
+      - [x] It should not create a new bid
+      - [x] It should return `{ success: false, message }` indicating the minimum required bid amount based on the configured `SMALLEST_BID_INCREMENT_PERCENTAGE`
+  - **When**: I send a `place-bid` event with a bid amount that is exactly at the minimum increment boundary (equal to `latestBidAmount * (1 + SMALLEST_BID_INCREMENT_PERCENTAGE / 100)`)
+    - **Then**:
+      - [x] It should create a new bid on the specified auction
+      - [x] It should return `{ success: true }` to the sender
+  - **When**: I send a `place-bid` event with missing or invalid fields in `CreateBidDto` (e.g., missing `auctionId` or a non-positive `amount`)
+    - **Then**:
+      - [x] It should not create a new bid
+      - [x] It should return `{ success: false, message }` indicating which fields are missing or invalid
+  - **When**: I send a `place-bid` event with a non-existent `auctionId`
+    - **Then**:
+      - [x] It should not create a new bid
+      - [x] It should return `{ success: false, message }` indicating that the specified auction was not found

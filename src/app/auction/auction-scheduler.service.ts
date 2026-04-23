@@ -1,4 +1,8 @@
-import { Injectable, Logger } from '@nestjs/common';
+import {
+  Injectable,
+  Logger,
+  ServiceUnavailableException,
+} from '@nestjs/common';
 import { Cron, CronExpression } from '@nestjs/schedule';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
@@ -20,17 +24,23 @@ export class AuctionSchedulerService {
    */
   @Cron(CronExpression.EVERY_MINUTE)
   async publishedToTransitioning(): Promise<void> {
-    const result = await this.auctionRepository
-      .createQueryBuilder()
-      .update(Auction)
-      .set({ status: AuctionStatus.TRANSITIONING })
-      .where('status = :status', { status: AuctionStatus.PUBLISHED })
-      .andWhere('"dateEnd" <= NOW()')
-      .execute();
+    try {
+      const result = await this.auctionRepository
+        .createQueryBuilder()
+        .update(Auction)
+        .set({ status: AuctionStatus.TRANSITIONING })
+        .where('status = :status', { status: AuctionStatus.PUBLISHED })
+        .andWhere('"dateEnd" <= NOW()')
+        .execute();
 
-    if (result.affected && result.affected > 0) {
-      this.logger.log(
-        `Transitioned ${result.affected} auction(s) PUBLISHED → TRANSITIONING`,
+      if (result.affected && result.affected > 0) {
+        this.logger.log(
+          `Transitioned ${result.affected} auction(s) PUBLISHED → TRANSITIONING`,
+        );
+      }
+    } catch {
+      throw new ServiceUnavailableException(
+        'Failed to connect to the database',
       );
     }
   }

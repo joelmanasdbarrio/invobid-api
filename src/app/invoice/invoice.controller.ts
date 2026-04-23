@@ -19,6 +19,7 @@ import { GetUser } from '../user/auth/decorators/get-user.decorator';
 import { User } from '../user/common/entities/user.entity';
 import { UserType } from '../user/common/enums/user-type.enum';
 import { Investor } from '../user/investor/entities/investor.entity';
+import { InvestorStatus } from '../user/investor/enums/investor-status.enum';
 import { InvestorType } from '../user/investor/enums/investor-type.enum';
 import { CreateInvoiceDto } from './dto/create-invoice.dto';
 import { UpdateInvoiceDto } from './dto/update-invoice.dto';
@@ -29,7 +30,7 @@ export class InvoiceController {
   constructor(private readonly invoiceService: InvoiceService) {}
 
   @Post()
-  @Auth([InvestorType.COMPANY])
+  @Auth([InvestorType.COMPANY], [InvestorStatus.VERIFIED])
   @UseInterceptors(FileInterceptor('file'))
   async create(
     @Body() createInvoiceDto: CreateInvoiceDto,
@@ -49,7 +50,7 @@ export class InvoiceController {
   }
 
   @Get()
-  @Auth()
+  @Auth([], [InvestorStatus.VERIFIED])
   async findAll(@Query() query: GetInvoicesDto, @GetUser() user: User) {
     const { data, total, page, limit } = await this.invoiceService.findAll(
       {
@@ -73,7 +74,7 @@ export class InvoiceController {
   }
 
   @Get(':id')
-  @Auth()
+  @Auth([], [InvestorStatus.VERIFIED])
   async findOne(@Param('id', ParseUUIDPipe) id: string, @GetUser() user: User) {
     const invoice = await this.invoiceService.findOne(id, user);
 
@@ -84,7 +85,7 @@ export class InvoiceController {
   }
 
   @Patch(':id')
-  @Auth([UserType.ADMIN, InvestorType.COMPANY])
+  @Auth([UserType.ADMIN, InvestorType.COMPANY], [InvestorStatus.VERIFIED])
   @UseInterceptors(FileInterceptor('file'))
   async update(
     @Param('id', ParseUUIDPipe) id: string,
@@ -106,7 +107,7 @@ export class InvoiceController {
   }
 
   @Delete(':id')
-  @Auth([UserType.ADMIN, InvestorType.COMPANY])
+  @Auth([InvestorType.COMPANY], [InvestorStatus.VERIFIED])
   async remove(@Param('id', ParseUUIDPipe) id: string, @GetUser() user: User) {
     await this.invoiceService.remove(id, user);
 

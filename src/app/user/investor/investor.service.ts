@@ -1,9 +1,10 @@
 import {
   BadRequestException,
+  ForbiddenException,
   Injectable,
   InternalServerErrorException,
   NotFoundException,
-  UnauthorizedException,
+  ServiceUnavailableException,
 } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import * as bcrypt from 'bcrypt';
@@ -110,7 +111,12 @@ export class InvestorService {
           );
         }
       }
-      throw new InternalServerErrorException(error);
+      if (error instanceof ServiceUnavailableException) {
+        throw error;
+      } else {
+        // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access
+        throw new InternalServerErrorException(error.message);
+      }
     }
   }
 
@@ -134,7 +140,6 @@ export class InvestorService {
         queryBuilder.withDeleted();
       }
     } else {
-      queryBuilder.leftJoin('investor.documents', 'document');
       queryBuilder.select([
         'investor.id',
         'investor.email',
@@ -173,8 +178,8 @@ export class InvestorService {
     }
 
     if (query.taxId) {
-      queryBuilder.andWhere('document.value = :documentValue', {
-        documentValue: query.taxId,
+      queryBuilder.andWhere('investor.taxId = :taxId', {
+        taxId: query.taxId,
       });
     }
 
@@ -197,30 +202,28 @@ export class InvestorService {
   }
 
   async findOne(id: string, user?: User) {
-    const investor = await (user &&
-    (user.type === UserType.ADMIN || user.id === id)
-      ? this.investorRepository.findOne({
-          where: { id },
-          relations: ['documents', 'bankAccount'],
-        })
-      : user &&
-          user.type !== UserType.ADMIN &&
-          user.id !== id &&
-          (user as Investor).status === InvestorStatus.PENDING
-        ? Promise.reject(
-            new UnauthorizedException(
-              `You don't have permissions to perform this action`,
-            ),
-          )
-        : this.investorRepository.findOne({
-            where: { id },
-            select: {
-              lastCommunication: false,
-              createdAt: false,
-              updatedAt: false,
-              deletedAt: false,
-            },
-          }));
+    const queryBuilder = this.investorRepository.createQueryBuilder('investor');
+
+    if (user && (user.type === UserType.ADMIN || user.id === id)) {
+      queryBuilder.leftJoinAndSelect('investor.documents', 'document');
+      queryBuilder.leftJoinAndSelect('investor.bankAccount', 'bankAccount');
+    } else if (user && user.type !== UserType.ADMIN && user.id !== id) {
+      queryBuilder.select([
+        'investor.id',
+        'investor.email',
+        'investor.name',
+        'investor.phoneNumber',
+        'investor.companyName',
+        'investor.investorType',
+      ]);
+      queryBuilder.andWhere('investor.status = :status', {
+        status: InvestorStatus.VERIFIED,
+      });
+    }
+
+    const investor = await queryBuilder
+      .where('investor.id = :id', { id })
+      .getOne();
 
     if (!investor) {
       throw new NotFoundException(`Investor with ID '${id}' not found`);
@@ -237,8 +240,6 @@ export class InvestorService {
   ) {
     const investor = await this.findOne(id, user);
     this.checkPermissions(investor, user);
-    this.checkIsPending(investor, user);
-    this.checkIsDenied(investor, user);
 
     if (user.type !== UserType.ADMIN) {
       if (investor.status === InvestorStatus.CORRECTION) {
@@ -258,7 +259,7 @@ export class InvestorService {
         updateInvestorDto.status !== investor.status &&
         updateInvestorDto.status !== InvestorStatus.PENDING
       ) {
-        throw new UnauthorizedException(
+        throw new ForbiddenException(
           "You don't have permissions to perform this action",
         );
       } else if (investor.status === InvestorStatus.VERIFIED) {
@@ -342,10 +343,14 @@ export class InvestorService {
         }
       }
 
-      if (error instanceof BadRequestException) {
+      if (
+        error instanceof BadRequestException ||
+        error instanceof ServiceUnavailableException
+      ) {
         throw error;
       } else {
-        throw new InternalServerErrorException(error);
+        // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access
+        throw new InternalServerErrorException(error.message);
       }
     }
   }
@@ -364,27 +369,9 @@ export class InvestorService {
 
   private checkPermissions(investor: Investor, user: User) {
     if (user.type !== UserType.ADMIN && user.id !== investor.id) {
-      throw new UnauthorizedException(
+      throw new ForbiddenException(
         "You don't have permissions to perform this action",
       );
-    }
-  }
-
-  private checkIsDenied(investor: Investor, user: User) {
-    if (
-      user.type !== UserType.ADMIN &&
-      investor.status === InvestorStatus.DENIED
-    ) {
-      throw new BadRequestException(`Investor user has been denied`);
-    }
-  }
-
-  private checkIsPending(investor: Investor, user: User) {
-    if (
-      user.type !== UserType.ADMIN &&
-      investor.status === InvestorStatus.PENDING
-    ) {
-      throw new BadRequestException(`Investor user is pending`);
     }
   }
 }

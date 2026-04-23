@@ -8,9 +8,11 @@ import {
   Patch,
 } from '@nestjs/common';
 import { Auth } from '../auth/decorators/auth.decorator';
+import { GetUser } from '../auth/decorators/get-user.decorator';
 import { UserType } from '../common/enums/user-type.enum';
 import { AdminService } from './admin.service';
 import { UpdateAdminDto } from './dto/update-admin.dto';
+import { Admin } from './entities/admin.entity';
 
 @Controller('admins')
 export class AdminController {
@@ -41,8 +43,9 @@ export class AdminController {
   async update(
     @Param('id', ParseUUIDPipe) id: string,
     @Body() updateAdminDto: UpdateAdminDto,
+    @GetUser() user: Admin,
   ) {
-    const admin = await this.adminService.update(id, updateAdminDto);
+    const admin = await this.adminService.update(id, updateAdminDto, user);
 
     delete (admin as Partial<typeof admin>).password;
 
@@ -54,8 +57,8 @@ export class AdminController {
 
   @Delete(':id')
   @Auth([UserType.ADMIN])
-  async remove(@Param('id', ParseUUIDPipe) id: string) {
-    await this.adminService.remove(id);
+  async remove(@Param('id', ParseUUIDPipe) id: string, @GetUser() user: Admin) {
+    await this.adminService.remove(id, user);
     return {
       status: 'success',
     };

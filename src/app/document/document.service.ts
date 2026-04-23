@@ -2,15 +2,15 @@ import {
   BadRequestException,
   Inject,
   Injectable,
-  InternalServerErrorException,
   NotFoundException,
+  ServiceUnavailableException,
 } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Debtor } from 'src/app/debtor/entities/debtor.entity';
 import { GetDocumentsDto } from 'src/app/document/dto/get-documents.dto';
 import { Invoice } from 'src/app/invoice/entities/invoice.entity';
-import { Not, Repository } from 'typeorm';
+import { Repository } from 'typeorm';
 import { v4 as uuidv4 } from 'uuid';
 import { User } from '../user/common/entities/user.entity';
 import { UserType } from '../user/common/enums/user-type.enum';
@@ -41,20 +41,13 @@ export class DocumentService {
       throw new BadRequestException('file must be a valid Document');
     }
 
-    if (
-      await this.checkDuplicateDocumentValues(user.id, createDocumentDto.value)
-    ) {
-      throw new BadRequestException(
-        `Document with value '${createDocumentDto.value}' already exists`,
-      );
-    }
-
-    let document: Document | undefined;
     let documentPath: string | undefined;
     try {
       const documentId = uuidv4();
 
-      document = this.documentRepository.create({
+      documentPath = await this.uploadFile(file, documentId);
+
+      return await this.documentRepository.save({
         ...createDocumentDto,
         filename: this.getFilename(file, documentId),
         id: documentId,
@@ -63,23 +56,13 @@ export class DocumentService {
         invoice: invoice,
         type: createDocumentDto.type,
       });
-
-      documentPath = await this.uploadFile(file, documentId);
-
-      return await this.documentRepository.save(document);
     } catch (error) {
       console.error(error);
-      if (document) {
-        await this.remove(document.id, user, false);
-      }
       if (documentPath) {
         await this.deleteFile(documentPath);
       }
 
-      throw new InternalServerErrorException(
-        error,
-        'Could not create document',
-      );
+      throw new ServiceUnavailableException('Failed to upload document');
     }
   }
 
@@ -91,9 +74,6 @@ export class DocumentService {
       file.buffer,
       this.getFilename(file, documentId),
     );
-
-    if (!storedFile)
-      throw new InternalServerErrorException('File upload failed');
 
     return storedFile;
   }
@@ -233,15 +213,5 @@ export class DocumentService {
 
   private getFilename(file: Express.Multer.File, documentId: string) {
     return `${documentId}.${file.originalname.split('.').pop()}`;
-  }
-
-  private async checkDuplicateDocumentValues(
-    investorId: string,
-    value: string,
-  ): Promise<boolean> {
-    const existingDocuments = await this.documentRepository.count({
-      where: { value, investor: { id: Not(investorId) } },
-    });
-    return !!existingDocuments;
   }
 }
