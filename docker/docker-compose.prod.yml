@@ -1,0 +1,50 @@
+services:
+  api:
+    build:
+      context: ../
+      dockerfile: Dockerfile
+    container_name: invobid_api
+    env_file: ../.env
+    depends_on:
+      db:
+        condition: service_healthy
+      minio-init:
+        condition: service_completed_successfully
+    networks:
+      - invobid_network
+    restart: unless-stopped
+
+  web:
+    build:
+      context: ../../invobid-spa
+      dockerfile: Dockerfile
+      args:
+        VITE_BASE_URL: /api/v1
+        VITE_SOCKET_URL: https://invobid.com
+        VITE_APP_NAME: "!nvobid"
+        VITE_EXT_RATING_PROVIDER: Einforma
+        VITE_SMALLEST_BID_INCREMENT_PERCENTAGE: "0.1"
+    container_name: invobid_web
+    ports:
+      - "80:80"
+      - "443:443"
+    volumes:
+      - certbot_conf:/etc/letsencrypt:ro
+      - certbot_www:/var/www/certbot:ro
+    depends_on:
+      - api
+    networks:
+      - invobid_network
+    restart: unless-stopped
+
+  certbot:
+    image: certbot/certbot:latest
+    container_name: invobid_certbot
+    volumes:
+      - certbot_conf:/etc/letsencrypt
+      - certbot_www:/var/www/certbot
+    restart: "no"
+
+volumes:
+  certbot_conf:
+  certbot_www:
