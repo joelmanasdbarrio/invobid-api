@@ -61,19 +61,13 @@ describe('DebtorController', () => {
 
       await controller.create(dto, mockUser as Investor);
 
-      expect(mockDebtorService.create).toHaveBeenCalledWith(
-        dto,
-        mockUser,
-      );
+      expect(mockDebtorService.create).toHaveBeenCalledWith(dto, mockUser);
     });
 
     it('should return status and created debtor data', async () => {
       mockDebtorService.create.mockResolvedValue(debtor);
 
-      const result = await controller.create(
-        dto,
-        mockUser as Investor,
-      );
+      const result = await controller.create(dto, mockUser as Investor);
 
       expect(result).toEqual({ status: 'success', data: debtor });
     });
@@ -161,11 +155,7 @@ describe('DebtorController', () => {
 
       await controller.update(id, dto, mockUser);
 
-      expect(mockDebtorService.update).toHaveBeenCalledWith(
-        id,
-        dto,
-        mockUser,
-      );
+      expect(mockDebtorService.update).toHaveBeenCalledWith(id, dto, mockUser);
     });
 
     it('should return status and updated debtor data', async () => {
