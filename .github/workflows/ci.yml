@@ -1,0 +1,90 @@
+name: CI
+
+on:
+  push:
+    branches:
+      - main
+      - 'release/**'
+      - 'feat/**'
+      - 'chore/**'
+
+jobs:
+  build:
+    name: Build
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Build
+        run: npm run build
+
+  unit-tests:
+    name: Unit Tests
+    needs: build
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Run unit tests with coverage
+        run: npm run test:cov
+
+  e2e-tests:
+    name: E2E Tests
+    needs: build
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Start services
+        run: |
+          docker compose -f docker/docker-compose.yml up -d --wait db minio
+          docker compose -f docker/docker-compose.yml up minio-init
+
+      - name: Run E2E tests
+        run: npm run test:e2e
+        env:
+          NODE_ENV: local
+          JWT_SECRET: ci-test-jwt-secret
+          DB_HOST: localhost
+          DB_PORT: 5432
+          DB_NAME: invobid_db
+          DB_USR: postgres
+          DB_PWD: pass1234
+          MINIO_ENDPOINT: localhost
+          MINIO_PORT: 9000
+          MINIO_USR: minio
+          MINIO_PWD: pass1234
+          MINIO_ACCESS_KEY: minio
+          MINIO_SECRET_KEY: pass1234
+          MINIO_BUCKET: invobid
+          BUYER_TRANSFER_FEE_PERCENTAGE: 0.2
+          SELLER_TRANSFER_FEE_PERCENTAGE: 0.5
+          SMALLEST_BID_INCREMENT_PERCENTAGE: 0.1
+
+      - name: Stop services
+        if: always()
+        run: docker compose -f docker/docker-compose.yml down -v || true

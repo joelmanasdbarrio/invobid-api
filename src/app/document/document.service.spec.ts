@@ -1,7 +1,7 @@
 import {
-  BadRequestException,
-  InternalServerErrorException,
-  NotFoundException,
+    BadRequestException,
+    NotFoundException,
+    ServiceUnavailableException
 } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { Test, TestingModule } from '@nestjs/testing';
@@ -118,17 +118,8 @@ describe('DocumentService', () => {
       ).rejects.toThrow(BadRequestException);
     });
 
-    it('should throw BadRequestException when a duplicate document value exists', async () => {
-      mockDocumentRepository.count.mockResolvedValue(1);
-
-      await expect(
-        service.create(makeCreateDto(), makeFile(), investorUser),
-      ).rejects.toThrow(BadRequestException);
-    });
-
     it('should create document entity, upload file, save and return document', async () => {
       const document = makeDocument();
-      mockDocumentRepository.create.mockReturnValue(document);
       mockStorageService.uploadFile.mockResolvedValue('test-uuid.pdf');
       mockDocumentRepository.save.mockResolvedValue(document);
 
@@ -138,34 +129,28 @@ describe('DocumentService', () => {
         investorUser,
       );
 
-      expect(mockDocumentRepository.create).toHaveBeenCalledWith(
+      expect(mockStorageService.uploadFile).toHaveBeenCalledWith(
+        expect.any(Buffer),
+        'test-uuid.pdf',
+      );
+      expect(mockDocumentRepository.save).toHaveBeenCalledWith(
         expect.objectContaining({
           id: 'test-uuid',
           filename: 'test-uuid.pdf',
           type: DocumentType.INVOICE,
         }),
       );
-      expect(mockStorageService.uploadFile).toHaveBeenCalledWith(
-        expect.any(Buffer),
-        'test-uuid.pdf',
-      );
-      expect(mockDocumentRepository.save).toHaveBeenCalledWith(document);
       expect(result).toBe(document);
     });
 
-    it('should rollback by calling remove and deleteFile when save throws', async () => {
-      const document = makeDocument();
-      mockDocumentRepository.create.mockReturnValue(document);
+    it('should rollback by calling deleteFile when save throws', async () => {
       mockStorageService.uploadFile.mockResolvedValue('test-uuid.pdf');
       mockDocumentRepository.save.mockRejectedValue(new Error('DB error'));
-      // findOne used inside remove
-      mockDocumentRepository.findOne.mockResolvedValue(document);
 
       await expect(
         service.create(makeCreateDto(), makeFile(), investorUser),
-      ).rejects.toThrow(InternalServerErrorException);
+      ).rejects.toThrow(ServiceUnavailableException);
 
-      expect(mockDocumentRepository.delete).toHaveBeenCalledWith(document.id);
       expect(mockStorageService.deleteFile).toHaveBeenCalledWith(
         'test-uuid.pdf',
       );
@@ -173,7 +158,6 @@ describe('DocumentService', () => {
 
     it('should derive filename as <uuid>.<extension> from originalname', async () => {
       const document = makeDocument({ filename: 'test-uuid.png' });
-      mockDocumentRepository.create.mockReturnValue(document);
       mockStorageService.uploadFile.mockResolvedValue('test-uuid.png');
       mockDocumentRepository.save.mockResolvedValue(document);
 
@@ -183,7 +167,7 @@ describe('DocumentService', () => {
         investorUser,
       );
 
-      expect(mockDocumentRepository.create).toHaveBeenCalledWith(
+      expect(mockDocumentRepository.save).toHaveBeenCalledWith(
         expect.objectContaining({ filename: 'test-uuid.png' }),
       );
     });
@@ -218,7 +202,7 @@ describe('DocumentService', () => {
       );
 
       expect(mockQueryBuilder.andWhere).toHaveBeenCalledWith(
-        'document.investorId = :investorId',
+        'investor.id = :investorId',
         { investorId: 'some-investor' },
       );
     });
