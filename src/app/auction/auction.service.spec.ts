@@ -1,11 +1,12 @@
 import { BadRequestException } from '@nestjs/common';
 import { Test, TestingModule } from '@nestjs/testing';
 import { getRepositoryToken } from '@nestjs/typeorm';
-import { Bid } from '../bid/entities/bid.entity';
+import { BidService } from '../bid/bid.service';
 import { InvoiceStatus } from '../invoice/enums/invoice-status.enum';
 import { InvoiceService } from '../invoice/invoice.service';
 import { UserType } from '../user/common/enums/user-type.enum';
 import { Investor } from '../user/investor/entities/investor.entity';
+import { InvestorService } from '../user/investor/investor.service';
 import { AuctionService } from './auction.service';
 import { CreateAuctionDto } from './dto/create-auction.dto';
 import { Auction } from './entities/auction.entity';
@@ -31,10 +32,6 @@ const mockAuctionRepository = {
   save: jest.fn(),
   delete: jest.fn(),
   count: jest.fn().mockResolvedValue(0),
-};
-
-const mockBidRepository = {
-  findOne: jest.fn(),
 };
 
 const mockInvoiceService = {
@@ -78,11 +75,9 @@ describe('AuctionService', () => {
           provide: getRepositoryToken(Auction),
           useValue: mockAuctionRepository,
         },
-        {
-          provide: getRepositoryToken(Bid),
-          useValue: mockBidRepository,
-        },
+        { provide: BidService, useValue: {} },
         { provide: InvoiceService, useValue: mockInvoiceService },
+        { provide: InvestorService, useValue: {} },
       ],
     }).compile();
 

@@ -1,4 +1,4 @@
-import { HttpException, UnauthorizedException } from '@nestjs/common';
+import { HttpException, ServiceUnavailableException, UnauthorizedException } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { Test, TestingModule } from '@nestjs/testing';
 import { getRepositoryToken } from '@nestjs/typeorm';
@@ -57,22 +57,22 @@ describe('JwtStrategy', () => {
       deletedAt: null,
     };
 
-    it('should throw UnauthorizedException when user is not found', async () => {
+    it('should throw ServiceUnavailableException when user is not found', async () => {
       mockUserRepository.findOne.mockResolvedValue(null);
 
       await expect(strategy.validate(payload)).rejects.toThrow(
-        UnauthorizedException,
+        ServiceUnavailableException,
       );
     });
 
-    it('should throw HttpException with status 423 when user account is disabled', async () => {
+    it('should throw ServiceUnavailableException when user account is disabled', async () => {
       mockUserRepository.findOne.mockResolvedValue({
         ...baseUser,
         deletedAt: new Date(),
       });
 
       await expect(strategy.validate(payload)).rejects.toThrow(
-        new HttpException('User has been disabled', 423),
+        ServiceUnavailableException,
       );
     });
 

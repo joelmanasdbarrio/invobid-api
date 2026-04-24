@@ -1,6 +1,6 @@
 import { Test, TestingModule } from '@nestjs/testing';
 import { getRepositoryToken } from '@nestjs/typeorm';
-import { Auction } from '../auction/entities/auction.entity';
+import { AuctionService } from '../auction/auction.service';
 import { BidService } from './bid.service';
 import { Bid } from './entities/bid.entity';
 
@@ -12,7 +12,7 @@ describe('BidService', () => {
       providers: [
         BidService,
         { provide: getRepositoryToken(Bid), useValue: {} },
-        { provide: getRepositoryToken(Auction), useValue: {} },
+        { provide: AuctionService, useValue: {} },
       ],
     }).compile();
 

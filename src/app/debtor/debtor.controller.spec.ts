@@ -59,11 +59,10 @@ describe('DebtorController', () => {
     it('should call debtorService.create with dto, files and investor', async () => {
       mockDebtorService.create.mockResolvedValue(debtor);
 
-      await controller.create(dto, mockFiles, mockUser as Investor);
+      await controller.create(dto, mockUser as Investor);
 
       expect(mockDebtorService.create).toHaveBeenCalledWith(
         dto,
-        mockFiles,
         mockUser,
       );
     });
@@ -73,7 +72,6 @@ describe('DebtorController', () => {
 
       const result = await controller.create(
         dto,
-        mockFiles,
         mockUser as Investor,
       );
 
@@ -161,12 +159,11 @@ describe('DebtorController', () => {
     it('should call debtorService.update with id, dto, files and user', async () => {
       mockDebtorService.update.mockResolvedValue(updatedDebtor);
 
-      await controller.update(id, dto, mockFiles, mockUser);
+      await controller.update(id, dto, mockUser);
 
       expect(mockDebtorService.update).toHaveBeenCalledWith(
         id,
         dto,
-        mockFiles,
         mockUser,
       );
     });
@@ -174,7 +171,7 @@ describe('DebtorController', () => {
     it('should return status and updated debtor data', async () => {
       mockDebtorService.update.mockResolvedValue(updatedDebtor);
 
-      const result = await controller.update(id, dto, mockFiles, mockUser);
+      const result = await controller.update(id, dto, mockUser);
 
       expect(result).toEqual({ status: 'success', data: updatedDebtor });
     });
