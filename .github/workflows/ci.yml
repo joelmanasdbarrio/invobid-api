@@ -7,6 +7,8 @@ on:
       - 'release/**'
       - 'feat/**'
       - 'chore/**'
+    tags:
+      - 'v*.*.*'
 
 jobs:
   build:
@@ -88,3 +90,52 @@ jobs:
       - name: Stop services
         if: always()
         run: docker compose -f docker/docker-compose.yml down -v || true
+
+  publish:
+    name: Publish Docker Image
+    runs-on: ubuntu-latest
+    needs: [unit-tests, e2e-tests]
+    if: startsWith(github.ref, 'refs/heads/release/') || startsWith(github.ref, 'refs/tags/v')
+    permissions:
+      packages: write
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Determine image tags
+        id: tags
+        run: |
+          IMAGE="ghcr.io/joelmanasdbarrio/invobid-api"
+          if [[ "$GITHUB_REF" == refs/heads/release/* ]]; then
+            BASE_VERSION="${GITHUB_REF#refs/heads/release/}"
+            echo "tags=${IMAGE}:${BASE_VERSION}-rc.${{ github.run_number }}" >> "$GITHUB_OUTPUT"
+          else
+            VERSION="${GITHUB_REF_NAME}"
+            echo "tags=${IMAGE}:${VERSION},${IMAGE}:latest" >> "$GITHUB_OUTPUT"
+          fi
+
+      - uses: docker/login-action@v3
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - uses: docker/build-push-action@v6
+        with:
+          context: .
+          push: true
+          tags: ${{ steps.tags.outputs.tags }}
+
+      # TODO: Auto-deploy to VPS (uncomment once server is available)
+      # Requires secrets: VPS_HOST, VPS_USER, VPS_KEY
+      # - name: Deploy to VPS
+      #   uses: appleboy/ssh-action@v1
+      #   with:
+      #     host: ${{ secrets.VPS_HOST }}
+      #     username: ${{ secrets.VPS_USER }}
+      #     key: ${{ secrets.VPS_KEY }}
+      #     script: |
+      #       docker login ghcr.io -u ${{ github.actor }} -p ${{ secrets.GITHUB_TOKEN }}
+      #       cd ~/invobid/invobid-api/docker
+      #       docker compose -f docker-compose.prod.yml pull api
+      #       docker compose -f docker-compose.prod.yml up -d --no-deps api
