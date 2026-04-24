@@ -1,4 +1,7 @@
-import { BadRequestException, ForbiddenException, NotFoundException } from '@nestjs/common';
+import {
+    BadRequestException,
+    NotFoundException
+} from '@nestjs/common';
 import { Test, TestingModule } from '@nestjs/testing';
 import { getRepositoryToken } from '@nestjs/typeorm';
 import * as bcrypt from 'bcrypt';
@@ -144,9 +147,9 @@ describe('AdminService', () => {
     it('should throw NotFoundException when admin does not exist', async () => {
       mockAdminRepository.findOne.mockResolvedValue(null);
 
-      await expect(service.update('missing-id', { name: 'X' }, mockAdminUser)).rejects.toThrow(
-        NotFoundException,
-      );
+      await expect(
+        service.update('missing-id', { name: 'X' }, mockAdminUser),
+      ).rejects.toThrow(NotFoundException);
     });
 
     it('should merge and save then return the updated admin', async () => {

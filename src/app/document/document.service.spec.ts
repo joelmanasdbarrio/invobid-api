@@ -1,8 +1,7 @@
 import {
-  BadRequestException,
-  InternalServerErrorException,
-  NotFoundException,
-  ServiceUnavailableException,
+    BadRequestException,
+    NotFoundException,
+    ServiceUnavailableException
 } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { Test, TestingModule } from '@nestjs/testing';

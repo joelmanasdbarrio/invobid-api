@@ -72,7 +72,11 @@ describe('AdminController', () => {
 
       await controller.update(id, dto, mockAdminUser);
 
-      expect(mockAdminService.update).toHaveBeenCalledWith(id, dto, mockAdminUser);
+      expect(mockAdminService.update).toHaveBeenCalledWith(
+        id,
+        dto,
+        mockAdminUser,
+      );
     });
 
     it('should return status and updated admin data', async () => {
