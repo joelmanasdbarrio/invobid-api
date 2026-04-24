@@ -76,34 +76,39 @@ pgAdmin: [`http://localhost:8080`](http://localhost:8080)
 
 ## Production deployment
 
+Pre-built Docker images are published to [GitHub Container Registry](https://ghcr.io) automatically via CI when a version tag is pushed. The VPS only needs Docker and the `docker-compose.prod.yml` file — no source code or build tools required.
+
+### Image publishing
+
+Images are built and pushed by GitHub Actions (`.github/workflows/ci.yml`) on two events:
+
+| Event | Image tag produced |
+|---|---|
+| Push to `release/vX.Y.Z` branch | `ghcr.io/joelmanasdbarrio/invobid-api:vX.Y.Z-rc.N` |
+| Push of `vX.Y.Z` git tag | `ghcr.io/joelmanasdbarrio/invobid-api:vX.Y.Z` + `:latest` |
+
+The publish job only runs after all test jobs pass.
+
 ### Prerequisites on the VPS
 
 - [Docker Engine](https://docs.docker.com/engine/install/) + Compose plugin
-- Both repos cloned as siblings (required for the relative build context):
+- Authenticated to ghcr.io with a PAT (`read:packages` scope):
 
-```
-~/invobid/
-  invobid-api/
-  invobid-spa/
+```sh
+echo <YOUR_PAT> | docker login ghcr.io -u joelmanasdbarrio --password-stdin
 ```
 
 ### First-time setup
 
-1. Clone both repos:
+1. Copy the compose file and `.env` template to the server (no full repo clone required):
 
 ```sh
-mkdir ~/invobid && cd ~/invobid
-git clone <invobid-api-repo-url> invobid-api
-git clone <invobid-spa-repo-url> invobid-spa
+mkdir -p ~/invobid/docker
+# Copy docker/docker-compose.prod.yml and docker/init-ssl.sh to ~/invobid/docker/
+# Copy .env.template to ~/invobid/.env and fill in all values
 ```
 
-2. Create the production `.env` from the template:
-
-```sh
-cp ~/invobid/invobid-api/.env.template ~/invobid/invobid-api/.env
-```
-
-Key values to set for production:
+2. Key values to set in `.env`:
 
 ```sh
 NODE_ENV=production
@@ -115,25 +120,27 @@ MINIO_ENDPOINT=invobid_minio   # internal Docker hostname, NOT localhost
 3. Point `invobid.com` A record to the VPS IP at your DNS provider, then obtain the SSL certificate:
 
 ```sh
-cd ~/invobid/invobid-api/docker
+cd ~/invobid/docker
 chmod +x init-ssl.sh
 ./init-ssl.sh invobid.com admin@invobid.com
 ```
 
-4. Start the full stack:
+4. Pull images and start the full stack:
 
 ```sh
-docker compose -f docker-compose.yml -f docker-compose.prod.yml up -d
+cd ~/invobid/docker
+docker compose -f docker-compose.prod.yml pull
+docker compose -f docker-compose.prod.yml up -d
 ```
 
 ### Deploying updates
 
+After pushing a new tag in the repo, CI publishes the image automatically. To deploy it on the server:
+
 ```sh
-cd ~/invobid/invobid-api/docker
-git -C ~/invobid/invobid-api pull
-git -C ~/invobid/invobid-spa pull
-docker compose -f docker-compose.yml -f docker-compose.prod.yml build --no-cache
-docker compose -f docker-compose.yml -f docker-compose.prod.yml up -d
+cd ~/invobid/docker
+docker compose -f docker-compose.prod.yml pull
+docker compose -f docker-compose.prod.yml up -d
 ```
 
 ### Certificate renewal
@@ -141,5 +148,5 @@ docker compose -f docker-compose.yml -f docker-compose.prod.yml up -d
 Add a monthly cron job on the VPS (`crontab -e`):
 
 ```sh
-0 0 1 * * cd ~/invobid/invobid-api/docker && docker compose -f docker-compose.yml -f docker-compose.prod.yml run --rm certbot renew && docker compose -f docker-compose.yml -f docker-compose.prod.yml exec web nginx -s reload
+0 0 1 * * cd ~/invobid/docker && docker compose -f docker-compose.prod.yml run --rm certbot renew && docker compose -f docker-compose.prod.yml exec web nginx -s reload
 ```
