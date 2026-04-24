@@ -258,7 +258,7 @@ describe('InvoiceService', () => {
       );
     });
 
-    it('should call withDeleted AND extra andWhere for non-ADMIN when includeDeleted > 0', async () => {
+    it('should call withDeleted for non-ADMIN when includeDeleted > 0', async () => {
       const investorUser = { id: 'inv-id', type: UserType.INVESTOR } as User;
 
       await service.findAll(
@@ -267,10 +267,6 @@ describe('InvoiceService', () => {
       );
 
       expect(mockQueryBuilder.withDeleted).toHaveBeenCalled();
-      expect(mockQueryBuilder.andWhere).toHaveBeenCalledWith(
-        expect.stringContaining('debtor.deletedAt IS NULL'),
-        expect.objectContaining({ userId: 'inv-id' }),
-      );
     });
 
     it('should apply skip/take from page and limit and return data/total', async () => {

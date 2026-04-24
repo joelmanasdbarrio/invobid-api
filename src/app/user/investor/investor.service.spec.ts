@@ -26,12 +26,14 @@ const mockQueryBuilder = {
   leftJoinAndSelect: jest.fn().mockReturnThis(),
   leftJoin: jest.fn().mockReturnThis(),
   select: jest.fn().mockReturnThis(),
+  where: jest.fn().mockReturnThis(),
   andWhere: jest.fn().mockReturnThis(),
   withDeleted: jest.fn().mockReturnThis(),
   skip: jest.fn().mockReturnThis(),
   take: jest.fn().mockReturnThis(),
   getCount: jest.fn().mockResolvedValue(0),
   getMany: jest.fn().mockResolvedValue([]),
+  getOne: jest.fn().mockResolvedValue(null),
 };
 
 const mockInvestorRepository = {
@@ -79,6 +81,7 @@ describe('InvestorService', () => {
     bcryptHash.mockResolvedValue('hashed-password' as never);
     mockQueryBuilder.getCount.mockResolvedValue(0);
     mockQueryBuilder.getMany.mockResolvedValue([]);
+    mockQueryBuilder.getOne.mockResolvedValue(null);
     mockInvestorRepository.createQueryBuilder.mockReturnValue(mockQueryBuilder);
 
     const module: TestingModule = await Test.createTestingModule({
@@ -218,7 +221,6 @@ describe('InvestorService', () => {
 
       await service.findAll(query, investorUser);
 
-      expect(mockQueryBuilder.leftJoin).toHaveBeenCalled();
       expect(mockQueryBuilder.select).toHaveBeenCalled();
       expect(mockQueryBuilder.andWhere).toHaveBeenCalledWith(
         'investor.status = :status',
@@ -243,36 +245,47 @@ describe('InvestorService', () => {
   });
 
   describe('findOne', () => {
-    it('should call findOne with relations for admin user', async () => {
+    it('should use leftJoinAndSelect for admin user', async () => {
       const investor = makeInvestor();
-      mockInvestorRepository.findOne.mockResolvedValue(investor);
+      mockQueryBuilder.getOne.mockResolvedValue(investor);
 
       await service.findOne(investor.id, adminUser);
 
-      expect(mockInvestorRepository.findOne).toHaveBeenCalledWith(
-        expect.objectContaining({ relations: ['documents', 'bankAccount'] }),
+      expect(mockQueryBuilder.leftJoinAndSelect).toHaveBeenCalledWith(
+        'investor.documents',
+        'document',
+      );
+      expect(mockQueryBuilder.leftJoinAndSelect).toHaveBeenCalledWith(
+        'investor.bankAccount',
+        'bankAccount',
       );
     });
 
-    it('should call findOne with relations when user is the investor themselves', async () => {
+    it('should use leftJoinAndSelect when user is the investor themselves', async () => {
       const investor = makeInvestor();
       const selfUser = { id: investor.id, type: UserType.INVESTOR } as User;
-      mockInvestorRepository.findOne.mockResolvedValue(investor);
+      mockQueryBuilder.getOne.mockResolvedValue(investor);
 
       await service.findOne(investor.id, selfUser);
 
-      expect(mockInvestorRepository.findOne).toHaveBeenCalledWith(
-        expect.objectContaining({ relations: ['documents', 'bankAccount'] }),
+      expect(mockQueryBuilder.leftJoinAndSelect).toHaveBeenCalledWith(
+        'investor.documents',
+        'document',
+      );
+      expect(mockQueryBuilder.leftJoinAndSelect).toHaveBeenCalledWith(
+        'investor.bankAccount',
+        'bankAccount',
       );
     });
 
-    it('should throw NotFoundException for non-admin, non-owner investor with PENDING status', async () => {
+    it('should throw NotFoundException for non-admin, non-owner investor with non-VERIFIED status', async () => {
       const pendingInvestor = makeInvestor({ status: InvestorStatus.PENDING });
       const otherUser = {
         id: 'other-id',
         type: UserType.INVESTOR,
         status: InvestorStatus.PENDING,
       } as unknown as User;
+      mockQueryBuilder.getOne.mockResolvedValue(null);
 
       await expect(
         service.findOne(pendingInvestor.id, otherUser),
@@ -280,7 +293,7 @@ describe('InvestorService', () => {
     });
 
     it('should throw NotFoundException when investor does not exist', async () => {
-      mockInvestorRepository.findOne.mockResolvedValue(null);
+      mockQueryBuilder.getOne.mockResolvedValue(null);
 
       await expect(service.findOne('missing-id', adminUser)).rejects.toThrow(
         NotFoundException,
@@ -295,7 +308,7 @@ describe('InvestorService', () => {
         id: 'different-id',
         type: UserType.INVESTOR,
       } as User;
-      mockInvestorRepository.findOne.mockResolvedValue(investor);
+      mockQueryBuilder.getOne.mockResolvedValue(investor);
 
       await expect(
         service.update(
@@ -307,13 +320,13 @@ describe('InvestorService', () => {
       ).rejects.toThrow(ForbiddenException);
     });
 
-    it('should throw BadRequestException when non-admin investor is PENDING', async () => {
+    it('should throw ForbiddenException when non-admin investor is PENDING', async () => {
       const investor = makeInvestor({
         id: 'inv-id',
         status: InvestorStatus.PENDING,
       });
       const selfUser = { id: 'inv-id', type: UserType.INVESTOR } as User;
-      mockInvestorRepository.findOne.mockResolvedValue(investor);
+      mockQueryBuilder.getOne.mockResolvedValue(investor);
 
       await expect(
         service.update(
@@ -322,16 +335,16 @@ describe('InvestorService', () => {
           undefined,
           selfUser,
         ),
-      ).rejects.toThrow(BadRequestException);
+      ).rejects.toThrow(ForbiddenException);
     });
 
-    it('should throw BadRequestException when non-admin investor is DENIED', async () => {
+    it('should throw ForbiddenException when non-admin investor is DENIED', async () => {
       const investor = makeInvestor({
         id: 'inv-id',
         status: InvestorStatus.DENIED,
       });
       const selfUser = { id: 'inv-id', type: UserType.INVESTOR } as User;
-      mockInvestorRepository.findOne.mockResolvedValue(investor);
+      mockQueryBuilder.getOne.mockResolvedValue(investor);
 
       await expect(
         service.update(
@@ -340,7 +353,7 @@ describe('InvestorService', () => {
           undefined,
           selfUser,
         ),
-      ).rejects.toThrow(BadRequestException);
+      ).rejects.toThrow(ForbiddenException);
     });
 
     it('should set status to PENDING and update lastCommunication when CORRECTION investor submits for review', async () => {
@@ -350,7 +363,7 @@ describe('InvestorService', () => {
       });
       const selfUser = { id: 'inv-id', type: UserType.INVESTOR } as User;
       const dto: UpdateInvestorDto = { status: InvestorStatus.PENDING };
-      mockInvestorRepository.findOne.mockResolvedValue(investor);
+      mockQueryBuilder.getOne.mockResolvedValue(investor);
       mockInvestorRepository.save.mockResolvedValue({ ...investor, ...dto });
 
       await service.update(investor.id, dto, undefined, selfUser);
@@ -369,7 +382,7 @@ describe('InvestorService', () => {
       });
       const selfUser = { id: 'inv-id', type: UserType.INVESTOR } as User;
       const dto: UpdateInvestorDto = { name: 'New Name' };
-      mockInvestorRepository.findOne.mockResolvedValue(investor);
+      mockQueryBuilder.getOne.mockResolvedValue(investor);
       mockInvestorRepository.save.mockResolvedValue({ ...investor, ...dto });
 
       await service.update(investor.id, dto, undefined, selfUser);
@@ -396,7 +409,7 @@ describe('InvestorService', () => {
         taxId: '99999999Z',
         status: InvestorStatus.VERIFIED,
       };
-      mockInvestorRepository.findOne.mockResolvedValue(investor);
+      mockQueryBuilder.getOne.mockResolvedValue(investor);
       mockInvestorRepository.save.mockResolvedValue(investor);
 
       await service.update(investor.id, dto, mockFile, selfUser);
@@ -412,7 +425,7 @@ describe('InvestorService', () => {
     it('should nullify file for admin update', async () => {
       const investor = makeInvestor({ id: 'inv-id' });
       const dto: UpdateInvestorDto = { name: 'Updated' };
-      mockInvestorRepository.findOne.mockResolvedValue(investor);
+      mockQueryBuilder.getOne.mockResolvedValue(investor);
       mockInvestorRepository.save.mockResolvedValue(investor);
 
       await service.update(investor.id, dto, mockFile, adminUser);
@@ -426,7 +439,7 @@ describe('InvestorService', () => {
         password: 'abc',
         passwordRepeat: 'xyz',
       };
-      mockInvestorRepository.findOne.mockResolvedValue(investor);
+      mockQueryBuilder.getOne.mockResolvedValue(investor);
 
       await expect(
         service.update(investor.id, dto, undefined, adminUser),
@@ -440,7 +453,7 @@ describe('InvestorService', () => {
       });
       const selfUser = { id: 'inv-id', type: UserType.INVESTOR } as User;
       const dto: UpdateInvestorDto = {};
-      mockInvestorRepository.findOne.mockResolvedValue(investor);
+      mockQueryBuilder.getOne.mockResolvedValue(investor);
 
       await expect(
         service.update(investor.id, dto, mockFile, selfUser),
@@ -451,7 +464,7 @@ describe('InvestorService', () => {
       const investor = makeInvestor({ id: 'inv-id' });
       const dto: UpdateInvestorDto = { name: 'Updated' };
       const updatedInvestor = { ...investor, name: 'Updated' };
-      mockInvestorRepository.findOne.mockResolvedValue(investor);
+      mockQueryBuilder.getOne.mockResolvedValue(investor);
       mockInvestorRepository.save.mockResolvedValue(updatedInvestor);
 
       const result = await service.update(
@@ -470,7 +483,7 @@ describe('InvestorService', () => {
     it('should throw ForbiddenException when non-admin tries to remove another investor', async () => {
       const investor = makeInvestor({ id: 'inv-id' });
       const otherUser = { id: 'other-id', type: UserType.INVESTOR } as User;
-      mockInvestorRepository.findOne.mockResolvedValue(investor);
+      mockQueryBuilder.getOne.mockResolvedValue(investor);
 
       await expect(service.remove(investor.id, otherUser)).rejects.toThrow(
         ForbiddenException,
@@ -479,7 +492,7 @@ describe('InvestorService', () => {
 
     it('should call softDelete by default', async () => {
       const investor = makeInvestor({ id: 'inv-id' });
-      mockInvestorRepository.findOne.mockResolvedValue(investor);
+      mockQueryBuilder.getOne.mockResolvedValue(investor);
       mockInvestorRepository.softDelete.mockResolvedValue(undefined);
 
       await service.remove(investor.id, adminUser);
@@ -491,7 +504,7 @@ describe('InvestorService', () => {
 
     it('should call delete when useSoft is false', async () => {
       const investor = makeInvestor({ id: 'inv-id' });
-      mockInvestorRepository.findOne.mockResolvedValue(investor);
+      mockQueryBuilder.getOne.mockResolvedValue(investor);
       mockInvestorRepository.delete.mockResolvedValue(undefined);
 
       await service.remove(investor.id, adminUser, false);

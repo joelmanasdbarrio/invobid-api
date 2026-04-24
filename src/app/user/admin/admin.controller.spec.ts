@@ -2,6 +2,7 @@ import { Test, TestingModule } from '@nestjs/testing';
 import { AdminController } from './admin.controller';
 import { AdminService } from './admin.service';
 import { UpdateAdminDto } from './dto/update-admin.dto';
+import { Admin } from './entities/admin.entity';
 
 const mockAdminService = {
   findAll: jest.fn(),
@@ -12,6 +13,8 @@ const mockAdminService = {
 
 describe('AdminController', () => {
   let controller: AdminController;
+
+  const mockAdminUser = { id: 'admin-uuid' } as Admin;
 
   beforeEach(async () => {
     jest.clearAllMocks();
@@ -67,15 +70,15 @@ describe('AdminController', () => {
     it('should call adminService.update with the correct id and dto', async () => {
       mockAdminService.update.mockResolvedValue({ id, name: 'Updated Name' });
 
-      await controller.update(id, dto);
+      await controller.update(id, dto, mockAdminUser);
 
-      expect(mockAdminService.update).toHaveBeenCalledWith(id, dto);
+      expect(mockAdminService.update).toHaveBeenCalledWith(id, dto, mockAdminUser);
     });
 
     it('should return status and updated admin data', async () => {
       mockAdminService.update.mockResolvedValue({ id, name: 'Updated Name' });
 
-      const result = await controller.update(id, dto);
+      const result = await controller.update(id, dto, mockAdminUser);
 
       expect(result).toMatchObject({ status: 'success', data: { id } });
     });
@@ -87,7 +90,7 @@ describe('AdminController', () => {
         password: 'hashed-password',
       });
 
-      const result = await controller.update(id, dto);
+      const result = await controller.update(id, dto, mockAdminUser);
 
       expect((result.data as Record<string, unknown>).password).toBeUndefined();
     });
@@ -99,15 +102,15 @@ describe('AdminController', () => {
     it('should call adminService.remove with the correct id', async () => {
       mockAdminService.remove.mockResolvedValue(undefined);
 
-      await controller.remove(id);
+      await controller.remove(id, mockAdminUser);
 
-      expect(mockAdminService.remove).toHaveBeenCalledWith(id);
+      expect(mockAdminService.remove).toHaveBeenCalledWith(id, mockAdminUser);
     });
 
     it('should return status success', async () => {
       mockAdminService.remove.mockResolvedValue(undefined);
 
-      const result = await controller.remove(id);
+      const result = await controller.remove(id, mockAdminUser);
 
       expect(result).toEqual({ status: 'success' });
     });

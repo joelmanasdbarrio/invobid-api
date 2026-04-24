@@ -1,4 +1,4 @@
-import { BadRequestException, NotFoundException } from '@nestjs/common';
+import { BadRequestException, ForbiddenException, NotFoundException } from '@nestjs/common';
 import { Test, TestingModule } from '@nestjs/testing';
 import { getRepositoryToken } from '@nestjs/typeorm';
 import * as bcrypt from 'bcrypt';
@@ -23,6 +23,8 @@ const mockAdminRepository = {
 
 describe('AdminService', () => {
   let service: AdminService;
+
+  const mockAdminUser = { id: 'admin-uuid', type: UserType.ADMIN } as Admin;
 
   beforeEach(async () => {
     jest.clearAllMocks();
@@ -58,13 +60,12 @@ describe('AdminService', () => {
 
     it('should hash the password and save the admin with UserType.ADMIN', async () => {
       const savedAdmin = { id: '1', ...createDto, type: UserType.ADMIN };
-      mockAdminRepository.create.mockReturnValue(savedAdmin);
       mockAdminRepository.save.mockResolvedValue(savedAdmin);
 
       const result = await service.create(createDto);
 
       expect(bcryptHash).toHaveBeenCalledWith('password123', 10);
-      expect(mockAdminRepository.create).toHaveBeenCalledWith(
+      expect(mockAdminRepository.save).toHaveBeenCalledWith(
         expect.objectContaining({
           type: UserType.ADMIN,
           password: 'hashed-password',
@@ -74,7 +75,6 @@ describe('AdminService', () => {
     });
 
     it('should throw BadRequestException on duplicate email (DB error 23505)', async () => {
-      mockAdminRepository.create.mockReturnValue({});
       mockAdminRepository.save.mockRejectedValue({ code: '23505' });
 
       await expect(service.create(createDto)).rejects.toThrow(
@@ -123,7 +123,7 @@ describe('AdminService', () => {
         passwordRepeat: 'xyz789',
       };
 
-      await expect(service.update(id, dto)).rejects.toThrow(
+      await expect(service.update(id, dto, mockAdminUser)).rejects.toThrow(
         BadRequestException,
       );
     });
@@ -136,7 +136,7 @@ describe('AdminService', () => {
       mockAdminRepository.merge.mockReturnValue({ ...existingAdmin });
       mockAdminRepository.save.mockResolvedValue(undefined);
 
-      await service.update(id, dto);
+      await service.update(id, dto, mockAdminUser);
 
       expect(bcryptHash).toHaveBeenCalledWith('newpass', 10);
     });
@@ -144,7 +144,7 @@ describe('AdminService', () => {
     it('should throw NotFoundException when admin does not exist', async () => {
       mockAdminRepository.findOne.mockResolvedValue(null);
 
-      await expect(service.update('missing-id', { name: 'X' })).rejects.toThrow(
+      await expect(service.update('missing-id', { name: 'X' }, mockAdminUser)).rejects.toThrow(
         NotFoundException,
       );
     });
@@ -155,7 +155,7 @@ describe('AdminService', () => {
       mockAdminRepository.merge.mockReturnValue(merged);
       mockAdminRepository.save.mockResolvedValue(undefined);
 
-      const result = await service.update(id, dto);
+      const result = await service.update(id, dto, mockAdminUser);
 
       expect(mockAdminRepository.merge).toHaveBeenCalled();
       expect(mockAdminRepository.save).toHaveBeenCalledWith(merged);
@@ -167,7 +167,7 @@ describe('AdminService', () => {
       mockAdminRepository.merge.mockReturnValue({ ...existingAdmin });
       mockAdminRepository.save.mockRejectedValue({ code: '23505' });
 
-      await expect(service.update(id, dto)).rejects.toThrow(
+      await expect(service.update(id, dto, mockAdminUser)).rejects.toThrow(
         BadRequestException,
       );
     });
@@ -177,7 +177,7 @@ describe('AdminService', () => {
     it('should throw NotFoundException when admin does not exist', async () => {
       mockAdminRepository.findOne.mockResolvedValue(null);
 
-      await expect(service.remove('missing-id')).rejects.toThrow(
+      await expect(service.remove('missing-id', mockAdminUser)).rejects.toThrow(
         NotFoundException,
       );
     });
@@ -187,7 +187,7 @@ describe('AdminService', () => {
       mockAdminRepository.findOne.mockResolvedValue({ id });
       mockAdminRepository.softDelete.mockResolvedValue(undefined);
 
-      await service.remove(id);
+      await service.remove(id, mockAdminUser);
 
       expect(mockAdminRepository.softDelete).toHaveBeenCalledWith(id);
     });
