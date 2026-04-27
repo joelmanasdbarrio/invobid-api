@@ -1,9 +1,9 @@
 import {
-    BadRequestException,
-    ForbiddenException,
-    InternalServerErrorException,
-    NotFoundException,
-    UnauthorizedException,
+  BadRequestException,
+  ForbiddenException,
+  InternalServerErrorException,
+  NotFoundException,
+  UnauthorizedException,
 } from '@nestjs/common';
 import { Test, TestingModule } from '@nestjs/testing';
 import { getRepositoryToken } from '@nestjs/typeorm';
@@ -82,12 +82,17 @@ const makeDebtor = (
   taxId: '12345678A',
 });
 
-const makeCreateDto = (): CreateInvoiceDto => ({
-  debtorId: 'debtor-id',
-  amount: 5000,
-  dueDate: '2026-06-01',
-  svc: 'B12345678-F001-00001234-20260216-A9K3',
-});
+const makeCreateDto = (): CreateInvoiceDto => {
+  const futureDate = new Date();
+  futureDate.setMonth(futureDate.getMonth() + 6);
+  const dueDateString = futureDate.toISOString().split('T')[0];
+  return {
+    debtorId: 'debtor-id',
+    amount: 5000,
+    dueDate: dueDateString,
+    svc: 'B12345678-F001-00001234-20260216-A9K3',
+  };
+};
 
 const mockFile = { originalname: 'invoice.pdf' } as Express.Multer.File;
 
@@ -572,7 +577,7 @@ describe('InvoiceService', () => {
         .mockResolvedValueOnce(invoice)
         .mockResolvedValueOnce({ ...invoice, documents: [document] });
 
-      const dto = makeCreateDto(); // dueDate: "2026-06-01"
+      const dto = makeCreateDto(); // dueDate: "2026-11-01"
       await service.create(dto, mockFile, sellerUser);
 
       // The first save call receives the raw DTO values — dueDate must be
@@ -580,7 +585,7 @@ describe('InvoiceService', () => {
       const savedPayload = (
         mockInvoiceRepository.save.mock.calls[0] as unknown[]
       )[0] as Record<string, unknown>;
-      expect(savedPayload.dueDate).toBe('2026-06-01');
+      expect(savedPayload.dueDate).toBe(dto.dueDate);
     });
 
     it('dueDate value from DTO is not converted to a Date object before saving', async () => {
