@@ -89,6 +89,23 @@ Images are built and pushed by GitHub Actions (`.github/workflows/ci.yml`) on tw
 
 The publish job only runs after all test jobs pass.
 
+### RC image cleanup
+
+To avoid accumulating old release-candidate container versions in GHCR, a scheduled workflow runs from [.github/workflows/cleanup-old-images.yml](.github/workflows/cleanup-old-images.yml).
+
+| Trigger | Behavior |
+|---|---|
+| Daily schedule (`0 6 * * *`) | Deletes `invobid-api` container versions tagged like `vX.Y.Z-rc.N` when older than `RC_RETENTION_DAYS` |
+| Manual trigger (`workflow_dispatch`) | Allows on-demand cleanup run from the Actions tab |
+
+Configure retention in repository settings as an Actions variable:
+
+- Name: `RC_RETENTION_DAYS`
+- Example value: `7`
+- Fallback behavior: defaults to `7` if the variable is missing or invalid
+
+Only RC-tagged versions are targeted. Stable release tags such as `vX.Y.Z` and `latest` are not affected.
+
 ### Prerequisites on the VPS
 
 - [Docker Engine](https://docs.docker.com/engine/install/) + Compose plugin

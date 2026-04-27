@@ -1,0 +1,71 @@
+name: Cleanup RC Docker Images
+
+on:
+  schedule:
+    - cron: '0 6 * * *' # Run daily at 6:00 AM UTC
+  workflow_dispatch: # Allow manual trigger
+
+permissions:
+  packages: write
+
+jobs:
+  cleanup:
+    name: Delete old RC images
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Delete old RC package versions
+        uses: actions/github-script@v7
+        env:
+          RC_RETENTION_DAYS: ${{ vars.RC_RETENTION_DAYS }}
+        with:
+          script: |
+            const rawRetentionDays = Number(process.env.RC_RETENTION_DAYS);
+            const retentionDays = Number.isFinite(rawRetentionDays) && rawRetentionDays > 0
+              ? rawRetentionDays
+              : 7;
+            const cutoff = new Date(Date.now() - retentionDays * 24 * 60 * 60 * 1000);
+
+            console.log(`Using RC retention window: ${retentionDays} day(s)`);
+
+            const owner = context.repo.owner;
+            const packageName = 'invobid-api';
+
+            let page = 1;
+            let deletedCount = 0;
+
+            while (true) {
+              const { data: versions } = await github.rest.packages.getAllPackageVersionsForPackageOwnedByUser({
+                package_type: 'container',
+                package_name: packageName,
+                username: owner,
+                per_page: 100,
+                page,
+              });
+
+              if (versions.length === 0) break;
+
+              for (const version of versions) {
+                const tags = version.metadata?.container?.tags ?? [];
+                const isRc = tags.some(tag => /^.+-rc\.\d+$/.test(tag));
+                const createdAt = new Date(version.created_at);
+
+                if (isRc && createdAt < cutoff) {
+                  console.log(`Deleting version ${version.id} (tags: ${tags.join(', ')}, created: ${version.created_at})`);
+                  await github.rest.packages.deletePackageVersionForUser({
+                    package_type: 'container',
+                    package_name: packageName,
+                    username: owner,
+                    package_version_id: version.id,
+                  });
+                  deletedCount++;
+                } else if (isRc) {
+                  console.log(`Keeping version ${version.id} (tags: ${tags.join(', ')}, created: ${version.created_at}) — not old enough`);
+                }
+              }
+
+              if (versions.length < 100) break;
+              page++;
+            }
+
+            console.log(`Done. Deleted ${deletedCount} RC image version(s).`);
