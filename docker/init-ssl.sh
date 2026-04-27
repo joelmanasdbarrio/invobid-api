@@ -4,9 +4,11 @@
 # Example: ./init-ssl.sh invobid.com admin@invobid.com
 set -e
 
+export MSYS_NO_PATHCONV=1
+
 DOMAIN="${1:-invobid.com}"
 EMAIL="${2:?Usage: ./init-ssl.sh invobid.com admin@invobid.com}"
-COMPOSE="docker compose -f docker-compose.yml -f docker-compose.prod.yml"
+COMPOSE="docker compose -f docker-compose.prod.yml"
 
 echo "==> [1/4] Creating placeholder certificate so nginx can start..."
 $COMPOSE run --rm --entrypoint sh certbot -c "
