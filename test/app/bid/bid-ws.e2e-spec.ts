@@ -298,6 +298,95 @@ describe('Bid WebSocket (e2e)', () => {
       expect(Number(bid.amount)).toBeCloseTo(minBid, 1);
     });
 
+    it('should extend auction end time when bid placed with <=10min remaining', async () => {
+      // Create a fresh debtor → invoice → auction to isolate this test
+      const debtorRes = await request(server)
+        .post(`${API}/debtors`)
+        .set(authHeader(sellerToken))
+        .send(makeDebtorDto());
+      await request(server)
+        .patch(`${API}/debtors/${debtorRes.body.data.id}`)
+        .set(authHeader(adminToken))
+        .send({ status: 'verified' });
+
+      const invoiceDto = makeInvoiceDto(debtorRes.body.data.id);
+      const invoiceRes = await request(server)
+        .post(`${API}/invoices`)
+        .set(authHeader(sellerToken))
+        .field('debtorId', invoiceDto.debtorId)
+        .field('amount', invoiceDto.amount)
+        .field('dueDate', invoiceDto.dueDate)
+        .field('svc', invoiceDto.svc)
+        .attach('file', INVOICE_FILE);
+      const testInvoiceId = invoiceRes.body.data.id;
+      await request(server)
+        .patch(`${API}/invoices/${testInvoiceId}`)
+        .set(authHeader(adminToken))
+        .send({ status: 'verified' });
+
+      const nearExpiryAuctionRes = await request(server)
+        .post(`${API}/auctions`)
+        .set(authHeader(sellerToken))
+        .send(makeAuctionDto(testInvoiceId));
+      const nearExpiryAuctionId = nearExpiryAuctionRes.body.data.id;
+      await request(server)
+        .patch(`${API}/auctions/${nearExpiryAuctionId}`)
+        .set(authHeader(sellerToken))
+        .send({ status: 'published' });
+
+      // Directly set auction end time to 5 min from now (within the 10 min extension window)
+      const nearEndTime = new Date(Date.now() + 5 * 60 * 1000);
+      await dataSource.query(
+        `UPDATE auctions SET "dateEnd" = $1 WHERE id = $2`,
+        [nearEndTime, nearExpiryAuctionId],
+      );
+
+      // Connect buyer socket and join the near-expiry auction room
+      const socket = trackSocket(connectSocket(port, buyerToken));
+      await new Promise<void>((resolve) => socket.on('connect', resolve));
+      const vcPromise = waitForEvent<number>(socket, 'viewer-count');
+      socket.emit('join-auction', { auctionId: nearExpiryAuctionId });
+      await vcPromise;
+
+      // Register broadcast event listeners before placing bid
+      const newBidPromise2 = waitForEvent<any>(socket, 'new-bid');
+      const auctionBidUpdatePromise = waitForEvent<any>(
+        socket,
+        'auction-bid-update',
+      );
+
+      // Place a valid bid
+      const increment =
+        Number(process.env.SMALLEST_BID_INCREMENT_PERCENTAGE) || 1;
+      const minBid = auctionStartPrice * (1 + increment / 100);
+      const result = await emitWithAck<{ success: boolean }>(
+        socket,
+        'place-bid',
+        { auctionId: nearExpiryAuctionId, amount: minBid },
+      );
+
+      // It should return { success: true }
+      expect(result.success).toBe(true);
+
+      // It should emit a new-bid event to all users in the auction room
+      const newBid = await newBidPromise2;
+      expect(Number(newBid.amount)).toBeCloseTo(minBid, 1);
+
+      // It should emit an auction-bid-update event to all connected clients
+      const bidUpdate = await auctionBidUpdatePromise;
+      expect(bidUpdate.auctionId).toBe(nearExpiryAuctionId);
+
+      // It should update the auction end time to be 10min from the original near-expiry time
+      const auctionAfter = await request(server)
+        .get(`${API}/auctions/${nearExpiryAuctionId}`)
+        .set(authHeader(adminToken));
+      const updatedEndTime = new Date(auctionAfter.body.data.date.end);
+      const expectedEndTime = new Date(nearEndTime.getTime() + 10 * 60 * 1000);
+      expect(
+        Math.abs(updatedEndTime.getTime() - expectedEndTime.getTime()),
+      ).toBeLessThan(5000); // within 5 seconds tolerance
+    });
+
     it('should reject bid from seller on own auction', async () => {
       const increment =
         Number(process.env.SMALLEST_BID_INCREMENT_PERCENTAGE) || 1;

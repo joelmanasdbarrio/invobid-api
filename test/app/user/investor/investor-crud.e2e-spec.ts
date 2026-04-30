@@ -221,6 +221,12 @@ describe('Investor CRUD (e2e)', () => {
         .send({ phoneNumber: '+34612345999', status: 'verified' });
 
       expect(res.status).toBe(200);
+
+      const getRes = await request(server)
+        .get(`${API}/investors/${investorId}`)
+        .set(authHeader(adminToken));
+      expect(getRes.status).toBe(200);
+      expect(getRes.body.data.phoneNumber).toBe('+34612345999');
     });
 
     it('should ignore sensitive fields when verified investor updates', async () => {
@@ -236,6 +242,12 @@ describe('Investor CRUD (e2e)', () => {
       // Should succeed but ignore the name/investorType change
       expect(res.status).toBe(200);
       expect(res.body.data.investorType).not.toBe('individual');
+
+      const getRes = await request(server)
+        .get(`${API}/investors/${investorId}`)
+        .set(authHeader(adminToken));
+      expect(getRes.status).toBe(200);
+      expect(getRes.body.data.investorType).toBe('company');
     });
 
     it('should return 400 for malformed ID', async () => {
@@ -277,6 +289,13 @@ describe('Investor CRUD (e2e)', () => {
         .send({ status: 'verified', lastCommunication: 'Approved' });
 
       expect(res.status).toBe(200);
+
+      const getRes = await request(server)
+        .get(`${API}/investors/${other.user.id}`)
+        .set(authHeader(adminToken));
+      expect(getRes.status).toBe(200);
+      expect(getRes.body.data.status).toBe('verified');
+      expect(getRes.body.data.lastCommunication).toBe('Approved');
     });
 
     it('should return 400 when email is already in use by another user', async () => {
@@ -324,6 +343,12 @@ describe('Investor CRUD (e2e)', () => {
 
       expect(res.status).toBe(200);
       expect(res.body.data.name).toBe('Updated Correction Name');
+
+      const getRes = await request(server)
+        .get(`${API}/investors/${corrInvestor.user.id}`)
+        .set(authHeader(adminToken));
+      expect(getRes.status).toBe(200);
+      expect(getRes.body.data.name).toBe('Updated Correction Name');
     });
 
     it('should return 400 for correction investor with duplicate unique fields', async () => {
