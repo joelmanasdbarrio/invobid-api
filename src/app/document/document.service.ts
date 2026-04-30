@@ -86,49 +86,49 @@ export class DocumentService {
     // .leftJoinAndSelect('document.debtor', 'debtor');
 
     if (user.type !== UserType.ADMIN) {
-      queryBuilder.where('document.investorId = :investorId', {
+      queryBuilder.where('(document.investorId = :investorId)', {
         investorId: user.id,
       });
     } else {
       if (query.investorId) {
-        queryBuilder.andWhere('investor.id = :investorId', {
+        queryBuilder.andWhere('(investor.id = :investorId)', {
           investorId: query.investorId,
         });
       }
     }
 
     if (query.invoiceSvc) {
-      queryBuilder.andWhere('invoice.svc = :invoiceSvc', {
+      queryBuilder.andWhere('(invoice.svc = :invoiceSvc)', {
         invoiceSvc: query.invoiceSvc,
       });
     }
 
     // if (query.debtorId) {
-    //   queryBuilder.andWhere('debtor.id = :debtorId', {
+    //   queryBuilder.andWhere('(debtor.id = :debtorId)', {
     //     debtorId: query.debtorId,
     //   });
     // }
 
     if (query.title) {
-      queryBuilder.andWhere('document.title LIKE :title', {
+      queryBuilder.andWhere('(document.title LIKE :title)', {
         title: `%${query.title}%`,
       });
     }
 
     if (query.filename) {
-      queryBuilder.andWhere('document.filename LIKE :filename', {
+      queryBuilder.andWhere('(document.filename LIKE :filename)', {
         filename: `%${query.filename}%`,
       });
     }
 
     if (query.value) {
-      queryBuilder.andWhere('document.value LIKE :value', {
+      queryBuilder.andWhere('(document.value LIKE :value)', {
         value: `%${query.value}%`,
       });
     }
 
     if (query.type) {
-      queryBuilder.andWhere('document.type = :type', {
+      queryBuilder.andWhere('(document.type = :type)', {
         type: query.type,
       });
     }

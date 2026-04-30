@@ -113,18 +113,22 @@ export class InvoiceService {
   }
 
   async findAll(query: GetInvoicesDto, user: User) {
-    const queryBuilder = this.invoiceRepository.createQueryBuilder('invoice');
-
-    queryBuilder.leftJoinAndSelect('invoice.buyerInvestor', 'buyerInvestor');
-    queryBuilder.leftJoinAndSelect('invoice.auctions', 'auctions');
-    queryBuilder.leftJoinAndSelect('invoice.debtor', 'debtor');
-    queryBuilder.leftJoinAndSelect('invoice.sellerInvestor', 'sellerInvestor');
-    queryBuilder.leftJoinAndSelect('invoice.documents', 'documents');
+    const queryBuilder = this.invoiceRepository
+      .createQueryBuilder('invoice')
+      .leftJoinAndSelect('invoice.debtor', 'debtor')
+      .leftJoinAndSelect('invoice.sellerInvestor', 'sellerInvestor')
+      .leftJoinAndSelect('invoice.buyerInvestor', 'buyerInvestor')
+      .leftJoinAndSelect('invoice.auctions', 'auctions')
+      .leftJoinAndSelect('invoice.documents', 'documents');
 
     if (user.type !== UserType.ADMIN) {
-      queryBuilder.andWhere('invoice.sellerInvestorId = :investorId', {
-        investorId: user.id,
-      });
+      queryBuilder.andWhere(
+        '(sellerInvestor.id = :investorId OR (invoice.status = :status AND buyerInvestor.id = :investorId))',
+        {
+          investorId: user.id,
+          status: InvoiceStatus.VERIFIED,
+        },
+      );
     }
 
     if (query.includeDeleted && query.includeDeleted > 0) {
@@ -132,20 +136,20 @@ export class InvoiceService {
     }
 
     if (query.invoiceSvc) {
-      queryBuilder.andWhere('invoice.svc ILIKE :invoiceSvc', {
+      queryBuilder.andWhere('(invoice.svc ILIKE :invoiceSvc)', {
         invoiceSvc: `%${query.invoiceSvc}%`,
       });
     }
 
     if (query.sellerInvestorId) {
-      queryBuilder.andWhere('invoice.sellerInvestorId = :sellerInvestorId', {
+      queryBuilder.andWhere('(sellerInvestor.id = :sellerInvestorId)', {
         sellerInvestorId: query.sellerInvestorId,
       });
     }
 
     if (query.sellerCompanyName) {
       queryBuilder.andWhere(
-        'sellerInvestor.companyName ILIKE :sellerCompanyName',
+        '(sellerInvestor.companyName ILIKE :sellerCompanyName)',
         {
           sellerCompanyName: `%${query.sellerCompanyName}%`,
         },
@@ -153,14 +157,14 @@ export class InvoiceService {
     }
 
     if (query.buyerInvestorId) {
-      queryBuilder.andWhere('invoice.buyerInvestorId = :buyerInvestorId', {
+      queryBuilder.andWhere('(buyerInvestor.id = :buyerInvestorId)', {
         buyerInvestorId: query.buyerInvestorId,
       });
     }
 
     if (query.buyerCompanyName) {
       queryBuilder.andWhere(
-        'buyerInvestor.companyName ILIKE :buyerCompanyName',
+        '(buyerInvestor.companyName ILIKE :buyerCompanyName)',
         {
           buyerCompanyName: `%${query.buyerCompanyName}%`,
         },
@@ -168,32 +172,32 @@ export class InvoiceService {
     }
 
     if (query.debtorId) {
-      queryBuilder.andWhere('invoice.debtorId = :debtorId', {
+      queryBuilder.andWhere('(invoice.debtorId = :debtorId)', {
         debtorId: query.debtorId,
       });
     }
 
     if (query.debtorCompanyName) {
-      queryBuilder.andWhere('debtor.companyName ILIKE :debtorCompanyName', {
+      queryBuilder.andWhere('(debtor.companyName ILIKE :debtorCompanyName)', {
         debtorCompanyName: `%${query.debtorCompanyName}%`,
       });
     }
 
     if (query.minAmount) {
-      queryBuilder.andWhere('invoice.amount >= :minAmount', {
+      queryBuilder.andWhere('(invoice.amount >= :minAmount)', {
         minAmount: query.minAmount,
       });
     }
 
     if (query.maxAmount) {
-      queryBuilder.andWhere('invoice.amount <= :maxAmount', {
+      queryBuilder.andWhere('(invoice.amount <= :maxAmount)', {
         maxAmount: query.maxAmount,
       });
     }
 
     if (query.minRating) {
       queryBuilder.andWhere(
-        'invoice.rating >= :minRating OR invoice.extRating >= :minRating',
+        '(invoice.rating >= :minRating OR invoice.extRating >= :minRating)',
         {
           minRating: query.minRating,
         },
@@ -201,28 +205,28 @@ export class InvoiceService {
     }
 
     if (query.status) {
-      queryBuilder.andWhere('invoice.status = :status', {
+      queryBuilder.andWhere('(invoice.status = :status)', {
         status: query.status,
       });
     }
 
     if (query.dueDateFrom) {
-      queryBuilder.andWhere('invoice.dueDate >= :dueDateFrom', {
+      queryBuilder.andWhere('(invoice.dueDate >= :dueDateFrom)', {
         dueDateFrom: query.dueDateFrom,
       });
     }
 
     if (query.dueDateTo) {
-      queryBuilder.andWhere('invoice.dueDate <= :dueDateTo', {
+      queryBuilder.andWhere('(invoice.dueDate <= :dueDateTo)', {
         dueDateTo: query.dueDateTo,
       });
     }
 
     if (query.isSold !== undefined) {
       if (query.isSold > 0) {
-        queryBuilder.andWhere('invoice.buyerInvestorId IS NOT NULL');
+        queryBuilder.andWhere('(invoice.buyerInvestorId IS NOT NULL)');
       } else {
-        queryBuilder.andWhere('invoice.buyerInvestorId IS NULL');
+        queryBuilder.andWhere('(invoice.buyerInvestorId IS NULL)');
       }
     }
 

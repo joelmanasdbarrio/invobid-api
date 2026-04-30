@@ -426,9 +426,11 @@ export class SeedService {
     const debtors: Debtor[] = [];
     const nifLetters = 'TRWAGMYFPDXBNJZSQVHLCKE';
 
-    // Only COMPANY investors can have debtors
+    // Only VERIFIED, COMPANY investors can have debtors
     const companyInvestors = investors.filter(
-      (inv) => inv.investorType === InvestorType.COMPANY,
+      (inv) =>
+        inv.investorType === InvestorType.COMPANY &&
+        inv.status === InvestorStatus.VERIFIED,
     );
 
     const debtorData = [
@@ -697,7 +699,9 @@ export class SeedService {
     }> = [];
 
     const sellerInvestors = investors.filter(
-      (inv) => inv.investorType === InvestorType.COMPANY,
+      (inv) =>
+        inv.investorType === InvestorType.COMPANY &&
+        inv.status === InvestorStatus.VERIFIED,
     );
 
     let invoiceIndex = 0;
@@ -833,10 +837,15 @@ export class SeedService {
     const DAY_MS = 24 * 60 * 60 * 1000;
     const now = new Date();
 
+    // Only VERIFIED invoices can be used to create auctions
+    const verifiedInvoices = invoices.filter(
+      (inv) => inv.status === InvoiceStatus.VERIFIED,
+    );
+
     const statuses = [Object.values(AuctionStatus)].flat();
 
-    for (let i = 0; i < invoices.length; i++) {
-      const invoice = invoices[i];
+    for (let i = 0; i < verifiedInvoices.length; i++) {
+      const invoice = verifiedInvoices[i];
       const status = statuses[i % statuses.length];
 
       const durationMs = (1 + Math.floor(Math.random() * 24)) * 60 * 60 * 1000;
@@ -952,7 +961,9 @@ export class SeedService {
     for (let i = 0; i < finishedAuctions.length; i++) {
       const auction = finishedAuctions[i];
       const sellerId = invoiceSellerMap.get(auction.invoice.id);
-      const availableBuyers = investors.filter((inv) => inv.id !== sellerId);
+      const availableBuyers = investors.filter(
+        (inv) => inv.id !== sellerId && inv.status === InvestorStatus.VERIFIED,
+      );
       const buyer = availableBuyers[i % availableBuyers.length];
       await this.invoiceRepository.update(auction.invoice.id, {
         buyerInvestor: { id: buyer.id },
@@ -966,9 +977,11 @@ export class SeedService {
   ): Promise<Bid[]> {
     const bids: Bid[] = [];
 
-    // Get only buyer investors (company type) for creating bids
+    // Get only VERIFIED, company investors for creating bids
     const buyerInvestors = investors.filter(
-      (inv) => inv.investorType === InvestorType.COMPANY,
+      (inv) =>
+        inv.investorType === InvestorType.COMPANY &&
+        inv.status === InvestorStatus.VERIFIED,
     );
 
     for (const auction of auctions) {

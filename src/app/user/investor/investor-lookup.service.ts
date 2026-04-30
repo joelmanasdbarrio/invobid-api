@@ -21,12 +21,12 @@ export class InvestorLookupService {
     if (user.type === UserType.ADMIN) {
       queryBuilder.leftJoinAndSelect('investor.documents', 'document');
       queryBuilder.leftJoinAndSelect('investor.bankAccount', 'bankAccount');
-      queryBuilder.andWhere('document.type = :documentType', {
+      queryBuilder.andWhere('(document.type = :documentType)', {
         documentType: DocumentType.ID,
       });
 
       if (query.status) {
-        queryBuilder.andWhere('investor.status = :status', {
+        queryBuilder.andWhere('(investor.status = :status)', {
           status: query.status,
         });
       }
@@ -44,43 +44,43 @@ export class InvestorLookupService {
         'investor.companyName',
         'investor.investorType',
       ]);
-      queryBuilder.andWhere('investor.status = :status', {
+      queryBuilder.andWhere('(investor.status = :status)', {
         status: InvestorStatus.VERIFIED,
       });
     }
 
     if (query.email) {
-      queryBuilder.andWhere('investor.email ILIKE :email', {
+      queryBuilder.andWhere('(investor.email ILIKE :email)', {
         email: `%${query.email}%`,
       });
     }
 
     if (query.name) {
-      queryBuilder.andWhere('investor.name ILIKE :name', {
+      queryBuilder.andWhere('(investor.name ILIKE :name)', {
         name: `%${query.name}%`,
       });
     }
 
     if (query.companyName) {
-      queryBuilder.andWhere('investor.companyName ILIKE :companyName', {
+      queryBuilder.andWhere('(investor.companyName ILIKE :companyName)', {
         companyName: `%${query.companyName}%`,
       });
     }
 
     if (query.phoneNumber) {
-      queryBuilder.andWhere('investor.phoneNumber = :phoneNumber', {
+      queryBuilder.andWhere('(investor.phoneNumber = :phoneNumber)', {
         phoneNumber: query.phoneNumber,
       });
     }
 
     if (query.taxId) {
-      queryBuilder.andWhere('document.value = :documentValue', {
+      queryBuilder.andWhere('(document.value = :documentValue)', {
         documentValue: query.taxId,
       });
     }
 
     if (query.investorType) {
-      queryBuilder.andWhere('investor.investorType = :investorType', {
+      queryBuilder.andWhere('(investor.investorType = :investorType)', {
         investorType: query.investorType,
       });
     }

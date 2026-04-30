@@ -129,7 +129,7 @@ export class AuctionService {
       );
 
       if (!query.includeSelf || !(query.includeSelf > 0)) {
-        queryBuilder.andWhere('sellerInvestor.id != :investorId', {
+        queryBuilder.andWhere('(sellerInvestor.id != :investorId)', {
           investorId: user.id,
         });
       }
@@ -138,7 +138,7 @@ export class AuctionService {
     if (query.includeDeleted && query.includeDeleted > 0) {
       queryBuilder.withDeleted();
       queryBuilder.andWhere(
-        'sellerInvestor.id = :investorId OR debtor.deletedAt IS NULL',
+        '(sellerInvestor.id = :investorId OR debtor.deletedAt IS NULL)',
         {
           investorId: user.id,
         },
@@ -146,20 +146,20 @@ export class AuctionService {
     }
 
     if (query.invoiceSvc) {
-      queryBuilder.andWhere('invoice.svc = :invoiceSvc', {
+      queryBuilder.andWhere('(invoice.svc = :invoiceSvc)', {
         invoiceSvc: query.invoiceSvc,
       });
     }
 
     if (query.sellerInvestorId) {
-      queryBuilder.andWhere('sellerInvestor.id = :sellerInvestorId', {
+      queryBuilder.andWhere('(sellerInvestor.id = :sellerInvestorId)', {
         sellerInvestorId: query.sellerInvestorId,
       });
     }
 
     if (query.sellerCompanyName) {
       queryBuilder.andWhere(
-        'sellerInvestor.companyName ILIKE :sellerCompanyName',
+        '(sellerInvestor.companyName ILIKE :sellerCompanyName)',
         {
           sellerCompanyName: `%${query.sellerCompanyName}%`,
         },
@@ -167,14 +167,14 @@ export class AuctionService {
     }
 
     if (query.buyerInvestorId) {
-      queryBuilder.andWhere('buyerInvestor.id = :buyerInvestorId', {
+      queryBuilder.andWhere('(buyerInvestor.id = :buyerInvestorId)', {
         buyerInvestorId: query.buyerInvestorId,
       });
     }
 
     if (query.buyerCompanyName) {
       queryBuilder.andWhere(
-        'buyerInvestor.companyName ILIKE :buyerCompanyName',
+        '(buyerInvestor.companyName ILIKE :buyerCompanyName)',
         {
           buyerCompanyName: `%${query.buyerCompanyName}%`,
         },
@@ -182,60 +182,60 @@ export class AuctionService {
     }
 
     if (query.debtorId) {
-      queryBuilder.andWhere('debtor.id = :debtorId', {
+      queryBuilder.andWhere('(debtor.id = :debtorId)', {
         debtorId: query.debtorId,
       });
     }
 
     if (query.debtorCompanyName) {
-      queryBuilder.andWhere('debtor.companyName ILIKE :debtorCompanyName', {
+      queryBuilder.andWhere('(debtor.companyName ILIKE :debtorCompanyName)', {
         debtorCompanyName: `%${query.debtorCompanyName}%`,
       });
     }
 
     if (query.maxAmount) {
       queryBuilder.andWhere(
-        `COALESCE((SELECT b.amount FROM bids b WHERE b."auctionId" = auction.id ORDER BY b."createdAt" DESC LIMIT 1), auction."priceStart") <= :maxAmount`,
+        `(COALESCE((SELECT b.amount FROM bids b WHERE b."auctionId" = auction.id ORDER BY b."createdAt" DESC LIMIT 1), auction."priceStart") <= :maxAmount)`,
         { maxAmount: query.maxAmount },
       );
     }
 
     if (query.minAmount) {
       queryBuilder.andWhere(
-        `COALESCE((SELECT b.amount FROM bids b WHERE b."auctionId" = auction.id ORDER BY b."createdAt" DESC LIMIT 1), auction."priceStart") >= :minAmount`,
+        `(COALESCE((SELECT b.amount FROM bids b WHERE b."auctionId" = auction.id ORDER BY b."createdAt" DESC LIMIT 1), auction."priceStart") >= :minAmount)`,
         { minAmount: query.minAmount },
       );
     }
 
     if (query.minDiscount) {
       queryBuilder.andWhere(
-        `COALESCE((SELECT b.discount FROM bids b WHERE b."auctionId" = auction.id ORDER BY b."createdAt" DESC LIMIT 1), auction."discountStart") >= :minDiscount`,
+        `(COALESCE((SELECT b.discount FROM bids b WHERE b."auctionId" = auction.id ORDER BY b."createdAt" DESC LIMIT 1), auction."discountStart") >= :minDiscount)`,
         { minDiscount: query.minDiscount },
       );
     }
 
     if (query.minProfitability) {
       queryBuilder.andWhere(
-        `COALESCE((SELECT b.profitability FROM bids b WHERE b."auctionId" = auction.id ORDER BY b."createdAt" DESC LIMIT 1), auction."profitabilityStart") >= :minProfitability`,
+        `(COALESCE((SELECT b.profitability FROM bids b WHERE b."auctionId" = auction.id ORDER BY b."createdAt" DESC LIMIT 1), auction."profitabilityStart") >= :minProfitability)`,
         { minProfitability: query.minProfitability },
       );
     }
 
     if (query.auctionDateStart) {
-      queryBuilder.andWhere('auction.date.start >= :auctionDateStart', {
+      queryBuilder.andWhere('(auction.date.start >= :auctionDateStart)', {
         auctionDateStart: query.auctionDateStart,
       });
     }
 
     if (query.auctionDateEnd) {
-      queryBuilder.andWhere('auction.date.end <= :auctionDateEnd', {
+      queryBuilder.andWhere('(auction.date.end <= :auctionDateEnd)', {
         auctionDateEnd: query.auctionDateEnd,
       });
     }
 
     if (query.minRating) {
       queryBuilder.andWhere(
-        'invoice.rating >= :minRating OR invoice.extRating >= :minRating',
+        '(invoice.rating >= :minRating OR invoice.extRating >= :minRating)',
         {
           minRating: query.minRating,
         },
@@ -243,7 +243,7 @@ export class AuctionService {
     }
 
     if (query.status) {
-      queryBuilder.andWhere('auction.status = :status', {
+      queryBuilder.andWhere('(auction.status = :status)', {
         status: query.status,
       });
     }

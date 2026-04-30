@@ -191,7 +191,7 @@ export class DebtorService {
       // queryBuilder.leftJoinAndSelect('debtor.documents', 'documents');
 
       if (query.status) {
-        queryBuilder.andWhere('debtor.status = :status', {
+        queryBuilder.andWhere('(debtor.status = :status)', {
           status: query.status,
         });
       }
@@ -220,37 +220,37 @@ export class DebtorService {
     }
 
     if (query.investorId) {
-      queryBuilder.andWhere('debtor.investorId = :investorId', {
+      queryBuilder.andWhere('(debtor.investorId = :investorId)', {
         investorId: query.investorId,
       });
     }
 
     if (query.email) {
-      queryBuilder.andWhere('debtor.email ILIKE :email', {
+      queryBuilder.andWhere('(debtor.email ILIKE :email)', {
         email: `%${query.email}%`,
       });
     }
 
     if (query.phoneNumber) {
-      queryBuilder.andWhere('debtor.phoneNumber ILIKE :phoneNumber', {
+      queryBuilder.andWhere('(debtor.phoneNumber ILIKE :phoneNumber)', {
         phoneNumber: `%${query.phoneNumber}%`,
       });
     }
 
     if (query.companyName) {
-      queryBuilder.andWhere('debtor.companyName ILIKE :companyName', {
+      queryBuilder.andWhere('(debtor.companyName ILIKE :companyName)', {
         companyName: `%${query.companyName}%`,
       });
     }
 
     if (query.taxId) {
-      queryBuilder.andWhere('debtor.taxId ILIKE :taxId', {
+      queryBuilder.andWhere('(debtor.taxId ILIKE :taxId)', {
         taxId: `%${query.taxId}%`,
       });
     }
 
     if (query.status) {
-      queryBuilder.andWhere('debtor.status = :status', {
+      queryBuilder.andWhere('(debtor.status = :status)', {
         status: query.status,
       });
     }
