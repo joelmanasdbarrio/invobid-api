@@ -65,7 +65,6 @@ export class BidWsGateway implements OnGatewayConnection, OnGatewayDisconnect {
       this.server.to(payload.auctionId).emit('new-bid', bid);
       this.server.emit('auction-bid-update', {
         auctionId: payload.auctionId,
-        bid,
       });
       return { success: true };
     } catch (error) {

@@ -10,6 +10,7 @@ import {
 import { InjectRepository } from '@nestjs/typeorm';
 import { In, Not, Repository } from 'typeorm';
 import { BidService } from '../bid/bid.service';
+import { Invoice } from '../invoice/entities/invoice.entity';
 import { InvoiceStatus } from '../invoice/enums/invoice-status.enum';
 import { InvoiceService } from '../invoice/invoice.service';
 import { User } from '../user/common/entities/user.entity';
@@ -33,6 +34,8 @@ export class AuctionService {
   constructor(
     @InjectRepository(Auction)
     private readonly auctionRepository: Repository<Auction>,
+    @InjectRepository(Invoice)
+    private readonly invoiceRepository: Repository<Invoice>,
     @Inject(forwardRef(() => BidService))
     private readonly bidService: BidService,
     private readonly invoiceService: InvoiceService,
@@ -379,6 +382,10 @@ export class AuctionService {
           }
 
           auction.invoice.buyerInvestor = buyerInvestor;
+          await this.invoiceRepository.save({
+            id: auction.invoice.id,
+            buyerInvestor,
+          });
         }
       }
     } else {
