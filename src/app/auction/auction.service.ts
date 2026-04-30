@@ -128,6 +128,18 @@ export class AuctionService {
         },
       );
 
+      if (query.hasBidded && query.hasBidded > 0) {
+        queryBuilder.andWhere((qb) => {
+          const subQuery = qb
+            .subQuery()
+            .select('bids.auctionId')
+            .from('bids', 'bids')
+            .where('bids.investorId = :investorId', { investorId: user.id })
+            .getQuery();
+          return 'auction.id IN ' + subQuery;
+        });
+      }
+
       if (!query.includeSelf || !(query.includeSelf > 0)) {
         queryBuilder.andWhere('(sellerInvestor.id != :investorId)', {
           investorId: user.id,
