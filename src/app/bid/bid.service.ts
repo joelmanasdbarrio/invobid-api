@@ -12,6 +12,7 @@ import {
   computeProfitability,
 } from '../auction/auction-metrics.util';
 import { AuctionService } from '../auction/auction.service';
+import { Auction } from '../auction/entities/auction.entity';
 import { AuctionStatus } from '../auction/enums/auction-status.enum';
 import { User } from '../user/common/entities/user.entity';
 import { UserType } from '../user/common/enums/user-type.enum';
@@ -25,6 +26,8 @@ export class BidService {
   constructor(
     @InjectRepository(Bid)
     private readonly bidRepository: Repository<Bid>,
+    @InjectRepository(Auction)
+    private readonly auctionRepository: Repository<Auction>,
     @Inject(forwardRef(() => AuctionService))
     private readonly auctionService: AuctionService,
   ) {}
@@ -84,13 +87,25 @@ export class BidService {
       ),
     });
 
-    const saved = await this.bidRepository.save(bid);
+    const savedBid = await this.bidRepository.save(bid);
 
-    return this.bidRepository
-      .createQueryBuilder('bid')
-      .leftJoinAndSelect('bid.investor', 'investor')
-      .where('bid.id = :id', { id: saved.id })
-      .getOne() as Promise<Bid>;
+    const now = new Date();
+    const tenMinutesFromNow = new Date(now.getTime() + 10 * 60 * 1000);
+    if (auction.date.end <= tenMinutesFromNow) {
+      const newEndTime = new Date(auction.date.end.getTime() + 10 * 60 * 1000);
+      const auctionToUpdate = await this.auctionRepository.findOne({
+        where: { id: auction.id },
+      });
+
+      if (!auctionToUpdate) {
+        throw new NotFoundException(`Auction with id ${auction.id} not found`);
+      }
+
+      auctionToUpdate.date.end = newEndTime;
+      await this.auctionRepository.save(auctionToUpdate);
+    }
+
+    return savedBid;
   }
 
   async findAll(query: GetBidsDto, user: User) {
@@ -100,11 +115,11 @@ export class BidService {
       .leftJoin('bid.auction', 'auction')
       .orderBy('bid.createdAt', 'DESC');
 
-      if (!query.auctionId && !query.investorId) {
-        throw new BadRequestException([
-          'At least one of auctionId or investorId query parameters is required',
-        ]);
-      }
+    if (!query.auctionId && !query.investorId) {
+      throw new BadRequestException([
+        'At least one of auctionId or investorId query parameters is required',
+      ]);
+    }
 
     if (user.type === UserType.ADMIN) {
       queryBuilder.leftJoinAndSelect('bid.investor', 'investor');
