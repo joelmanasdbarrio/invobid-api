@@ -274,7 +274,7 @@ export class InvoiceService {
       queryBuilder.leftJoinAndSelect(
         'invoice.documents',
         'documents',
-        'invoice.sellerInvestorId = :investorId',
+        '(invoice.sellerInvestorId = :investorId OR invoice.buyerInvestorId = :investorId)',
         { investorId: user.id },
       );
     }

@@ -1,6 +1,8 @@
 import { Injectable } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import * as bcrypt from 'bcrypt';
+import * as fs from 'fs';
+import * as path from 'path';
 import {
   computeDiscount,
   computeProfitability,
@@ -13,6 +15,7 @@ import { Debtor } from 'src/app/debtor/entities/debtor.entity';
 import { DebtorStatus } from 'src/app/debtor/enums/debtor-status.enum';
 import { Document } from 'src/app/document/entities/document.entity';
 import { DocumentType } from 'src/app/document/enums/document-type.enum';
+import { MinioStorageService } from 'src/app/document/services/minio-storage.service';
 import { Invoice } from 'src/app/invoice/entities/invoice.entity';
 import { InvoiceStatus } from 'src/app/invoice/enums/invoice-status.enum';
 import { Admin } from 'src/app/user/admin/entities/admin.entity';
@@ -42,6 +45,7 @@ export class SeedService {
     private readonly auctionRepository: Repository<Auction>,
     @InjectRepository(Bid)
     private readonly bidRepository: Repository<Bid>,
+    private readonly storageService: MinioStorageService,
   ) {}
 
   async run() {
@@ -116,6 +120,21 @@ export class SeedService {
   private async seedInvestors(): Promise<Investor[]> {
     const password = bcrypt.hashSync('Investor123!', 10);
     const investors: Investor[] = [];
+
+    const SEED_DNI_KEY = 'seed-dni.jpg';
+    const SEED_NIF_KEY = 'seed-nif.jpg';
+    await this.storageService.uploadFile(
+      fs.readFileSync(
+        path.join(process.cwd(), 'test', 'sample_files', 'dni.jpg'),
+      ),
+      SEED_DNI_KEY,
+    );
+    await this.storageService.uploadFile(
+      fs.readFileSync(
+        path.join(process.cwd(), 'test', 'sample_files', 'nif.jpg'),
+      ),
+      SEED_NIF_KEY,
+    );
 
     const investorData = [
       {
@@ -404,7 +423,8 @@ export class SeedService {
       const document = this.documentRepository.create({
         id: documentId,
         title: `${data.company} NIF/CIF Document`,
-        filename: data.type === InvestorType.INDIVIDUAL ? `dni.jpg` : `cif.jpg`,
+        filename:
+          data.type === InvestorType.INDIVIDUAL ? SEED_DNI_KEY : SEED_NIF_KEY,
         value: data.taxId,
         type: DocumentType.ID,
       });
@@ -703,10 +723,14 @@ export class SeedService {
     const invoices: Invoice[] = [];
     const invoiceMetadata: Array<{
       title: string;
-      filename: string;
-      value: string;
       investor: Investor;
     }> = [];
+
+    const SEED_INVOICE_KEY = 'seed-invoice.pdf';
+    const pdfBuffer = fs.readFileSync(
+      path.join(process.cwd(), 'test', 'sample_files', 'invoice.pdf'),
+    );
+    await this.storageService.uploadFile(pdfBuffer, SEED_INVOICE_KEY);
 
     const sellerInvestors = investors.filter(
       (inv) =>
@@ -803,12 +827,8 @@ export class SeedService {
         const invoice = this.invoiceRepository.create(invoiceData);
         invoices.push(invoice);
 
-        // Store document metadata for later creation
-        const documentId = uuidv4();
         invoiceMetadata.push({
           title: `Invoice ${i} - ${seller.companyName}`,
-          filename: `${documentId}.pdf`,
-          value: uuidv4(),
           investor: seller,
         });
 
@@ -826,8 +846,8 @@ export class SeedService {
       const invoiceDocument = this.documentRepository.create({
         id: uuidv4(),
         title: metadata.title,
-        filename: metadata.filename,
-        value: metadata.value,
+        filename: SEED_INVOICE_KEY,
+        value: uuidv4(),
         investor: metadata.investor,
         invoice: savedInvoice,
         type: DocumentType.INVOICE,

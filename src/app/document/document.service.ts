@@ -154,12 +154,19 @@ export class DocumentService {
       user.type === UserType.ADMIN
         ? await this.documentRepository.findOne({
             where: { id },
-            relations: ['investor', 'debtor'],
+            relations: ['investor'],
           })
-        : await this.documentRepository.findOne({
-            where: { id, investor: { id: user.id } },
-            relations: ['investor', 'debtor'],
-          });
+        : await this.documentRepository
+            .createQueryBuilder('document')
+            .leftJoinAndSelect('document.investor', 'investor')
+            .leftJoin('document.invoice', 'invoice')
+            .leftJoin('invoice.buyerInvestor', 'buyerInvestor')
+            .where('document.id = :id', { id })
+            .andWhere(
+              '(document.investorId = :investorId OR buyerInvestor.id = :investorId)',
+              { investorId: user.id },
+            )
+            .getOne();
 
     if (!document)
       throw new NotFoundException(`Document with ID '${id}' not found`);
