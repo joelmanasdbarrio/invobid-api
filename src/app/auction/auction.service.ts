@@ -432,6 +432,25 @@ export class AuctionService {
     return await this.auctionRepository.save(auction);
   }
 
+  async extendAuctionIfNeeded(auctionId: string): Promise<string | null> {
+    const auction = await this.auctionRepository.findOne({
+      where: { id: auctionId },
+    });
+
+    if (!auction) return null;
+
+    const extensionMs =
+      Number(process.env.AUCTION_EXTENSION_MINUTES) * 60 * 1000;
+    if (auction.date.end.getTime() - Date.now() <= extensionMs) {
+      const newEndTime = new Date(Date.now() + extensionMs);
+      auction.date.end = newEndTime;
+      await this.auctionRepository.save(auction);
+      return newEndTime.toISOString();
+    }
+
+    return null;
+  }
+
   async remove(id: string, user: User, useSoft = true) {
     const auction = await this.findOne(id, user);
 

@@ -45,6 +45,16 @@ export class SeedService {
   ) {}
 
   async run() {
+    if (
+      process.env.NODE_ENV !== 'development' &&
+      process.env.NODE_ENV !== 'local'
+    ) {
+      console.warn(
+        '⚠️ Seeding may only be executed in development environment.',
+      );
+      return;
+    }
+
     console.log('🌱 Starting database seeding...');
 
     try {
@@ -736,7 +746,7 @@ export class SeedService {
 
     // Step 1: Create and save invoices without documents
     for (const seller of sellerInvestors) {
-      for (let i = 1; i <= 3; i++) {
+      for (let i = 1; i <= 10; i++) {
         // Set due date to a date between Oct 1 and Dec 31 of 2026
         const targetYear = 2026;
         const month = 9 + (invoiceIndex % 3); // Oct (9), Nov (10), Dec (11)
@@ -758,11 +768,11 @@ export class SeedService {
         let status: InvoiceStatus;
         let lastCommunication: string | undefined;
 
-        if (invoiceIndex % 4 === 0) {
+        if (invoiceIndex % 2 === 0) {
           status = InvoiceStatus.VERIFIED;
-        } else if (invoiceIndex % 4 === 1) {
+        } else if (invoiceIndex % 6 === 1) {
           status = InvoiceStatus.PENDING;
-        } else if (invoiceIndex % 4 === 2) {
+        } else if (invoiceIndex % 6 === 3) {
           status = InvoiceStatus.CORRECTION;
           lastCommunication =
             'Se requiere documentación adicional para verificación';
@@ -774,7 +784,7 @@ export class SeedService {
         const invoiceData: Partial<Invoice> = {
           sellerInvestor: seller,
           debtor: debtor,
-          amount: 10000 + Math.random() * 90000,
+          amount: 5000 + Math.random() * 95000,
           dueDate: dueDate,
           status: status,
           transactionFee: {
@@ -848,7 +858,7 @@ export class SeedService {
       const invoice = verifiedInvoices[i];
       const status = statuses[i % statuses.length];
 
-      const durationMs = (1 + Math.floor(Math.random() * 24)) * 60 * 60 * 1000;
+      const durationMs = 15 * 60 * 1000 + Math.random() * 45 * 60 * 1000;
 
       let auctionDateStart: Date | undefined;
       let auctionDateEnd: Date;
@@ -992,7 +1002,15 @@ export class SeedService {
       const buyerPercentage = auction.invoice.transactionFee.buyerPercentage;
       const netInvoice = auction.invoice.amount * (1 - buyerPercentage / 100);
       const lowerBound = auction.price.start;
-      const upperBound = netInvoice * 0.999; // keeps profitability ≥ ~0.1%
+      // Constrain total profitability spread across 5 bids to [0.1%, 1.0%]
+      const startProfitability = computeProfitability(
+        auction.invoice.amount,
+        buyerPercentage,
+        lowerBound,
+      );
+      const profSpread = 0.1 + Math.random() * 0.9;
+      const endProfitability = Math.max(0.05, startProfitability - profSpread);
+      const upperBound = netInvoice / (1 + endProfitability / 100);
       const spread = upperBound - lowerBound;
       const step = spread / 6; // divide range into 6 steps, use steps 1–5
 
