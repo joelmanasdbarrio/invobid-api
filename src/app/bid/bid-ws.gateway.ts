@@ -6,6 +6,7 @@ import {
   WebSocketServer,
 } from '@nestjs/websockets';
 import { Server, Socket } from 'socket.io';
+import { AuctionService } from '../auction/auction.service';
 import { WsAuth } from '../user/auth/decorators/ws-auth.decorator';
 import { User } from '../user/common/entities/user.entity';
 import { UserType } from '../user/common/enums/user-type.enum';
@@ -26,7 +27,10 @@ export class BidWsGateway implements OnGatewayConnection, OnGatewayDisconnect {
   private readonly clientRooms = new Map<string, string>();
   private readonly socketUserMap = new Map<string, string>();
 
-  constructor(private readonly bidService: BidService) {}
+  constructor(
+    private readonly bidService: BidService,
+    private readonly auctionService: AuctionService,
+  ) {}
 
   @WsAuth([UserType.INVESTOR])
   @SubscribeMessage('join-auction')
@@ -62,10 +66,13 @@ export class BidWsGateway implements OnGatewayConnection, OnGatewayDisconnect {
     try {
       const user = (client.data as Record<string, unknown>).user as User;
       const bid = await this.bidService.create(payload, user);
+      const newEndDate = await this.auctionService.extendAuctionIfNeeded(
+        payload.auctionId,
+      );
       this.server.to(payload.auctionId).emit('new-bid', bid);
       this.server.emit('auction-bid-update', {
         auctionId: payload.auctionId,
-        bid,
+        newEndDate,
       });
       return { success: true };
     } catch (error) {

@@ -42,20 +42,20 @@ export class AuctionLookupService {
     }
 
     if (query.invoiceSvc) {
-      queryBuilder.andWhere('invoice.svc = :invoiceSvc', {
+      queryBuilder.andWhere('(invoice.svc = :invoiceSvc)', {
         invoiceSvc: query.invoiceSvc,
       });
     }
 
     if (query.sellerInvestorId) {
-      queryBuilder.andWhere('sellerInvestor.id = :sellerInvestorId', {
+      queryBuilder.andWhere('(sellerInvestor.id = :sellerInvestorId)', {
         sellerInvestorId: query.sellerInvestorId,
       });
     }
 
     if (query.sellerCompanyName) {
       queryBuilder.andWhere(
-        'sellerInvestor.companyName ILIKE :sellerCompanyName',
+        '(sellerInvestor.companyName ILIKE :sellerCompanyName)',
         {
           sellerCompanyName: `%${query.sellerCompanyName}%`,
         },
@@ -63,14 +63,14 @@ export class AuctionLookupService {
     }
 
     if (query.buyerInvestorId) {
-      queryBuilder.andWhere('buyerInvestor.id = :buyerInvestorId', {
+      queryBuilder.andWhere('(buyerInvestor.id = :buyerInvestorId)', {
         buyerInvestorId: query.buyerInvestorId,
       });
     }
 
     if (query.buyerCompanyName) {
       queryBuilder.andWhere(
-        'buyerInvestor.companyName ILIKE :buyerCompanyName',
+        '(buyerInvestor.companyName ILIKE :buyerCompanyName)',
         {
           buyerCompanyName: `%${query.buyerCompanyName}%`,
         },
@@ -78,43 +78,43 @@ export class AuctionLookupService {
     }
 
     if (query.debtorId) {
-      queryBuilder.andWhere('debtor.id = :debtorId', {
+      queryBuilder.andWhere('(debtor.id = :debtorId)', {
         debtorId: query.debtorId,
       });
     }
 
     if (query.debtorCompanyName) {
-      queryBuilder.andWhere('debtor.companyName ILIKE :debtorCompanyName', {
+      queryBuilder.andWhere('(debtor.companyName ILIKE :debtorCompanyName)', {
         debtorCompanyName: `%${query.debtorCompanyName}%`,
       });
     }
 
     if (query.maxAmount) {
-      queryBuilder.andWhere('invoice.amount <= :maxAmount', {
+      queryBuilder.andWhere('(invoice.amount <= :maxAmount)', {
         maxAmount: query.maxAmount,
       });
     }
 
     if (query.minAmount) {
-      queryBuilder.andWhere('invoice.amount >= :minAmount', {
+      queryBuilder.andWhere('(invoice.amount >= :minAmount)', {
         minAmount: query.minAmount,
       });
     }
 
     if (query.auctionDateStart) {
-      queryBuilder.andWhere('auction.date.start >= :auctionDateStart', {
+      queryBuilder.andWhere('(auction.date.start >= :auctionDateStart)', {
         auctionDateStart: query.auctionDateStart,
       });
     }
 
     if (query.auctionDateEnd) {
-      queryBuilder.andWhere('auction.date.end <= :auctionDateEnd', {
+      queryBuilder.andWhere('(auction.date.end <= :auctionDateEnd)', {
         auctionDateEnd: query.auctionDateEnd,
       });
     }
 
     if (query.status) {
-      queryBuilder.andWhere('auction.status = :status', {
+      queryBuilder.andWhere('(auction.status = :status)', {
         status: query.status,
       });
     }

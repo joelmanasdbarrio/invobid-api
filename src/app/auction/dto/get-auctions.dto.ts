@@ -81,6 +81,12 @@ export class GetAuctionsDto extends PaginationDto {
   @IsNumber()
   @Min(0)
   @Max(1)
+  hasBidded?: number;
+
+  @IsOptional()
+  @IsNumber()
+  @Min(0)
+  @Max(1)
   includeDeleted?: number;
 
   @IsOptional()

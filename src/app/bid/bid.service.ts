@@ -84,13 +84,7 @@ export class BidService {
       ),
     });
 
-    const saved = await this.bidRepository.save(bid);
-
-    return this.bidRepository
-      .createQueryBuilder('bid')
-      .leftJoinAndSelect('bid.investor', 'investor')
-      .where('bid.id = :id', { id: saved.id })
-      .getOne() as Promise<Bid>;
+    return await this.bidRepository.save(bid);
   }
 
   async findAll(query: GetBidsDto, user: User) {
@@ -100,36 +94,37 @@ export class BidService {
       .leftJoin('bid.auction', 'auction')
       .orderBy('bid.createdAt', 'DESC');
 
+    if (!query.auctionId && !query.investorId) {
+      throw new BadRequestException([
+        'At least one of auctionId or investorId query parameters is required',
+      ]);
+    }
+
     if (user.type === UserType.ADMIN) {
-      if (!query.auctionId && !query.investorId) {
-        throw new BadRequestException([
-          'At least one of auctionId or investorId query parameters is required',
-        ]);
-      }
-
       queryBuilder.leftJoinAndSelect('bid.investor', 'investor');
-
-      if (query.investorId) {
-        queryBuilder.andWhere('investor.id = :investorId', {
-          investorId: query.investorId,
-        });
-      }
     } else {
-      if (!query.auctionId) {
-        throw new BadRequestException([
-          'auctionId query parameter is required',
-        ]);
-      }
+      queryBuilder.leftJoinAndSelect(
+        'bid.investor',
+        'investor',
+        'investor.id = :userId',
+        { userId: user.id },
+      );
 
-      queryBuilder.andWhere('auction.status IN (:...status)', {
+      queryBuilder.andWhere('(auction.status IN (:...status))', {
         status: [AuctionStatus.PUBLISHED],
+      });
+    }
+
+    if (query.investorId) {
+      queryBuilder.andWhere('(investor.id = :investorId)', {
+        investorId: query.investorId,
       });
     }
 
     if (query.auctionId) {
       await this.auctionService.findOne(query.auctionId, user);
 
-      queryBuilder.andWhere('auction.id = :auctionId', {
+      queryBuilder.andWhere('(auction.id = :auctionId)', {
         auctionId: query.auctionId,
       });
     }
@@ -161,7 +156,7 @@ export class BidService {
 
     if (user.type !== UserType.ADMIN) {
       queryBuilder.andWhere(
-        'auction.status IN (:...status) OR bid.investor.id = :userId',
+        '(auction.status IN (:...status) OR bid.investor.id = :userId)',
         {
           status: [AuctionStatus.PUBLISHED],
           userId: user.id,

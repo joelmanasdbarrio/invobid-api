@@ -475,6 +475,12 @@ describe('Auction (e2e)', () => {
         .send({ status: 'published' });
 
       expect(res.status).toBe(200);
+
+      const getRes = await request(server)
+        .get(`${API}/auctions/${created.body.data.id}`)
+        .set(authHeader(adminToken));
+      expect(getRes.status).toBe(200);
+      expect(getRes.body.data.status).toBe('published');
     });
 
     it('should return 403 when updating published auction', async () => {
@@ -611,6 +617,23 @@ describe('Auction (e2e)', () => {
         .send({ status: 'finished' });
 
       expect(res.status).toBe(200);
+
+      const auctionRes = await request(server)
+        .get(`${API}/auctions/${auctionId}`)
+        .set(authHeader(adminToken));
+      expect(auctionRes.status).toBe(200);
+      expect(auctionRes.body.data.status).toBe('finished');
+      expect(parseFloat(auctionRes.body.data.price.end)).toBe(5000);
+      expect(auctionRes.body.data.discount.end).not.toBeNull();
+      expect(auctionRes.body.data.profitability.end).not.toBeNull();
+
+      const invoiceRes = await request(server)
+        .get(`${API}/invoices/${invoiceId}`)
+        .set(authHeader(adminToken));
+
+      expect(invoiceRes.status).toBe(200);
+      expect(invoiceRes.body.data.buyerInvestor).toBeDefined();
+      expect(invoiceRes.body.data.buyerInvestor.id).toBe(bidder.user.id);
     });
 
     it('should return 400 when admin finishes transitioning auction without bids', async () => {
@@ -708,6 +731,15 @@ describe('Auction (e2e)', () => {
         });
 
       expect(res.status).toBe(200);
+
+      const getRes = await request(server)
+        .get(`${API}/auctions/${auctionId}`)
+        .set(authHeader(adminToken));
+      expect(getRes.status).toBe(200);
+      expect(getRes.body.data.status).toBe('cancelled');
+      expect(getRes.body.data.lastCommunication).toBe(
+        'Auction cancelled by admin',
+      );
     });
 
     it('should return 403 when admin updates non-transitioning auction', async () => {

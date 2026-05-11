@@ -10,6 +10,7 @@ import {
 import { InjectRepository } from '@nestjs/typeorm';
 import { In, Not, Repository } from 'typeorm';
 import { BidService } from '../bid/bid.service';
+import { Invoice } from '../invoice/entities/invoice.entity';
 import { InvoiceStatus } from '../invoice/enums/invoice-status.enum';
 import { InvoiceService } from '../invoice/invoice.service';
 import { User } from '../user/common/entities/user.entity';
@@ -33,6 +34,8 @@ export class AuctionService {
   constructor(
     @InjectRepository(Auction)
     private readonly auctionRepository: Repository<Auction>,
+    @InjectRepository(Invoice)
+    private readonly invoiceRepository: Repository<Invoice>,
     @Inject(forwardRef(() => BidService))
     private readonly bidService: BidService,
     private readonly invoiceService: InvoiceService,
@@ -128,8 +131,20 @@ export class AuctionService {
         },
       );
 
+      if (query.hasBidded && query.hasBidded > 0) {
+        queryBuilder.andWhere((qb) => {
+          const subQuery = qb
+            .subQuery()
+            .select('bids.auctionId')
+            .from('bids', 'bids')
+            .where('bids.investorId = :investorId', { investorId: user.id })
+            .getQuery();
+          return 'auction.id IN ' + subQuery;
+        });
+      }
+
       if (!query.includeSelf || !(query.includeSelf > 0)) {
-        queryBuilder.andWhere('sellerInvestor.id != :investorId', {
+        queryBuilder.andWhere('(sellerInvestor.id != :investorId)', {
           investorId: user.id,
         });
       }
@@ -138,7 +153,7 @@ export class AuctionService {
     if (query.includeDeleted && query.includeDeleted > 0) {
       queryBuilder.withDeleted();
       queryBuilder.andWhere(
-        'sellerInvestor.id = :investorId OR debtor.deletedAt IS NULL',
+        '(sellerInvestor.id = :investorId OR debtor.deletedAt IS NULL)',
         {
           investorId: user.id,
         },
@@ -146,20 +161,20 @@ export class AuctionService {
     }
 
     if (query.invoiceSvc) {
-      queryBuilder.andWhere('invoice.svc = :invoiceSvc', {
+      queryBuilder.andWhere('(invoice.svc = :invoiceSvc)', {
         invoiceSvc: query.invoiceSvc,
       });
     }
 
     if (query.sellerInvestorId) {
-      queryBuilder.andWhere('sellerInvestor.id = :sellerInvestorId', {
+      queryBuilder.andWhere('(sellerInvestor.id = :sellerInvestorId)', {
         sellerInvestorId: query.sellerInvestorId,
       });
     }
 
     if (query.sellerCompanyName) {
       queryBuilder.andWhere(
-        'sellerInvestor.companyName ILIKE :sellerCompanyName',
+        '(sellerInvestor.companyName ILIKE :sellerCompanyName)',
         {
           sellerCompanyName: `%${query.sellerCompanyName}%`,
         },
@@ -167,14 +182,14 @@ export class AuctionService {
     }
 
     if (query.buyerInvestorId) {
-      queryBuilder.andWhere('buyerInvestor.id = :buyerInvestorId', {
+      queryBuilder.andWhere('(buyerInvestor.id = :buyerInvestorId)', {
         buyerInvestorId: query.buyerInvestorId,
       });
     }
 
     if (query.buyerCompanyName) {
       queryBuilder.andWhere(
-        'buyerInvestor.companyName ILIKE :buyerCompanyName',
+        '(buyerInvestor.companyName ILIKE :buyerCompanyName)',
         {
           buyerCompanyName: `%${query.buyerCompanyName}%`,
         },
@@ -182,60 +197,60 @@ export class AuctionService {
     }
 
     if (query.debtorId) {
-      queryBuilder.andWhere('debtor.id = :debtorId', {
+      queryBuilder.andWhere('(debtor.id = :debtorId)', {
         debtorId: query.debtorId,
       });
     }
 
     if (query.debtorCompanyName) {
-      queryBuilder.andWhere('debtor.companyName ILIKE :debtorCompanyName', {
+      queryBuilder.andWhere('(debtor.companyName ILIKE :debtorCompanyName)', {
         debtorCompanyName: `%${query.debtorCompanyName}%`,
       });
     }
 
     if (query.maxAmount) {
       queryBuilder.andWhere(
-        `COALESCE((SELECT b.amount FROM bids b WHERE b."auctionId" = auction.id ORDER BY b."createdAt" DESC LIMIT 1), auction."priceStart") <= :maxAmount`,
+        `(COALESCE((SELECT b.amount FROM bids b WHERE b."auctionId" = auction.id ORDER BY b."createdAt" DESC LIMIT 1), auction."priceStart") <= :maxAmount)`,
         { maxAmount: query.maxAmount },
       );
     }
 
     if (query.minAmount) {
       queryBuilder.andWhere(
-        `COALESCE((SELECT b.amount FROM bids b WHERE b."auctionId" = auction.id ORDER BY b."createdAt" DESC LIMIT 1), auction."priceStart") >= :minAmount`,
+        `(COALESCE((SELECT b.amount FROM bids b WHERE b."auctionId" = auction.id ORDER BY b."createdAt" DESC LIMIT 1), auction."priceStart") >= :minAmount)`,
         { minAmount: query.minAmount },
       );
     }
 
     if (query.minDiscount) {
       queryBuilder.andWhere(
-        `COALESCE((SELECT b.discount FROM bids b WHERE b."auctionId" = auction.id ORDER BY b."createdAt" DESC LIMIT 1), auction."discountStart") >= :minDiscount`,
+        `(COALESCE((SELECT b.discount FROM bids b WHERE b."auctionId" = auction.id ORDER BY b."createdAt" DESC LIMIT 1), auction."discountStart") >= :minDiscount)`,
         { minDiscount: query.minDiscount },
       );
     }
 
     if (query.minProfitability) {
       queryBuilder.andWhere(
-        `COALESCE((SELECT b.profitability FROM bids b WHERE b."auctionId" = auction.id ORDER BY b."createdAt" DESC LIMIT 1), auction."profitabilityStart") >= :minProfitability`,
+        `(COALESCE((SELECT b.profitability FROM bids b WHERE b."auctionId" = auction.id ORDER BY b."createdAt" DESC LIMIT 1), auction."profitabilityStart") >= :minProfitability)`,
         { minProfitability: query.minProfitability },
       );
     }
 
     if (query.auctionDateStart) {
-      queryBuilder.andWhere('auction.date.start >= :auctionDateStart', {
+      queryBuilder.andWhere('(auction.date.start >= :auctionDateStart)', {
         auctionDateStart: query.auctionDateStart,
       });
     }
 
     if (query.auctionDateEnd) {
-      queryBuilder.andWhere('auction.date.end <= :auctionDateEnd', {
+      queryBuilder.andWhere('(auction.date.end <= :auctionDateEnd)', {
         auctionDateEnd: query.auctionDateEnd,
       });
     }
 
     if (query.minRating) {
       queryBuilder.andWhere(
-        'invoice.rating >= :minRating OR invoice.extRating >= :minRating',
+        '(invoice.rating >= :minRating OR invoice.extRating >= :minRating)',
         {
           minRating: query.minRating,
         },
@@ -243,7 +258,7 @@ export class AuctionService {
     }
 
     if (query.status) {
-      queryBuilder.andWhere('auction.status = :status', {
+      queryBuilder.andWhere('(auction.status = :status)', {
         status: query.status,
       });
     }
@@ -367,6 +382,10 @@ export class AuctionService {
           }
 
           auction.invoice.buyerInvestor = buyerInvestor;
+          await this.invoiceRepository.save({
+            id: auction.invoice.id,
+            buyerInvestor,
+          });
         }
       }
     } else {
@@ -411,6 +430,25 @@ export class AuctionService {
     auction.discount.start = discount;
     auction.profitability.start = profitability;
     return await this.auctionRepository.save(auction);
+  }
+
+  async extendAuctionIfNeeded(auctionId: string): Promise<string | null> {
+    const auction = await this.auctionRepository.findOne({
+      where: { id: auctionId },
+    });
+
+    if (!auction) return null;
+
+    const extensionMs =
+      Number(process.env.AUCTION_EXTENSION_MINUTES) * 60 * 1000;
+    if (auction.date.end.getTime() - Date.now() <= extensionMs) {
+      const newEndTime = new Date(Date.now() + extensionMs);
+      auction.date.end = newEndTime;
+      await this.auctionRepository.save(auction);
+      return newEndTime.toISOString();
+    }
+
+    return null;
   }
 
   async remove(id: string, user: User, useSoft = true) {

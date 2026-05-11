@@ -1,7 +1,7 @@
 import {
-    BadRequestException,
-    NotFoundException,
-    ServiceUnavailableException
+  BadRequestException,
+  NotFoundException,
+  ServiceUnavailableException,
 } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { Test, TestingModule } from '@nestjs/testing';
@@ -21,6 +21,7 @@ jest.mock('uuid', () => ({ v4: () => 'test-uuid' }));
 
 const mockQueryBuilder = {
   leftJoinAndSelect: jest.fn().mockReturnThis(),
+  leftJoin: jest.fn().mockReturnThis(),
   where: jest.fn().mockReturnThis(),
   andWhere: jest.fn().mockReturnThis(),
   skip: jest.fn().mockReturnThis(),
@@ -28,6 +29,7 @@ const mockQueryBuilder = {
   orderBy: jest.fn().mockReturnThis(),
   getCount: jest.fn().mockResolvedValue(0),
   getMany: jest.fn().mockResolvedValue([]),
+  getOne: jest.fn().mockResolvedValue(null),
 };
 
 const mockDocumentRepository = {
@@ -181,7 +183,7 @@ describe('DocumentService', () => {
       );
 
       expect(mockQueryBuilder.where).toHaveBeenCalledWith(
-        'document.investorId = :investorId',
+        '(document.investorId = :investorId)',
         { investorId: 'investor-id' },
       );
     });
@@ -202,7 +204,7 @@ describe('DocumentService', () => {
       );
 
       expect(mockQueryBuilder.andWhere).toHaveBeenCalledWith(
-        'investor.id = :investorId',
+        '(investor.id = :investorId)',
         { investorId: 'some-investor' },
       );
     });
@@ -260,14 +262,19 @@ describe('DocumentService', () => {
 
     it('should call findOne with investor filter for non-ADMIN', async () => {
       const document = makeDocument();
-      mockDocumentRepository.findOne.mockResolvedValue(document);
+      mockQueryBuilder.getOne.mockResolvedValue(document);
 
       await service.findOne(document.id, investorUser);
 
-      expect(mockDocumentRepository.findOne).toHaveBeenCalledWith(
-        expect.objectContaining({
-          where: { id: document.id, investor: { id: investorUser.id } },
-        }),
+      expect(mockDocumentRepository.createQueryBuilder).toHaveBeenCalledWith(
+        'document',
+      );
+      expect(mockQueryBuilder.where).toHaveBeenCalledWith('document.id = :id', {
+        id: document.id,
+      });
+      expect(mockQueryBuilder.andWhere).toHaveBeenCalledWith(
+        '(document.investorId = :investorId OR buyerInvestor.id = :investorId)',
+        { investorId: investorUser.id },
       );
     });
   });

@@ -1,6 +1,8 @@
 import { Injectable } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import * as bcrypt from 'bcrypt';
+import * as fs from 'fs';
+import * as path from 'path';
 import {
   computeDiscount,
   computeProfitability,
@@ -13,6 +15,7 @@ import { Debtor } from 'src/app/debtor/entities/debtor.entity';
 import { DebtorStatus } from 'src/app/debtor/enums/debtor-status.enum';
 import { Document } from 'src/app/document/entities/document.entity';
 import { DocumentType } from 'src/app/document/enums/document-type.enum';
+import { MinioStorageService } from 'src/app/document/services/minio-storage.service';
 import { Invoice } from 'src/app/invoice/entities/invoice.entity';
 import { InvoiceStatus } from 'src/app/invoice/enums/invoice-status.enum';
 import { Admin } from 'src/app/user/admin/entities/admin.entity';
@@ -42,9 +45,20 @@ export class SeedService {
     private readonly auctionRepository: Repository<Auction>,
     @InjectRepository(Bid)
     private readonly bidRepository: Repository<Bid>,
+    private readonly storageService: MinioStorageService,
   ) {}
 
   async run() {
+    if (
+      process.env.NODE_ENV !== 'development' &&
+      process.env.NODE_ENV !== 'local'
+    ) {
+      console.warn(
+        '⚠️ Seeding may only be executed in development environment.',
+      );
+      return;
+    }
+
     console.log('🌱 Starting database seeding...');
 
     try {
@@ -106,6 +120,21 @@ export class SeedService {
   private async seedInvestors(): Promise<Investor[]> {
     const password = bcrypt.hashSync('Investor123!', 10);
     const investors: Investor[] = [];
+
+    const SEED_DNI_KEY = 'seed-dni.jpg';
+    const SEED_NIF_KEY = 'seed-nif.jpg';
+    await this.storageService.uploadFile(
+      fs.readFileSync(
+        path.join(process.cwd(), 'test', 'sample_files', 'dni.jpg'),
+      ),
+      SEED_DNI_KEY,
+    );
+    await this.storageService.uploadFile(
+      fs.readFileSync(
+        path.join(process.cwd(), 'test', 'sample_files', 'nif.jpg'),
+      ),
+      SEED_NIF_KEY,
+    );
 
     const investorData = [
       {
@@ -394,7 +423,8 @@ export class SeedService {
       const document = this.documentRepository.create({
         id: documentId,
         title: `${data.company} NIF/CIF Document`,
-        filename: data.type === InvestorType.INDIVIDUAL ? `dni.jpg` : `cif.jpg`,
+        filename:
+          data.type === InvestorType.INDIVIDUAL ? SEED_DNI_KEY : SEED_NIF_KEY,
         value: data.taxId,
         type: DocumentType.ID,
       });
@@ -426,9 +456,11 @@ export class SeedService {
     const debtors: Debtor[] = [];
     const nifLetters = 'TRWAGMYFPDXBNJZSQVHLCKE';
 
-    // Only COMPANY investors can have debtors
+    // Only VERIFIED, COMPANY investors can have debtors
     const companyInvestors = investors.filter(
-      (inv) => inv.investorType === InvestorType.COMPANY,
+      (inv) =>
+        inv.investorType === InvestorType.COMPANY &&
+        inv.status === InvestorStatus.VERIFIED,
     );
 
     const debtorData = [
@@ -691,13 +723,19 @@ export class SeedService {
     const invoices: Invoice[] = [];
     const invoiceMetadata: Array<{
       title: string;
-      filename: string;
-      value: string;
       investor: Investor;
     }> = [];
 
+    const SEED_INVOICE_KEY = 'seed-invoice.pdf';
+    const pdfBuffer = fs.readFileSync(
+      path.join(process.cwd(), 'test', 'sample_files', 'invoice.pdf'),
+    );
+    await this.storageService.uploadFile(pdfBuffer, SEED_INVOICE_KEY);
+
     const sellerInvestors = investors.filter(
-      (inv) => inv.investorType === InvestorType.COMPANY,
+      (inv) =>
+        inv.investorType === InvestorType.COMPANY &&
+        inv.status === InvestorStatus.VERIFIED,
     );
 
     let invoiceIndex = 0;
@@ -732,7 +770,7 @@ export class SeedService {
 
     // Step 1: Create and save invoices without documents
     for (const seller of sellerInvestors) {
-      for (let i = 1; i <= 3; i++) {
+      for (let i = 1; i <= 10; i++) {
         // Set due date to a date between Oct 1 and Dec 31 of 2026
         const targetYear = 2026;
         const month = 9 + (invoiceIndex % 3); // Oct (9), Nov (10), Dec (11)
@@ -754,11 +792,11 @@ export class SeedService {
         let status: InvoiceStatus;
         let lastCommunication: string | undefined;
 
-        if (invoiceIndex % 4 === 0) {
+        if (invoiceIndex % 2 === 0) {
           status = InvoiceStatus.VERIFIED;
-        } else if (invoiceIndex % 4 === 1) {
+        } else if (invoiceIndex % 6 === 1) {
           status = InvoiceStatus.PENDING;
-        } else if (invoiceIndex % 4 === 2) {
+        } else if (invoiceIndex % 6 === 3) {
           status = InvoiceStatus.CORRECTION;
           lastCommunication =
             'Se requiere documentación adicional para verificación';
@@ -770,7 +808,7 @@ export class SeedService {
         const invoiceData: Partial<Invoice> = {
           sellerInvestor: seller,
           debtor: debtor,
-          amount: 10000 + Math.random() * 90000,
+          amount: 5000 + Math.random() * 95000,
           dueDate: dueDate,
           status: status,
           transactionFee: {
@@ -789,12 +827,8 @@ export class SeedService {
         const invoice = this.invoiceRepository.create(invoiceData);
         invoices.push(invoice);
 
-        // Store document metadata for later creation
-        const documentId = uuidv4();
         invoiceMetadata.push({
           title: `Invoice ${i} - ${seller.companyName}`,
-          filename: `${documentId}.pdf`,
-          value: uuidv4(),
           investor: seller,
         });
 
@@ -812,8 +846,8 @@ export class SeedService {
       const invoiceDocument = this.documentRepository.create({
         id: uuidv4(),
         title: metadata.title,
-        filename: metadata.filename,
-        value: metadata.value,
+        filename: SEED_INVOICE_KEY,
+        value: uuidv4(),
         investor: metadata.investor,
         invoice: savedInvoice,
         type: DocumentType.INVOICE,
@@ -833,13 +867,18 @@ export class SeedService {
     const DAY_MS = 24 * 60 * 60 * 1000;
     const now = new Date();
 
+    // Only VERIFIED invoices can be used to create auctions
+    const verifiedInvoices = invoices.filter(
+      (inv) => inv.status === InvoiceStatus.VERIFIED,
+    );
+
     const statuses = [Object.values(AuctionStatus)].flat();
 
-    for (let i = 0; i < invoices.length; i++) {
-      const invoice = invoices[i];
+    for (let i = 0; i < verifiedInvoices.length; i++) {
+      const invoice = verifiedInvoices[i];
       const status = statuses[i % statuses.length];
 
-      const durationMs = (1 + Math.floor(Math.random() * 24)) * 60 * 60 * 1000;
+      const durationMs = 15 * 60 * 1000 + Math.random() * 45 * 60 * 1000;
 
       let auctionDateStart: Date | undefined;
       let auctionDateEnd: Date;
@@ -952,7 +991,9 @@ export class SeedService {
     for (let i = 0; i < finishedAuctions.length; i++) {
       const auction = finishedAuctions[i];
       const sellerId = invoiceSellerMap.get(auction.invoice.id);
-      const availableBuyers = investors.filter((inv) => inv.id !== sellerId);
+      const availableBuyers = investors.filter(
+        (inv) => inv.id !== sellerId && inv.status === InvestorStatus.VERIFIED,
+      );
       const buyer = availableBuyers[i % availableBuyers.length];
       await this.invoiceRepository.update(auction.invoice.id, {
         buyerInvestor: { id: buyer.id },
@@ -966,9 +1007,11 @@ export class SeedService {
   ): Promise<Bid[]> {
     const bids: Bid[] = [];
 
-    // Get only buyer investors (company type) for creating bids
+    // Get only VERIFIED, company investors for creating bids
     const buyerInvestors = investors.filter(
-      (inv) => inv.investorType === InvestorType.COMPANY,
+      (inv) =>
+        inv.investorType === InvestorType.COMPANY &&
+        inv.status === InvestorStatus.VERIFIED,
     );
 
     for (const auction of auctions) {
@@ -979,7 +1022,15 @@ export class SeedService {
       const buyerPercentage = auction.invoice.transactionFee.buyerPercentage;
       const netInvoice = auction.invoice.amount * (1 - buyerPercentage / 100);
       const lowerBound = auction.price.start;
-      const upperBound = netInvoice * 0.999; // keeps profitability ≥ ~0.1%
+      // Constrain total profitability spread across 5 bids to [0.1%, 1.0%]
+      const startProfitability = computeProfitability(
+        auction.invoice.amount,
+        buyerPercentage,
+        lowerBound,
+      );
+      const profSpread = 0.1 + Math.random() * 0.9;
+      const endProfitability = Math.max(0.05, startProfitability - profSpread);
+      const upperBound = netInvoice / (1 + endProfitability / 100);
       const spread = upperBound - lowerBound;
       const step = spread / 6; // divide range into 6 steps, use steps 1–5
 

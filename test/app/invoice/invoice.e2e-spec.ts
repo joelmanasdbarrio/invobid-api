@@ -406,6 +406,12 @@ describe('Invoice (e2e)', () => {
         .send({ amount: 9999, status: 'pending' });
 
       expect(res.status).toBe(200);
+
+      const getRes = await request(server)
+        .get(`${API}/invoices/${invoiceId}`)
+        .set(authHeader(adminToken));
+      expect(getRes.status).toBe(200);
+      expect(parseFloat(getRes.body.data.amount)).toBe(9999);
     });
 
     it('should allow admin to update invoice status', async () => {
@@ -415,6 +421,12 @@ describe('Invoice (e2e)', () => {
         .send({ status: 'verified' });
 
       expect(res.status).toBe(200);
+
+      const getRes = await request(server)
+        .get(`${API}/invoices/${invoiceId}`)
+        .set(authHeader(adminToken));
+      expect(getRes.status).toBe(200);
+      expect(getRes.body.data.status).toBe('verified');
     });
 
     it('should return 403 for non-owner investor', async () => {
