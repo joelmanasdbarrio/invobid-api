@@ -2,6 +2,7 @@ import { BadRequestException } from '@nestjs/common';
 import { Test, TestingModule } from '@nestjs/testing';
 import { getRepositoryToken } from '@nestjs/typeorm';
 import { BidService } from '../bid/bid.service';
+import { Invoice } from '../invoice/entities/invoice.entity';
 import { InvoiceStatus } from '../invoice/enums/invoice-status.enum';
 import { InvoiceService } from '../invoice/invoice.service';
 import { UserType } from '../user/common/enums/user-type.enum';
@@ -74,6 +75,10 @@ describe('AuctionService', () => {
         {
           provide: getRepositoryToken(Auction),
           useValue: mockAuctionRepository,
+        },
+        {
+          provide: getRepositoryToken(Invoice),
+          useValue: {},
         },
         { provide: BidService, useValue: {} },
         { provide: InvoiceService, useValue: mockInvoiceService },

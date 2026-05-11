@@ -359,6 +359,7 @@ describe('Bid WebSocket (e2e)', () => {
       const increment =
         Number(process.env.SMALLEST_BID_INCREMENT_PERCENTAGE) || 1;
       const minBid = auctionStartPrice * (1 + increment / 100);
+      const bidPlacedAt = Date.now();
       const result = await emitWithAck<{ success: boolean }>(
         socket,
         'place-bid',
@@ -376,12 +377,12 @@ describe('Bid WebSocket (e2e)', () => {
       const bidUpdate = await auctionBidUpdatePromise;
       expect(bidUpdate.auctionId).toBe(nearExpiryAuctionId);
 
-      // It should update the auction end time to be 10min from the original near-expiry time
+      // It should update the auction end time to be 10min from when the bid was placed
       const auctionAfter = await request(server)
         .get(`${API}/auctions/${nearExpiryAuctionId}`)
         .set(authHeader(adminToken));
       const updatedEndTime = new Date(auctionAfter.body.data.date.end);
-      const expectedEndTime = new Date(nearEndTime.getTime() + 10 * 60 * 1000);
+      const expectedEndTime = new Date(bidPlacedAt + 10 * 60 * 1000);
       expect(
         Math.abs(updatedEndTime.getTime() - expectedEndTime.getTime()),
       ).toBeLessThan(5000); // within 5 seconds tolerance
