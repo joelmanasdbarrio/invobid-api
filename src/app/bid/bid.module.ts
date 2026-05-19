@@ -3,6 +3,7 @@ import { ConfigModule } from '@nestjs/config';
 import { TypeOrmModule } from '@nestjs/typeorm';
 import { AuctionModule } from '../auction/auction.module';
 import { Auction } from '../auction/entities/auction.entity';
+import { BankAccountModule } from '../bank-account/bank-account.module';
 import { AuthModule } from '../user/auth/auth.module';
 import { User } from '../user/common/entities/user.entity';
 import { InvestorModule } from '../user/investor/investor.module';
@@ -17,6 +18,7 @@ import { Bid } from './entities/bid.entity';
     TypeOrmModule.forFeature([Bid, User, Auction]),
     AuthModule,
     InvestorModule,
+    BankAccountModule,
     forwardRef(() => AuctionModule),
   ],
   controllers: [BidController],

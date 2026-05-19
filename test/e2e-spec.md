@@ -970,6 +970,17 @@ _Use case_: Call PATCH `/auctions/:id` endpoint
     - **Then**:
       - [x] It should authorize my access
       - [x] It should return a 400 Bad Request response with an error message indicating that `lastCommunication` is required when cancelling an auction
+  - **When**: I set a `TRANSITIONING` auction to `FINISHED` (winning bid exists)
+    - **Then**:
+      - [x] It should deduct the winning bid amount from the winner's `balance`
+      - [x] It should NOT change the winner's `availableBalance` (funds were already reserved)
+  - **When**: I set a `TRANSITIONING` auction to `CANCELLED` and a winning bidder exists
+    - **Then**:
+      - [x] It should restore the winning bidder's `availableBalance` by the bid amount
+      - [x] It should NOT change the winner's `balance`
+  - **When**: I set a `TRANSITIONING` auction to `CANCELLED` and no bids have been placed
+    - **Then**:
+      - [x] It should NOT modify any investor's `balance` or `availableBalance`
 
 _Use case_: Call DELETE `/auctions/:id` endpoint
 - **Given that**: I'm an existing verified company investor user of the platform who wants to access the DELETE `/auctions/:id` endpoint
@@ -1086,6 +1097,19 @@ _Use case_: Connect to the `/auctions` WebSocket namespace
     - **Then**:
       - [x] It should reject the connection with an error indicating that only investor users are allowed
 
+_Use case_: Send `join-balance` event on the `/auctions` namespace
+- **Given that**: I'm an existing verified investor user of the platform connected to the `/auctions` namespace
+  - **When**: I send a `join-balance` event without a valid access token
+    - **Then**:
+      - [x] It should reject the request with an unauthorized error
+  - **When**: I send a `join-balance` event with an invalid access token
+    - **Then**:
+      - [x] It should reject the request with an unauthorized error
+  - **When**: I send a valid `join-balance` event as a verified investor
+    - **Then**:
+      - [x] It should register my socket for balance updates
+      - [x] It should emit a `balance-update` event to my socket whenever a bid I place (or a bid that outbids me) changes my `availableBalance`
+
 _Use case_: Send `join-auction` event on the `/auctions` namespace
 - **Given that**: I'm an existing verified investor user of the platform connected to the `/auctions` namespace
   - **When**: I send a `join-auction` event with a valid `auctionId`
@@ -1144,3 +1168,20 @@ _Use case_: Send `place-bid` event on the `/auctions` namespace
     - **Then**:
       - [x] It should not create a new bid
       - [x] It should return `{ success: false, message }` indicating that the specified auction was not found
+  - **When**: I send a `place-bid` event with a bid amount exceeding my `availableBalance`
+    - **Then**:
+      - [x] It should not create a new bid
+      - [x] It should return `{ success: false, message }` indicating insufficient funds
+  - **When**: I send a valid `place-bid` event and my `availableBalance` is sufficient
+    - **Then**:
+      - [x] It should decrease my `availableBalance` by the bid amount
+      - [x] It should NOT change my `balance`
+      - [x] It should emit a `balance-update` event only to my sockets with my new `availableBalance`
+  - **When**: Another investor places a higher bid on the same auction (I am outbid)
+    - **Then**:
+      - [x] It should restore my `availableBalance` by my previously reserved bid amount
+      - [x] It should NOT change my `balance`
+      - [x] It should emit a `balance-update` event only to my sockets with my restored `availableBalance`
+  - **When**: A `balance-update` event is emitted after any bid
+    - **Then**:
+      - [x] It should NOT be visible to other investors who are not the bidder or the outbid investor

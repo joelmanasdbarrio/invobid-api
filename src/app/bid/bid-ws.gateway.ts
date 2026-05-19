@@ -10,13 +10,17 @@ import { AuctionService } from '../auction/auction.service';
 import { WsAuth } from '../user/auth/decorators/ws-auth.decorator';
 import { User } from '../user/common/entities/user.entity';
 import { UserType } from '../user/common/enums/user-type.enum';
+import { Investor } from '../user/investor/entities/investor.entity';
 import { BidService } from './bid.service';
 import { CreateBidDto } from './dto/create-bid.dto';
 
 @WebSocketGateway({
   namespace: '/auctions',
   cors: {
-    origin: process.env.CORS_ORIGIN || 'http://localhost:5173',
+    origin: process.env.CORS_ORIGIN || [
+      'http://localhost:5173',
+      'http://192.168.0.10:5173',
+    ],
     credentials: true,
   },
 })
@@ -58,22 +62,43 @@ export class BidWsGateway implements OnGatewayConnection, OnGatewayDisconnect {
   }
 
   @WsAuth([UserType.INVESTOR])
+  @SubscribeMessage('join-balance')
+  handleJoinBalance(client: Socket): void {
+    const user = (client.data as Record<string, unknown>).user as User;
+    this.socketUserMap.set(client.id, user.id);
+  }
+
+  @WsAuth([UserType.INVESTOR])
   @SubscribeMessage('place-bid')
   async handlePlaceBid(
     client: Socket,
     payload: CreateBidDto,
   ): Promise<{ success: boolean; message?: string }> {
     try {
-      const user = (client.data as Record<string, unknown>).user as User;
-      const bid = await this.bidService.create(payload, user);
+      const user = (client.data as Record<string, unknown>).user as Investor;
+      const { bid, balanceUpdates } = await this.bidService.create(
+        payload,
+        user,
+      );
       const newEndDate = await this.auctionService.extendAuctionIfNeeded(
         payload.auctionId,
       );
-      this.server.to(payload.auctionId).emit('new-bid', bid);
+      this.server.to(payload.auctionId).emit('new-bid', bid.id);
       this.server.emit('auction-bid-update', {
         auctionId: payload.auctionId,
         newEndDate,
       });
+
+      for (const update of balanceUpdates) {
+        for (const [socketId, userId] of this.socketUserMap.entries()) {
+          if (userId === update.investorId) {
+            this.server.to(socketId).emit('balance-update', {
+              reservedBalance: update.reservedBalance,
+            });
+          }
+        }
+      }
+
       return { success: true };
     } catch (error) {
       return { success: false, message: (error as Error).message };
@@ -102,8 +127,8 @@ export class BidWsGateway implements OnGatewayConnection, OnGatewayDisconnect {
         }
         this.server.to(auctionId).emit('viewer-count', userCount.size);
       }
-      this.clientRooms.delete(client.id);
-      this.socketUserMap.delete(client.id);
     }
+    this.clientRooms.delete(client.id);
+    this.socketUserMap.delete(client.id);
   }
 }

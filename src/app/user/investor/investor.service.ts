@@ -219,6 +219,8 @@ export class InvestorService {
       queryBuilder.andWhere('(investor.status = :status)', {
         status: InvestorStatus.VERIFIED,
       });
+    } else {
+      queryBuilder.leftJoinAndSelect('investor.bankAccount', 'bankAccount');
     }
 
     const investor = await queryBuilder

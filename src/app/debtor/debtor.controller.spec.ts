@@ -22,11 +22,10 @@ const mockUser = {
   type: UserType.INVESTOR,
 } as User;
 
-const mockFiles: { [key: string]: Express.Multer.File[] } = {
-  modelo111: [{ originalname: 'modelo111.pdf' } as Express.Multer.File],
-  modelo303: [{ originalname: 'modelo303.pdf' } as Express.Multer.File],
-};
-
+// const mockFiles: { [key: string]: Express.Multer.File[] } = {
+//   modelo111: [{ originalname: 'modelo111.pdf' } as Express.Multer.File],
+//   modelo303: [{ originalname: 'modelo303.pdf' } as Express.Multer.File],
+// };
 describe('DebtorController', () => {
   let controller: DebtorController;
 
@@ -51,8 +50,8 @@ describe('DebtorController', () => {
       phoneNumber: '+34600000000',
       companyName: 'Debtor Co',
       taxId: 'B12345678',
-      modelo111Csv: 'csv-111',
-      modelo303Csv: 'csv-303',
+      // modelo111Csv: 'csv-111',
+      // modelo303Csv: 'csv-303',
     };
     const debtor = { id: 'debtor-uuid', companyName: 'Debtor Co' };
 

@@ -9,6 +9,7 @@ import {
 } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { In, Not, Repository } from 'typeorm';
+import { BankAccountService } from '../bank-account/bank-account.service';
 import { BidService } from '../bid/bid.service';
 import { Invoice } from '../invoice/entities/invoice.entity';
 import { InvoiceStatus } from '../invoice/enums/invoice-status.enum';
@@ -40,6 +41,7 @@ export class AuctionService {
     private readonly bidService: BidService,
     private readonly invoiceService: InvoiceService,
     private readonly investorService: InvestorService,
+    private readonly bankAccountService: BankAccountService,
   ) {}
 
   async create(createAuctionDto: CreateAuctionDto, user: Investor) {
@@ -344,48 +346,12 @@ export class AuctionService {
           );
         }
 
-        if (
-          updateAuctionDto.status === AuctionStatus.CANCELLED &&
-          !updateAuctionDto.lastCommunication
-        ) {
-          throw new BadRequestException(
-            `lastCommunication is required when cancelling an auction`,
-          );
+        if (updateAuctionDto.status === AuctionStatus.CANCELLED) {
+          await this.cancelAuction(updateAuctionDto, auction, user);
         }
 
         if (updateAuctionDto.status === AuctionStatus.FINISHED) {
-          const latestBid = await this.bidService
-            .findAll({ auctionId: auction.id, page: 1, limit: 1 }, user)
-            .then((res) => res.data[0]);
-
-          if (latestBid) {
-            auction.price.end = parseFloat(latestBid.amount.toString());
-            auction.discount.end = parseFloat(latestBid.discount.toString());
-            auction.profitability.end = parseFloat(
-              latestBid.profitability.toString(),
-            );
-          } else {
-            throw new BadRequestException(
-              `Auction must have at least one bid before finishing`,
-            );
-          }
-
-          const buyerInvestor = await this.investorService.findOne(
-            latestBid.investor.id,
-            user,
-          );
-
-          if (!buyerInvestor) {
-            throw new NotFoundException(
-              `Buyer investor with id ${latestBid.investor.id} not found`,
-            );
-          }
-
-          auction.invoice.buyerInvestor = buyerInvestor;
-          await this.invoiceRepository.save({
-            id: auction.invoice.id,
-            buyerInvestor,
-          });
+          await this.finishAuction(auction, user);
         }
       }
     } else {
@@ -399,23 +365,7 @@ export class AuctionService {
       }
 
       if (updateAuctionDto.status === AuctionStatus.PUBLISHED) {
-        auction.date.start = new Date();
-      }
-
-      if (updateAuctionDto.auctionDateEnd !== undefined) {
-        const endDate = toUTCDate(updateAuctionDto.auctionDateEnd);
-        const today = new Date();
-        today.setUTCHours(0, 0, 0, 0);
-        const minEndDate = new Date(today);
-        minEndDate.setUTCDate(minEndDate.getUTCDate() + 2);
-
-        const dueDateUTC = toUTCDate(auction.invoice.dueDate);
-        const oneMonthBeforeDue = new Date(dueDateUTC);
-        oneMonthBeforeDue.setUTCMonth(oneMonthBeforeDue.getUTCMonth() - 1);
-
-        if (endDate < minEndDate || endDate > oneMonthBeforeDue) {
-          throw new BadRequestException(`Auction dates are not valid`);
-        }
+        this.publishAuction(auction, updateAuctionDto);
       }
 
       updateAuctionDto.lastCommunication = auction.lastCommunication;
@@ -430,25 +380,6 @@ export class AuctionService {
     auction.discount.start = discount;
     auction.profitability.start = profitability;
     return await this.auctionRepository.save(auction);
-  }
-
-  async extendAuctionIfNeeded(auctionId: string): Promise<string | null> {
-    const auction = await this.auctionRepository.findOne({
-      where: { id: auctionId },
-    });
-
-    if (!auction) return null;
-
-    const extensionMs =
-      Number(process.env.AUCTION_EXTENSION_MINUTES) * 60 * 1000;
-    if (auction.date.end.getTime() - Date.now() <= extensionMs) {
-      const newEndTime = new Date(Date.now() + extensionMs);
-      auction.date.end = newEndTime;
-      await this.auctionRepository.save(auction);
-      return newEndTime.toISOString();
-    }
-
-    return null;
   }
 
   async remove(id: string, user: User, useSoft = true) {
@@ -470,6 +401,25 @@ export class AuctionService {
     }
   }
 
+  async extendAuctionIfNeeded(auctionId: string): Promise<string | null> {
+    const auction = await this.auctionRepository.findOne({
+      where: { id: auctionId },
+    });
+
+    if (!auction) return null;
+
+    const extensionMs =
+      Number(process.env.AUCTION_EXTENSION_MINUTES) * 60 * 1000;
+    if (auction.date.end.getTime() - Date.now() <= extensionMs) {
+      const newEndTime = new Date(Date.now() + extensionMs);
+      auction.date.end = newEndTime;
+      await this.auctionRepository.save(auction);
+      return newEndTime.toISOString();
+    }
+
+    return null;
+  }
+
   private computeMetrics(
     invoiceAmount: number,
     buyerPercentage: number,
@@ -483,5 +433,133 @@ export class AuctionService {
         startingPrice,
       ),
     };
+  }
+
+  private publishAuction(auction: Auction, updateAuctionDto: UpdateAuctionDto) {
+    auction.date.start = new Date();
+
+    if (updateAuctionDto.auctionDateEnd === undefined) {
+      throw new BadRequestException(
+        `auctionDateEnd is required when publishing an auction`,
+      );
+    }
+
+    const endDate = toUTCDate(updateAuctionDto.auctionDateEnd);
+    const today = new Date();
+    today.setUTCHours(0, 0, 0, 0);
+    const minEndDate = new Date(today);
+    minEndDate.setUTCDate(minEndDate.getUTCDate() + 2);
+
+    const dueDateUTC = toUTCDate(auction.invoice.dueDate);
+    const oneMonthBeforeDue = new Date(dueDateUTC);
+    oneMonthBeforeDue.setUTCMonth(oneMonthBeforeDue.getUTCMonth() - 1);
+
+    if (endDate < minEndDate || endDate > oneMonthBeforeDue) {
+      throw new BadRequestException(`Auction dates are not valid`);
+    }
+  }
+
+  private async cancelAuction(
+    updateAuctionDto: UpdateAuctionDto,
+    auction: Auction,
+    user: User,
+  ) {
+    if (!updateAuctionDto.lastCommunication) {
+      throw new BadRequestException(
+        `lastCommunication is required when cancelling an auction`,
+      );
+    }
+
+    const latestBid = await this.bidService
+      .findAll({ auctionId: auction.id, page: 1, limit: 1 }, user)
+      .then((res) => res.data[0]);
+
+    if (latestBid) {
+      const investor = await this.investorService.findOne(
+        latestBid.investor.id,
+        user,
+      );
+      if (investor?.bankAccount) {
+        await this.bankAccountService.releaseBalance(
+          investor.bankAccount.id,
+          parseFloat(latestBid.amount.toString()),
+        );
+      }
+    }
+  }
+
+  private async finishAuction(auction: Auction, user: User) {
+    const latestBid = await this.bidService
+      .findAll({ auctionId: auction.id, page: 1, limit: 1 }, user)
+      .then((res) => res.data[0]);
+
+    if (latestBid) {
+      auction.price.end = parseFloat(latestBid.amount.toString());
+      auction.discount.end = parseFloat(latestBid.discount.toString());
+      auction.profitability.end = parseFloat(
+        latestBid.profitability.toString(),
+      );
+    } else {
+      throw new BadRequestException(
+        `Auction must have at least one bid before finishing`,
+      );
+    }
+
+    const buyerInvestor = await this.investorService.findOne(
+      latestBid.investor.id,
+      user,
+    );
+
+    if (!buyerInvestor) {
+      throw new NotFoundException(
+        `Buyer investor with id ${latestBid.investor.id} not found`,
+      );
+    }
+
+    if (!buyerInvestor.bankAccount) {
+      throw new BadRequestException(
+        `Buyer investor does not have a bank account`,
+      );
+    }
+
+    const sellerInvestor = await this.investorService.findOne(
+      auction.invoice.sellerInvestor.id,
+      user,
+    );
+
+    if (!sellerInvestor) {
+      throw new NotFoundException(
+        `Seller investor with id ${auction.invoice.sellerInvestor.id} not found`,
+      );
+    }
+
+    if (!sellerInvestor.bankAccount) {
+      throw new BadRequestException(
+        `Seller investor does not have a bank account`,
+      );
+    }
+
+    const platformAccount = await this.bankAccountService.getPlatformAccount();
+
+    const bidAmount = parseFloat(latestBid.amount.toString());
+    const buyerFee =
+      (bidAmount * auction.invoice.transactionFee.buyerPercentage) / 100;
+    const sellerFee =
+      (bidAmount * auction.invoice.transactionFee.sellerPercentage) / 100;
+
+    auction.invoice.buyerInvestor = buyerInvestor;
+    await this.invoiceRepository.save({
+      id: auction.invoice.id,
+      buyerInvestor,
+    });
+
+    await this.bankAccountService.settleAuction({
+      buyerAccountId: buyerInvestor.bankAccount.id,
+      sellerAccountId: sellerInvestor.bankAccount.id,
+      platformAccountId: platformAccount.id,
+      bidAmount,
+      buyerFee,
+      sellerFee,
+    });
   }
 }
