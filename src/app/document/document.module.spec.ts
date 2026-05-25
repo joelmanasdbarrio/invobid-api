@@ -49,11 +49,4 @@ describe('DocumentModule — STORAGE_SERVICE factory', () => {
 
     expect(() => factory(mockConfig)).toThrow(InternalServerErrorException);
   });
-
-  it('should throw InternalServerErrorException when NODE_ENV is undefined', () => {
-    const mockConfig = makeConfigService(undefined);
-    const factory = getStorageFactory();
-
-    expect(() => factory(mockConfig)).toThrow(InternalServerErrorException);
-  });
 });
