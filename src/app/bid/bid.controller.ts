@@ -5,7 +5,7 @@ import { User } from '../user/common/entities/user.entity';
 import { BidService } from './bid.service';
 import { GetBidsDto } from './dto/get-bids.dto';
 
-@Controller('bid')
+@Controller('bids')
 export class BidController {
   constructor(private readonly bidService: BidService) {}
 

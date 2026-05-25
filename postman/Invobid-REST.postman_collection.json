@@ -1411,12 +1411,12 @@
               "formdata": []
             },
             "url": {
-              "raw": "{{url}}/bid?auctionId={{auctionId}}&page=1&limit=1",
+              "raw": "{{url}}/bids?auctionId={{auctionId}}&page=1&limit=1",
               "host": [
                 "{{url}}"
               ],
               "path": [
-                "bid"
+                "bids"
               ],
               "query": [
                 {
@@ -1456,12 +1456,12 @@
               "formdata": []
             },
             "url": {
-              "raw": "{{url}}/bid/:bidId",
+              "raw": "{{url}}/bids/:bidId",
               "host": [
                 "{{url}}"
               ],
               "path": [
-                "bid",
+                "bids",
                 ":bidId"
               ],
               "variable": [

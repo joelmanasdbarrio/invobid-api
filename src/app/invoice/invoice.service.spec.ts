@@ -245,8 +245,8 @@ describe('InvoiceService', () => {
       );
 
       expect(mockQueryBuilder.andWhere).toHaveBeenCalledWith(
-        expect.stringContaining('sellerInvestorId = :investorId'),
-        expect.objectContaining({ investorId: 'inv-id' }),
+        '(sellerInvestor.id = :investorId OR (invoice.status = :status AND buyerInvestor.id = :investorId))',
+        expect.objectContaining({ investorId: 'inv-id', status: 'verified' }),
       );
     });
 

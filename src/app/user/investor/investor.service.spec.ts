@@ -1,8 +1,8 @@
 import {
-    BadRequestException,
-    ForbiddenException,
-    InternalServerErrorException,
-    NotFoundException,
+  BadRequestException,
+  ForbiddenException,
+  InternalServerErrorException,
+  NotFoundException,
 } from '@nestjs/common';
 import { Test, TestingModule } from '@nestjs/testing';
 import { getRepositoryToken } from '@nestjs/typeorm';
@@ -223,7 +223,7 @@ describe('InvestorService', () => {
 
       expect(mockQueryBuilder.select).toHaveBeenCalled();
       expect(mockQueryBuilder.andWhere).toHaveBeenCalledWith(
-        'investor.status = :status',
+        '(investor.status = :status)',
         { status: InvestorStatus.VERIFIED },
       );
     });

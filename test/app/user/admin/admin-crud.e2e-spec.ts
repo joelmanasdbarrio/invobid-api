@@ -85,6 +85,12 @@ describe('Admin CRUD (e2e)', () => {
 
       expect(res.status).toBe(200);
       expect(res.body.data.name).toBe('Updated Admin Name');
+
+      const getRes = await request(server)
+        .get(`${API}/admins/${adminId}`)
+        .set(authHeader(adminToken));
+      expect(getRes.status).toBe(200);
+      expect(getRes.body.data.name).toBe('Updated Admin Name');
     });
 
     it('should return 400 when password and passwordRepeat do not match', async () => {

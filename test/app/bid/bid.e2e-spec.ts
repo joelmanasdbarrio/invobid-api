@@ -35,6 +35,8 @@ describe('Bid REST (e2e)', () => {
   let buyerId: string;
   let buyerToken: string;
   let bidId: string;
+  let otherBuyerId: string;
+  let otherBidId: string;
 
   beforeAll(async () => {
     app = await createTestApp();
@@ -54,6 +56,10 @@ describe('Bid REST (e2e)', () => {
     buyerToken = buyer.accessToken;
     buyerId = buyer.user.id;
     await verifyInvestor(server, adminToken, buyerId);
+
+    const otherBuyer = await registerInvestor(server, makeCompanyInvestorDto());
+    otherBuyerId = otherBuyer.user.id;
+    await verifyInvestor(server, adminToken, otherBuyerId);
 
     // Create debtor → verify → invoice → verify → auction → publish
     const debtorDto = makeDebtorDto();
@@ -99,6 +105,12 @@ describe('Bid REST (e2e)', () => {
       [5000, 10.5, 11.2, auctionId, buyerId],
     );
     bidId = bidResult[0].id;
+
+    const otherBidResult = await dataSource.query(
+      `INSERT INTO bids (amount, discount, profitability, "auctionId", "investorId") VALUES ($1, $2, $3, $4, $5) RETURNING id`,
+      [5100, 10, 11.5, auctionId, otherBuyerId],
+    );
+    otherBidId = otherBidResult[0].id;
   });
 
   afterAll(async () => {
@@ -106,11 +118,11 @@ describe('Bid REST (e2e)', () => {
     await app.close();
   });
 
-  // GET /bid
-  describe('GET /bid', () => {
+  // GET /bids
+  describe('GET /bids', () => {
     it('should return 200 with bid list for admin (with auctionId)', async () => {
       const res = await request(server)
-        .get(`${API}/bid?auctionId=${auctionId}`)
+        .get(`${API}/bids?auctionId=${auctionId}`)
         .set(authHeader(adminToken));
 
       expect(res.status).toBe(200);
@@ -120,7 +132,7 @@ describe('Bid REST (e2e)', () => {
 
     it('should return 400 for admin without auctionId or investorId', async () => {
       const res = await request(server)
-        .get(`${API}/bid`)
+        .get(`${API}/bids`)
         .set(authHeader(adminToken));
 
       expect(res.status).toBe(400);
@@ -128,23 +140,69 @@ describe('Bid REST (e2e)', () => {
 
     it('should return 200 for investor with auctionId (published auction)', async () => {
       const res = await request(server)
-        .get(`${API}/bid?auctionId=${auctionId}`)
+        .get(`${API}/bids?auctionId=${auctionId}`)
         .set('Authorization', `Bearer ${buyerToken}`);
 
       expect(res.status).toBe(200);
+      expect(res.body.data.length).toBeGreaterThanOrEqual(2);
+
+      const ownBid = res.body.data.find((bid) => bid.id === bidId);
+      const anotherBid = res.body.data.find((bid) => bid.id === otherBidId);
+
+      expect(ownBid).toBeDefined();
+      expect(anotherBid).toBeDefined();
+
+      expect(ownBid.investor).toBeDefined();
+      expect(ownBid.investor.id).toBe(buyerId);
+      expect(
+        anotherBid.investor === null || anotherBid.investor === undefined,
+      ).toBe(true);
+
+      expect(Number.isFinite(Number(ownBid.amount))).toBe(true);
+      expect(Number.isFinite(Number(ownBid.discount))).toBe(true);
+      expect(Number.isFinite(Number(ownBid.profitability))).toBe(true);
+      expect(typeof ownBid.createdAt).toBe('string');
+
+      expect(Number.isFinite(Number(anotherBid.amount))).toBe(true);
+      expect(Number.isFinite(Number(anotherBid.discount))).toBe(true);
+      expect(Number.isFinite(Number(anotherBid.profitability))).toBe(true);
+      expect(typeof anotherBid.createdAt).toBe('string');
     });
 
-    it('should return 400 for investor without auctionId', async () => {
+    it('should return 400 for investor without auctionId or investorId', async () => {
       const res = await request(server)
-        .get(`${API}/bid`)
+        .get(`${API}/bids`)
         .set('Authorization', `Bearer ${buyerToken}`);
 
       expect(res.status).toBe(400);
     });
 
+    it('should return 200 with own bids for investor using investorId=self', async () => {
+      const res = await request(server)
+        .get(`${API}/bids?investorId=${buyerId}`)
+        .set('Authorization', `Bearer ${buyerToken}`);
+
+      expect(res.status).toBe(200);
+      expect(Array.isArray(res.body.data)).toBe(true);
+      expect(res.body.data.length).toBeGreaterThanOrEqual(1);
+      expect(res.body.data.every((bid) => bid.investor?.id === buyerId)).toBe(
+        true,
+      );
+    });
+
+    it('should return 200 with empty list for investor using investorId from another investor', async () => {
+      const res = await request(server)
+        .get(`${API}/bids?investorId=${otherBuyerId}`)
+        .set('Authorization', `Bearer ${buyerToken}`);
+
+      expect(res.status).toBe(200);
+      expect(Array.isArray(res.body.data)).toBe(true);
+      expect(res.body.data).toHaveLength(0);
+    });
+
     it('should return 400 for wrong type filter values', async () => {
       const res = await request(server)
-        .get(`${API}/bid?auctionId=not-a-uuid`)
+        .get(`${API}/bids?auctionId=not-a-uuid`)
         .set(authHeader(adminToken));
 
       expect(res.status).toBe(400);
@@ -180,7 +238,7 @@ describe('Bid REST (e2e)', () => {
         .send(makeAuctionDto(invoiceRes.body.data.id));
 
       const res = await request(server)
-        .get(`${API}/bid?auctionId=${draftAuction.body.data.id}`)
+        .get(`${API}/bids?auctionId=${draftAuction.body.data.id}`)
         .set('Authorization', `Bearer ${buyerToken}`);
 
       // Non-published auction bids are not visible to non-owner investors
@@ -222,7 +280,7 @@ describe('Bid REST (e2e)', () => {
         .send({ status: 'published' });
 
       const res = await request(server)
-        .get(`${API}/bid?auctionId=${freshAuction.body.data.id}`)
+        .get(`${API}/bids?auctionId=${freshAuction.body.data.id}`)
         .set('Authorization', `Bearer ${buyerToken}`);
 
       expect(res.status).toBe(200);
@@ -231,7 +289,7 @@ describe('Bid REST (e2e)', () => {
 
     it('should return 200 with bids for admin using investorId', async () => {
       const res = await request(server)
-        .get(`${API}/bid?investorId=${buyerId}`)
+        .get(`${API}/bids?investorId=${buyerId}`)
         .set(authHeader(adminToken));
 
       expect(res.status).toBe(200);
@@ -240,7 +298,7 @@ describe('Bid REST (e2e)', () => {
 
     it('should return 200 for admin with both auctionId and investorId', async () => {
       const res = await request(server)
-        .get(`${API}/bid?auctionId=${auctionId}&investorId=${buyerId}`)
+        .get(`${API}/bids?auctionId=${auctionId}&investorId=${buyerId}`)
         .set(authHeader(adminToken));
 
       expect(res.status).toBe(200);
@@ -248,11 +306,11 @@ describe('Bid REST (e2e)', () => {
     });
   });
 
-  // GET /bid/:id
-  describe('GET /bid/:id', () => {
+  // GET /bids/:id
+  describe('GET /bids/:id', () => {
     it('should return 400 for malformed ID', async () => {
       const res = await request(server)
-        .get(`${API}/bid/not-a-uuid`)
+        .get(`${API}/bids/not-a-uuid`)
         .set(authHeader(adminToken));
 
       expect(res.status).toBe(400);
@@ -260,7 +318,7 @@ describe('Bid REST (e2e)', () => {
 
     it('should return 404 for non-existent bid', async () => {
       const res = await request(server)
-        .get(`${API}/bid/00000000-0000-0000-0000-000000000000`)
+        .get(`${API}/bids/00000000-0000-0000-0000-000000000000`)
         .set(authHeader(adminToken));
 
       expect(res.status).toBe(404);
@@ -268,7 +326,7 @@ describe('Bid REST (e2e)', () => {
 
     it('should return 200 for investor viewing own bid', async () => {
       const res = await request(server)
-        .get(`${API}/bid/${bidId}`)
+        .get(`${API}/bids/${bidId}`)
         .set('Authorization', `Bearer ${buyerToken}`);
 
       expect(res.status).toBe(200);
@@ -281,7 +339,7 @@ describe('Bid REST (e2e)', () => {
       await verifyInvestor(server, adminToken, viewer.user.id);
 
       const res = await request(server)
-        .get(`${API}/bid/${bidId}`)
+        .get(`${API}/bids/${bidId}`)
         .set('Authorization', `Bearer ${viewer.accessToken}`);
 
       expect(res.status).toBe(200);
@@ -327,7 +385,7 @@ describe('Bid REST (e2e)', () => {
       await verifyInvestor(server, adminToken, viewer.user.id);
 
       const res = await request(server)
-        .get(`${API}/bid/${draftBid[0].id}`)
+        .get(`${API}/bids/${draftBid[0].id}`)
         .set('Authorization', `Bearer ${viewer.accessToken}`);
 
       expect(res.status).toBe(404);
@@ -335,7 +393,7 @@ describe('Bid REST (e2e)', () => {
 
     it('should return 200 for admin viewing any bid', async () => {
       const res = await request(server)
-        .get(`${API}/bid/${bidId}`)
+        .get(`${API}/bids/${bidId}`)
         .set(authHeader(adminToken));
 
       expect(res.status).toBe(200);

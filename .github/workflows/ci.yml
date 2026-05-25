@@ -90,6 +90,7 @@ jobs:
           BUYER_TRANSFER_FEE_PERCENTAGE: 0.2
           SELLER_TRANSFER_FEE_PERCENTAGE: 0.5
           SMALLEST_BID_INCREMENT_PERCENTAGE: 0.1
+          AUCTION_EXTENSION_MINUTES: ${{ vars.AUCTION_EXTENSION_MINUTES }}
 
       - name: Stop services
         if: always()

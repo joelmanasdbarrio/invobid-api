@@ -287,15 +287,22 @@ describe('Debtor (e2e)', () => {
     });
 
     it('should update debtor and return 200 for owner', async () => {
+      const updatedEmail = `updated-debtor-${Date.now()}@test.com`;
       const res = await request(server)
         .patch(`${API}/debtors/${debtorId}`)
         .set(authHeader(companyToken))
         .send({
-          email: `updated-debtor-${Date.now()}@test.com`,
+          email: updatedEmail,
           status: 'pending',
         });
 
       expect(res.status).toBe(200);
+
+      const getRes = await request(server)
+        .get(`${API}/debtors/${debtorId}`)
+        .set(authHeader(adminToken));
+      expect(getRes.status).toBe(200);
+      expect(getRes.body.data.email).toBe(updatedEmail);
     });
 
     it('should allow admin to update debtor status', async () => {
@@ -305,6 +312,12 @@ describe('Debtor (e2e)', () => {
         .send({ status: 'verified' });
 
       expect(res.status).toBe(200);
+
+      const getRes = await request(server)
+        .get(`${API}/debtors/${debtorId}`)
+        .set(authHeader(adminToken));
+      expect(getRes.status).toBe(200);
+      expect(getRes.body.data.status).toBe('verified');
     });
 
     it('should return 403 for non-owner investor', async () => {
