@@ -50,7 +50,14 @@ export class InvestorController {
   }
 
   @Get(':id')
-  @Auth([], [InvestorStatus.VERIFIED])
+  @Auth(
+    [],
+    [
+      InvestorStatus.VERIFIED,
+      InvestorStatus.CORRECTION,
+      InvestorStatus.PENDING,
+    ],
+  )
   async findOne(@Param('id', ParseUUIDPipe) id: string, @GetUser() user: User) {
     const investor = await this.investorService.findOne(id, user);
     return {
