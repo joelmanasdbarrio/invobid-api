@@ -2,9 +2,9 @@ name: invobid
 
 services:
   api:
-    image: ghcr.io/joelmanasdbarrio/invobid-api:latest
+    image: ghcr.io/joelmanasdbarrio/invobid-api:${API_TAG:-latest}
     container_name: invobid_api
-    env_file: ../.env
+    env_file: .env
     depends_on:
       db:
         condition: service_healthy
@@ -15,8 +15,9 @@ services:
     restart: unless-stopped
 
   web:
-    image: ghcr.io/joelmanasdbarrio/invobid-spa:latest
+    image: ghcr.io/joelmanasdbarrio/invobid-spa:${SPA_TAG:-latest}
     container_name: invobid_web
+    env_file: .env
     ports:
       - "80:80"
       - "443:443"
@@ -32,7 +33,7 @@ services:
   db:
     image: postgres:14.19-alpine3.21
     container_name: invobid_postgres
-    env_file: ../.env
+    env_file: .env
     environment:
       POSTGRES_USER: ${DB_USR}
       POSTGRES_PASSWORD: ${DB_PWD}
@@ -43,7 +44,7 @@ services:
     networks:
       - invobid_network
     healthcheck:
-      test: [ "CMD-SHELL", "pg_isready -U ${DB_USR}" ]
+      test: ["CMD-SHELL", "pg_isready -U ${DB_USR}"]
       interval: 5s
       timeout: 5s
       retries: 5
@@ -52,6 +53,7 @@ services:
   minio:
     image: quay.io/minio/minio:RELEASE.2025-02-07T23-21-09Z
     container_name: invobid_minio
+    env_file: .env
     environment:
       MINIO_ROOT_USER: ${MINIO_USR}
       MINIO_ROOT_PASSWORD: ${MINIO_PWD}
@@ -66,9 +68,10 @@ services:
   minio-init:
     image: minio/mc:latest
     container_name: invobid_minio_init
+    env_file: .env
     depends_on:
       - minio
-    entrypoint: [ "/bin/sh", "-c" ]
+    entrypoint: ["/bin/sh", "-c"]
     command: >
       'until mc --insecure alias set local http://minio:9000
       "$${MINIO_ROOT_USER}" "$${MINIO_ROOT_PASSWORD}" >/dev/null 2>&1; do echo
@@ -82,24 +85,25 @@ services:
     networks:
       - invobid_network
 
-  pgadmin:
-    image: dpage/pgadmin4:snapshot
-    container_name: invobid_pgadmin
-    environment:
-      PGADMIN_DEFAULT_EMAIL: admin@mail.com
-      PGADMIN_DEFAULT_PASSWORD: 1234
-      PGADMIN_CONFIG_SERVER_MODE: "False"
-      PGADMIN_CONFIG_MASTER_PASSWORD_REQUIRED: "False"
-    ports:
-      - "127.0.0.1:8080:80"
-    volumes:
-      - ./data/pgadmin/servers.json:/pgadmin4/servers.json:ro
-      - ./data/pgadmin/pgpass:/var/lib/pgadmin/pgpass:ro
-    depends_on:
-      - db
-    networks:
-      - invobid_network
-    restart: unless-stopped
+  #  pgadmin:
+  #    image: dpage/pgadmin4:snapshot
+  #    container_name: invobid_pgadmin
+  #    env_file: .env
+  #    environment:
+  #      PGADMIN_DEFAULT_EMAIL: admin@mail.com
+  #      PGADMIN_DEFAULT_PASSWORD: 1234
+  #      PGADMIN_CONFIG_SERVER_MODE: "False"
+  #      PGADMIN_CONFIG_MASTER_PASSWORD_REQUIRED: "False"
+  #    ports:
+  #      - "127.0.0.1:8080:80"
+  #    volumes:
+  #      - ./data/pgadmin/servers.json:/pgadmin4/servers.json:ro
+  #      - ./data/pgadmin/pgpass:/var/lib/pgadmin/pgpass:ro
+  #    depends_on:
+  #      - db
+  #    networks:
+  #      - invobid_network
+  #    restart: unless-stopped
 
   certbot:
     image: certbot/certbot:latest

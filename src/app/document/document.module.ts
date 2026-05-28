@@ -17,7 +17,7 @@ import { MinioStorageService } from './services/minio-storage.service';
       useFactory: (configService: ConfigService): IStorageService => {
         const environment = configService.get<string>('NODE_ENV');
 
-        if (environment === 'local') {
+        if (environment !== 'production') {
           return new MinioStorageService(configService);
         }
 
