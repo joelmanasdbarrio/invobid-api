@@ -1,0 +1,124 @@
+name: invobid
+
+services:
+  api:
+    image: ghcr.io/joelmanasdbarrio/invobid-api:${API_TAG:-latest}
+    container_name: invobid_api
+    env_file: .env
+    depends_on:
+      db:
+        condition: service_healthy
+      minio-init:
+        condition: service_completed_successfully
+    networks:
+      - invobid_network
+    restart: unless-stopped
+
+  web:
+    image: ghcr.io/joelmanasdbarrio/invobid-spa:${SPA_TAG:-latest}
+    container_name: invobid_web
+    env_file: .env
+    ports:
+      - "80:80"
+      - "443:443"
+    volumes:
+      - certbot_conf:/etc/letsencrypt:ro
+      - certbot_www:/var/www/certbot:ro
+    depends_on:
+      - api
+    networks:
+      - invobid_network
+    restart: unless-stopped
+
+  db:
+    image: postgres:14.19-alpine3.21
+    container_name: invobid_postgres
+    env_file: .env
+    environment:
+      POSTGRES_USER: ${DB_USR}
+      POSTGRES_PASSWORD: ${DB_PWD}
+      POSTGRES_DB: ${DB_NAME}
+    volumes:
+      - db_data:/var/lib/postgresql/data
+    hostname: invobid_postgres
+    networks:
+      - invobid_network
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${DB_USR}"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+    restart: unless-stopped
+
+  minio:
+    image: quay.io/minio/minio:RELEASE.2025-02-07T23-21-09Z
+    container_name: invobid_minio
+    env_file: .env
+    environment:
+      MINIO_ROOT_USER: ${MINIO_USR}
+      MINIO_ROOT_PASSWORD: ${MINIO_PWD}
+    volumes:
+      - minio_data:/data
+    command: server /data --console-address ":9001"
+    hostname: invobid_minio
+    networks:
+      - invobid_network
+    restart: unless-stopped
+
+  minio-init:
+    image: minio/mc:latest
+    container_name: invobid_minio_init
+    env_file: .env
+    depends_on:
+      - minio
+    entrypoint: ["/bin/sh", "-c"]
+    command: >
+      'until mc --insecure alias set local http://minio:9000
+      "$${MINIO_ROOT_USER}" "$${MINIO_ROOT_PASSWORD}" >/dev/null 2>&1; do echo
+      "waiting for minio..."; sleep 1; done;
+       mc --insecure mb --ignore-existing local/invobid;
+       echo "minio bucket created (or already existed)";'
+    environment:
+      MINIO_ROOT_USER: ${MINIO_USR}
+      MINIO_ROOT_PASSWORD: ${MINIO_PWD}
+    restart: "no"
+    networks:
+      - invobid_network
+
+  #  pgadmin:
+  #    image: dpage/pgadmin4:snapshot
+  #    container_name: invobid_pgadmin
+  #    env_file: .env
+  #    environment:
+  #      PGADMIN_DEFAULT_EMAIL: admin@mail.com
+  #      PGADMIN_DEFAULT_PASSWORD: 1234
+  #      PGADMIN_CONFIG_SERVER_MODE: "False"
+  #      PGADMIN_CONFIG_MASTER_PASSWORD_REQUIRED: "False"
+  #    ports:
+  #      - "127.0.0.1:8080:80"
+  #    volumes:
+  #      - ./data/pgadmin/servers.json:/pgadmin4/servers.json:ro
+  #      - ./data/pgadmin/pgpass:/var/lib/pgadmin/pgpass:ro
+  #    depends_on:
+  #      - db
+  #    networks:
+  #      - invobid_network
+  #    restart: unless-stopped
+
+  certbot:
+    image: certbot/certbot:latest
+    container_name: invobid_certbot
+    volumes:
+      - certbot_conf:/etc/letsencrypt
+      - certbot_www:/var/www/certbot
+    restart: "no"
+
+volumes:
+  db_data:
+  minio_data:
+  certbot_conf:
+  certbot_www:
+
+networks:
+  invobid_network:
+    driver: bridge

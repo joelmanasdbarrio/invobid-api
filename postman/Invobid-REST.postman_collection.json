@@ -1,0 +1,1510 @@
+{
+  "info": {
+    "_postman_id": "32c22e82-5da9-4d25-81df-6de65a6ad611",
+    "name": "Invobid REST",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json",
+    "_exporter_id": "24297190"
+  },
+  "item": [
+    {
+      "name": "Auth",
+      "item": [
+        {
+          "name": "Login",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "const res = JSON.parse(pm.response.text())\r",
+                  "pm.environment.set(\"token\", res.access_token)"
+                ],
+                "type": "text/javascript",
+                "packages": {},
+                "requests": {}
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "x-activate-account",
+                "value": "true",
+                "type": "text",
+                "disabled": true
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\r\n    // \"email\": \"seller2@globaltrade.com\",\r\n    // \"password\": \"Investor123!\"\r\n    \"email\": \"seller1@techcorp.com\",\r\n    \"password\": \"Investor123!\"\r\n    // \"email\": \"admin1@invobid.com\",\r\n    // \"password\": \"Admin123!\"\r\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{url}}/auth/login",
+              "host": [
+                "{{url}}"
+              ],
+              "path": [
+                "auth",
+                "login"
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Create Administrator",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "const res = JSON.parse(pm.response.text())\r",
+                  "pm.environment.set(\"token\", res.access_token)"
+                ],
+                "type": "text/javascript",
+                "packages": {},
+                "requests": {}
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [],
+            "body": {
+              "mode": "raw",
+              "raw": "{\r\n    \"email\": \"email@mail.com\",\r\n    \"password\": \"pass1234\",\r\n    \"passwordRepeat\": \"pass1234\",\r\n    \"name\": \"Admin 1\"\r\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{url}}/auth/register/admin",
+              "host": [
+                "{{url}}"
+              ],
+              "path": [
+                "auth",
+                "register",
+                "admin"
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Create Investor",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "const res = JSON.parse(pm.response.text())\r",
+                  "pm.environment.set(\"token\", res.access_token)"
+                ],
+                "type": "text/javascript",
+                "packages": {},
+                "requests": {}
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [],
+            "body": {
+              "mode": "formdata",
+              "formdata": [
+                {
+                  "key": "email",
+                  "value": "seller1@techcorp.com",
+                  "type": "text",
+                  "uuid": "e06c075e-354f-4b60-8ef3-675255c68580"
+                },
+                {
+                  "key": "password",
+                  "value": "Investor123!",
+                  "type": "text",
+                  "uuid": "77112d8e-1b20-4acb-b745-9114b76512a0"
+                },
+                {
+                  "key": "passwordRepeat",
+                  "value": "Investor123!",
+                  "type": "text",
+                  "uuid": "da75ea8e-b30f-4b9e-b7e7-f1ff498b3454"
+                },
+                {
+                  "key": "name",
+                  "value": "Investor name",
+                  "type": "text",
+                  "uuid": "de020cee-eba8-4c95-9e08-6a24be8ab00f"
+                },
+                {
+                  "key": "phoneNumber",
+                  "value": "654987322",
+                  "type": "text",
+                  "uuid": "2865c247-3b81-48e3-b9fb-680539f66175"
+                },
+                {
+                  "key": "companyName",
+                  "value": "Test Investor 1 S.L.",
+                  "type": "text",
+                  "uuid": "335b3908-add7-444c-8513-ce475a0d04fb",
+                  "description": "For individual users, same as `name`"
+                },
+                {
+                  "key": "document",
+                  "type": "file",
+                  "uuid": "1e8b486c-d614-4397-a42c-8e5eade7004a",
+                  "src": "/C:/Users/joelm/Git/Invobid/invobid-api/test/sample_files/dni.jpg"
+                },
+                {
+                  "key": "taxId",
+                  "value": "21706462M",
+                  "type": "text",
+                  "uuid": "23853e69-631d-4bc9-9b3a-77d65dda28be"
+                },
+                {
+                  "key": "investorType",
+                  "value": "individual",
+                  "description": "individual or company",
+                  "type": "text",
+                  "uuid": "340b5206-dd12-4740-b32e-8947d066e1d0"
+                }
+              ]
+            },
+            "url": {
+              "raw": "{{url}}/auth/register/investor",
+              "host": [
+                "{{url}}"
+              ],
+              "path": [
+                "auth",
+                "register",
+                "investor"
+              ]
+            }
+          },
+          "response": []
+        }
+      ]
+    },
+    {
+      "name": "Documents",
+      "item": [
+        {
+          "name": "Upload Document",
+          "request": {
+            "method": "POST",
+            "header": [],
+            "body": {
+              "mode": "formdata",
+              "formdata": [
+                {
+                  "key": "title",
+                  "value": "my document",
+                  "type": "text",
+                  "uuid": "eab48fdb-eb59-46e1-b9ec-287ec02dda2d"
+                },
+                {
+                  "key": "file",
+                  "type": "file",
+                  "uuid": "f4d2f61e-7e56-4fd9-b208-91327d829fbf",
+                  "src": "/C:/Users/joelm/Downloads/download.svg"
+                }
+              ]
+            },
+            "url": {
+              "raw": "{{url}}/documents",
+              "host": [
+                "{{url}}"
+              ],
+              "path": [
+                "documents"
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Get All Documents",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{url}}/documents",
+              "host": [
+                "{{url}}"
+              ],
+              "path": [
+                "documents"
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Get Document",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{url}}/documents/:documentId",
+              "host": [
+                "{{url}}"
+              ],
+              "path": [
+                "documents",
+                ":documentId"
+              ],
+              "variable": [
+                {
+                  "key": "documentId",
+                  "value": "18948de3-6893-4292-82e2-a9c754b0c90f"
+                }
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Update Document",
+          "request": {
+            "method": "PATCH",
+            "header": [],
+            "body": {
+              "mode": "raw",
+              "raw": "{\r\n    \"title\": \"Title\",\r\n    \"value\": null\r\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{url}}/documents/:documentId",
+              "host": [
+                "{{url}}"
+              ],
+              "path": [
+                "documents",
+                ":documentId"
+              ],
+              "variable": [
+                {
+                  "key": "documentId",
+                  "value": "ed8feeb7-3d8a-4a97-ac4b-07335682ead8"
+                }
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Delete Document",
+          "request": {
+            "method": "DELETE",
+            "header": [],
+            "url": {
+              "raw": "{{url}}/documents/:documentId",
+              "host": [
+                "{{url}}"
+              ],
+              "path": [
+                "documents",
+                ":documentId"
+              ],
+              "variable": [
+                {
+                  "key": "documentId",
+                  "value": "9559d8cc-6378-48ff-9aa2-35abcbd1797f"
+                }
+              ]
+            }
+          },
+          "response": []
+        }
+      ]
+    },
+    {
+      "name": "Users",
+      "item": [
+        {
+          "name": "Administrators",
+          "item": [
+            {
+              "name": "Get All Administrators",
+              "request": {
+                "method": "GET",
+                "header": [],
+                "url": {
+                  "raw": "{{url}}/admins",
+                  "host": [
+                    "{{url}}"
+                  ],
+                  "path": [
+                    "admins"
+                  ]
+                }
+              },
+              "response": []
+            },
+            {
+              "name": "Get Administrator",
+              "request": {
+                "method": "GET",
+                "header": [],
+                "url": {
+                  "raw": "{{url}}/admins/:adminId",
+                  "host": [
+                    "{{url}}"
+                  ],
+                  "path": [
+                    "admins",
+                    ":adminId"
+                  ],
+                  "variable": [
+                    {
+                      "key": "adminId",
+                      "value": "4fb3bfd0-0fb4-4d83-9e45-668b36e18279"
+                    }
+                  ]
+                }
+              },
+              "response": []
+            },
+            {
+              "name": "Update Administrator",
+              "request": {
+                "method": "PATCH",
+                "header": [],
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\r\n    \"email\": \"email@mail.com\"\r\n}",
+                  "options": {
+                    "raw": {
+                      "language": "json"
+                    }
+                  }
+                },
+                "url": {
+                  "raw": "{{url}}/admins/:adminId",
+                  "host": [
+                    "{{url}}"
+                  ],
+                  "path": [
+                    "admins",
+                    ":adminId"
+                  ],
+                  "variable": [
+                    {
+                      "key": "adminId",
+                      "value": "4fb3bfd0-0fb4-4d83-9e45-668b36e18279"
+                    }
+                  ]
+                }
+              },
+              "response": []
+            },
+            {
+              "name": "Delete Administrator",
+              "request": {
+                "method": "DELETE",
+                "header": [],
+                "url": {
+                  "raw": "{{url}}/admins/:adminId",
+                  "host": [
+                    "{{url}}"
+                  ],
+                  "path": [
+                    "admins",
+                    ":adminId"
+                  ],
+                  "variable": [
+                    {
+                      "key": "adminId",
+                      "value": "f5c9876a-845c-411a-a957-3904e0652e6e"
+                    }
+                  ]
+                }
+              },
+              "response": []
+            }
+          ]
+        },
+        {
+          "name": "Investors",
+          "item": [
+            {
+              "name": "Lookup",
+              "item": [
+                {
+                  "name": "Get Count Pending",
+                  "request": {
+                    "method": "GET",
+                    "header": [],
+                    "url": {
+                      "raw": "{{url}}/investors/lookup/countPending",
+                      "host": [
+                        "{{url}}"
+                      ],
+                      "path": [
+                        "investors",
+                        "lookup",
+                        "countPending"
+                      ]
+                    }
+                  },
+                  "response": []
+                }
+              ]
+            },
+            {
+              "name": "Get All Investors",
+              "protocolProfileBehavior": {
+                "disableBodyPruning": true
+              },
+              "request": {
+                "method": "GET",
+                "header": [],
+                "body": {
+                  "mode": "formdata",
+                  "formdata": []
+                },
+                "url": {
+                  "raw": "{{url}}/investors?email=seller2@globaltrade.com&includeDeleted=false",
+                  "host": [
+                    "{{url}}"
+                  ],
+                  "path": [
+                    "investors"
+                  ],
+                  "query": [
+                    {
+                      "key": "email",
+                      "value": "seller2@globaltrade.com"
+                    },
+                    {
+                      "key": "name",
+                      "value": "Robert",
+                      "disabled": true
+                    },
+                    {
+                      "key": "companyName",
+                      "value": "Solutions",
+                      "disabled": true
+                    },
+                    {
+                      "key": "phoneNumber",
+                      "value": "34912345678",
+                      "disabled": true
+                    },
+                    {
+                      "key": "documentValue",
+                      "value": "12345678Z",
+                      "disabled": true
+                    },
+                    {
+                      "key": "investorType",
+                      "value": "individual",
+                      "description": "company or individual",
+                      "disabled": true
+                    },
+                    {
+                      "key": "status",
+                      "value": "",
+                      "description": "pending, verified, correction or denied",
+                      "type": "text",
+                      "disabled": true
+                    },
+                    {
+                      "key": "page",
+                      "value": "1",
+                      "disabled": true
+                    },
+                    {
+                      "key": "limit",
+                      "value": "1",
+                      "disabled": true
+                    },
+                    {
+                      "key": "includeDeleted",
+                      "value": "false"
+                    }
+                  ]
+                }
+              },
+              "response": []
+            },
+            {
+              "name": "Get Investor",
+              "protocolProfileBehavior": {
+                "disableBodyPruning": true
+              },
+              "request": {
+                "method": "GET",
+                "header": [],
+                "body": {
+                  "mode": "formdata",
+                  "formdata": []
+                },
+                "url": {
+                  "raw": "{{url}}/investors/:supplierId",
+                  "host": [
+                    "{{url}}"
+                  ],
+                  "path": [
+                    "investors",
+                    ":supplierId"
+                  ],
+                  "variable": [
+                    {
+                      "key": "supplierId",
+                      "value": "4149f748-64e8-4db9-9c59-630e4995f304"
+                    }
+                  ]
+                }
+              },
+              "response": []
+            },
+            {
+              "name": "Update Investor",
+              "request": {
+                "method": "PATCH",
+                "header": [],
+                "body": {
+                  "mode": "formdata",
+                  "formdata": [
+                    {
+                      "key": "email",
+                      "value": "investor1@mail.com",
+                      "type": "text",
+                      "uuid": "e06c075e-354f-4b60-8ef3-675255c68580",
+                      "disabled": true
+                    },
+                    {
+                      "key": "password",
+                      "value": "pass1234",
+                      "type": "text",
+                      "uuid": "77112d8e-1b20-4acb-b745-9114b76512a0",
+                      "disabled": true
+                    },
+                    {
+                      "key": "passwordRepeat",
+                      "value": "pass1234",
+                      "type": "text",
+                      "uuid": "da75ea8e-b30f-4b9e-b7e7-f1ff498b3454",
+                      "disabled": true
+                    },
+                    {
+                      "key": "name",
+                      "value": "Investor name",
+                      "type": "text",
+                      "uuid": "de020cee-eba8-4c95-9e08-6a24be8ab00f",
+                      "disabled": true
+                    },
+                    {
+                      "key": "phoneNumber",
+                      "value": "654987321",
+                      "type": "text",
+                      "uuid": "2865c247-3b81-48e3-b9fb-680539f66175",
+                      "disabled": true
+                    },
+                    {
+                      "key": "companyName",
+                      "value": "Test Investor 1 S.L.",
+                      "type": "text",
+                      "uuid": "335b3908-add7-444c-8513-ce475a0d04fb",
+                      "description": "For individual users, same as `name`",
+                      "disabled": true
+                    },
+                    {
+                      "key": "document",
+                      "type": "file",
+                      "uuid": "1e8b486c-d614-4397-a42c-8e5eade7004a",
+                      "src": "/C:/Users/joelm/Documents/Git/Invobid/invobid-api/test/sample_files/dni.jpg",
+                      "disabled": true
+                    },
+                    {
+                      "key": "documentValue",
+                      "value": "21706462M",
+                      "type": "text",
+                      "uuid": "23853e69-631d-4bc9-9b3a-77d65dda28be",
+                      "disabled": true
+                    },
+                    {
+                      "key": "investorType",
+                      "value": "individual",
+                      "description": "individual or company",
+                      "type": "text",
+                      "uuid": "340b5206-dd12-4740-b32e-8947d066e1d0",
+                      "disabled": true
+                    }
+                  ]
+                },
+                "url": {
+                  "raw": "{{url}}/investors/:supplierId",
+                  "host": [
+                    "{{url}}"
+                  ],
+                  "path": [
+                    "investors",
+                    ":supplierId"
+                  ],
+                  "variable": [
+                    {
+                      "key": "supplierId",
+                      "value": "ab2d3160-ba02-42da-aeee-19fd623f35c1"
+                    }
+                  ]
+                }
+              },
+              "response": []
+            },
+            {
+              "name": "Delete Investor",
+              "request": {
+                "method": "DELETE",
+                "header": [],
+                "body": {
+                  "mode": "formdata",
+                  "formdata": []
+                },
+                "url": {
+                  "raw": "{{url}}/investors/:supplierId",
+                  "host": [
+                    "{{url}}"
+                  ],
+                  "path": [
+                    "investors",
+                    ":supplierId"
+                  ],
+                  "variable": [
+                    {
+                      "key": "supplierId",
+                      "value": "2c2ff2af-16fe-4854-a32b-959b7115beda"
+                    }
+                  ]
+                }
+              },
+              "response": []
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "Debtors",
+      "item": [
+        {
+          "name": "Lookup",
+          "item": [
+            {
+              "name": "Get Count Pending Debtors",
+              "request": {
+                "method": "GET",
+                "header": [],
+                "url": {
+                  "raw": "{{url}}/debtors/lookup/countPending",
+                  "host": [
+                    "{{url}}"
+                  ],
+                  "path": [
+                    "debtors",
+                    "lookup",
+                    "countPending"
+                  ]
+                }
+              },
+              "response": []
+            },
+            {
+              "name": "Get Count Correction Debtors",
+              "request": {
+                "method": "GET",
+                "header": [],
+                "url": {
+                  "raw": "{{url}}/debtors/lookup/countCorrection",
+                  "host": [
+                    "{{url}}"
+                  ],
+                  "path": [
+                    "debtors",
+                    "lookup",
+                    "countCorrection"
+                  ]
+                }
+              },
+              "response": []
+            }
+          ]
+        },
+        {
+          "name": "Create Debtor",
+          "request": {
+            "method": "POST",
+            "header": [],
+            "body": {
+              "mode": "formdata",
+              "formdata": [
+                {
+                  "key": "email",
+                  "value": "debtor@email.com",
+                  "type": "text",
+                  "uuid": "1f8ac643-5948-4447-8bcb-033fc1cc0793"
+                },
+                {
+                  "key": "phoneNumber",
+                  "value": "654987321",
+                  "type": "text",
+                  "uuid": "28aec2be-e73e-45c7-b866-d54453cd6991"
+                },
+                {
+                  "key": "companyName",
+                  "value": "Debtor SL",
+                  "type": "text",
+                  "uuid": "d3b8f197-26dd-4cc4-ad00-5cd1289fe7ba"
+                },
+                {
+                  "key": "taxId",
+                  "value": "21706462M",
+                  "type": "text",
+                  "uuid": "a73928a9-671d-4ae3-b3f8-35bd26b890ea"
+                },
+                {
+                  "key": "modelo111",
+                  "type": "file",
+                  "uuid": "344eac0f-a9ca-4c19-a61b-ca016f5103fa",
+                  "src": "/C:/Users/joelm/Git/Invobid/invobid-api/test/sample_files/dni.jpg"
+                },
+                {
+                  "key": "modelo111Csv",
+                  "value": "1234",
+                  "type": "text",
+                  "uuid": "7b7de008-121a-498d-967e-0cf4e5d0e211"
+                },
+                {
+                  "key": "modelo303",
+                  "type": "file",
+                  "uuid": "d3438fb5-9987-4a6f-b45e-821e34dc3760",
+                  "src": "/C:/Users/joelm/Git/Invobid/invobid-api/test/sample_files/nif.jpg"
+                },
+                {
+                  "key": "modelo303Csv",
+                  "value": "5678",
+                  "type": "text",
+                  "uuid": "bae3d00f-7ca7-4527-b81a-c2b57e18d67f"
+                }
+              ]
+            },
+            "url": {
+              "raw": "{{url}}/debtors",
+              "host": [
+                "{{url}}"
+              ],
+              "path": [
+                "debtors"
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Get All Debtors",
+          "protocolProfileBehavior": {
+            "disableBodyPruning": true
+          },
+          "request": {
+            "method": "GET",
+            "header": [],
+            "body": {
+              "mode": "raw",
+              "raw": "{\r\n    \"email\": \"email@mail.com\",\r\n    \"password\": \"pass1234\",\r\n    \"passwordRepeat\": \"pass1234\",\r\n    \"name\": \"Admin 1\"\r\n}"
+            },
+            "url": {
+              "raw": "{{url}}/debtors",
+              "host": [
+                "{{url}}"
+              ],
+              "path": [
+                "debtors"
+              ],
+              "query": [
+                {
+                  "key": "companyName",
+                  "value": "Debtor SL",
+                  "disabled": true
+                },
+                {
+                  "key": "email",
+                  "value": "",
+                  "type": "text",
+                  "disabled": true
+                },
+                {
+                  "key": "phoneNumber",
+                  "value": "",
+                  "type": "text",
+                  "disabled": true
+                },
+                {
+                  "key": "taxId",
+                  "value": "",
+                  "type": "text",
+                  "disabled": true
+                },
+                {
+                  "key": "status",
+                  "value": "",
+                  "type": "text",
+                  "disabled": true
+                },
+                {
+                  "key": "includeDeleted",
+                  "value": "false",
+                  "disabled": true
+                },
+                {
+                  "key": "investorId",
+                  "value": "45e39d1b-8aad-4208-a1d2-538f6099e97a",
+                  "disabled": true
+                }
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Get Debtor",
+          "protocolProfileBehavior": {
+            "disableBodyPruning": true
+          },
+          "request": {
+            "method": "GET",
+            "header": [],
+            "body": {
+              "mode": "raw",
+              "raw": "{\r\n    \"email\": \"email@mail.com\",\r\n    \"password\": \"pass1234\",\r\n    \"passwordRepeat\": \"pass1234\",\r\n    \"name\": \"Admin 1\"\r\n}"
+            },
+            "url": {
+              "raw": "{{url}}/debtors/:debtorId",
+              "host": [
+                "{{url}}"
+              ],
+              "path": [
+                "debtors",
+                ":debtorId"
+              ],
+              "variable": [
+                {
+                  "key": "debtorId",
+                  "value": "8dcf9f9d-9ae1-4cb0-8ed0-fb0280c1e718"
+                }
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Update Debtor",
+          "request": {
+            "method": "PATCH",
+            "header": [],
+            "body": {
+              "mode": "formdata",
+              "formdata": [
+                {
+                  "key": "email",
+                  "value": "debtor@email.com",
+                  "type": "text",
+                  "uuid": "1f8ac643-5948-4447-8bcb-033fc1cc0793"
+                },
+                {
+                  "key": "phoneNumber",
+                  "value": "654987321",
+                  "type": "text",
+                  "uuid": "28aec2be-e73e-45c7-b866-d54453cd6991"
+                },
+                {
+                  "key": "companyName",
+                  "value": "Debtor SL",
+                  "type": "text",
+                  "uuid": "d3b8f197-26dd-4cc4-ad00-5cd1289fe7ba"
+                },
+                {
+                  "key": "taxId",
+                  "value": "21706462M",
+                  "type": "text",
+                  "uuid": "a73928a9-671d-4ae3-b3f8-35bd26b890ea"
+                },
+                {
+                  "key": "modelo_111",
+                  "type": "file",
+                  "uuid": "344eac0f-a9ca-4c19-a61b-ca016f5103fa",
+                  "src": "/C:/Users/joelm/Git/Invobid/invobid-api/test/sample_files/dni.jpg"
+                },
+                {
+                  "key": "modelo111Csv",
+                  "value": "1234",
+                  "type": "text",
+                  "uuid": "7b7de008-121a-498d-967e-0cf4e5d0e211"
+                },
+                {
+                  "key": "modelo_303",
+                  "type": "file",
+                  "uuid": "d3438fb5-9987-4a6f-b45e-821e34dc3760",
+                  "src": "/C:/Users/joelm/Git/Invobid/invobid-api/test/sample_files/nif.jpg"
+                },
+                {
+                  "key": "modelo303Csv",
+                  "value": "5678",
+                  "type": "text",
+                  "uuid": "bae3d00f-7ca7-4527-b81a-c2b57e18d67f"
+                }
+              ]
+            },
+            "url": {
+              "raw": "{{url}}/debtors/:debtorId",
+              "host": [
+                "{{url}}"
+              ],
+              "path": [
+                "debtors",
+                ":debtorId"
+              ],
+              "variable": [
+                {
+                  "key": "debtorId",
+                  "value": "8dcf9f9d-9ae1-4cb0-8ed0-fb0280c1e718"
+                }
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Delete Debtor",
+          "request": {
+            "method": "DELETE",
+            "header": [],
+            "body": {
+              "mode": "raw",
+              "raw": "{\r\n    \"email\": \"email@mail.com\",\r\n    \"password\": \"pass1234\",\r\n    \"passwordRepeat\": \"pass1234\",\r\n    \"name\": \"Admin 1\"\r\n}"
+            },
+            "url": {
+              "raw": "{{url}}/debtors/:debtorId",
+              "host": [
+                "{{url}}"
+              ],
+              "path": [
+                "debtors",
+                ":debtorId"
+              ],
+              "variable": [
+                {
+                  "key": "debtorId",
+                  "value": "8dcf9f9d-9ae1-4cb0-8ed0-fb0280c1e718"
+                }
+              ]
+            }
+          },
+          "response": []
+        }
+      ]
+    },
+    {
+      "name": "Invoices",
+      "item": [
+        {
+          "name": "Lookup",
+          "item": [
+            {
+              "name": "Get Count Pending Invoices",
+              "request": {
+                "method": "GET",
+                "header": [],
+                "url": {
+                  "raw": "{{url}}/invoices/lookup/countPending",
+                  "host": [
+                    "{{url}}"
+                  ],
+                  "path": [
+                    "invoices",
+                    "lookup",
+                    "countPending"
+                  ]
+                }
+              },
+              "response": []
+            },
+            {
+              "name": "Get Count Correction Invoices",
+              "request": {
+                "method": "GET",
+                "header": [],
+                "url": {
+                  "raw": "{{url}}/invoices/lookup/countCorrection",
+                  "host": [
+                    "{{url}}"
+                  ],
+                  "path": [
+                    "invoices",
+                    "lookup",
+                    "countCorrection"
+                  ]
+                }
+              },
+              "response": []
+            }
+          ]
+        },
+        {
+          "name": "Create Invoice",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "x-activate-account",
+                "value": "true",
+                "type": "text",
+                "disabled": true
+              }
+            ],
+            "body": {
+              "mode": "formdata",
+              "formdata": [
+                {
+                  "key": "debtorId",
+                  "value": "906aab53-8149-4a11-9940-44adb25d3ca3",
+                  "description": "UUID",
+                  "type": "text",
+                  "uuid": "91c53911-584c-4240-bc89-5b8387d937b0"
+                },
+                {
+                  "key": "amount",
+                  "value": "100",
+                  "description": "XXXXXXXXXXXX.YYY",
+                  "type": "text",
+                  "uuid": "d0c64abb-d538-4d85-8462-18d1be580c75"
+                },
+                {
+                  "key": "dueDate",
+                  "value": "2026-02-12",
+                  "description": "yyyy-mm-dd",
+                  "type": "text",
+                  "uuid": "24ef3ced-d53b-4664-9e45-0cb5a9386c76"
+                },
+                {
+                  "key": "file",
+                  "description": "PDF, JPG or PNG",
+                  "type": "file",
+                  "uuid": "f0b06a4d-ca5c-40cb-a5cf-a62bee9276d1",
+                  "src": "/C:/Users/joelm/Git/Invobid/invobid-api/test/sample_files/nif.jpg"
+                }
+              ]
+            },
+            "url": {
+              "raw": "{{url}}/invoices",
+              "host": [
+                "{{url}}"
+              ],
+              "path": [
+                "invoices"
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Get All Invoices",
+          "protocolProfileBehavior": {
+            "disableBodyPruning": true
+          },
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "x-activate-account",
+                "value": "true",
+                "type": "text",
+                "disabled": true
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": ""
+            },
+            "url": {
+              "raw": "{{url}}/invoices",
+              "host": [
+                "{{url}}"
+              ],
+              "path": [
+                "invoices"
+              ],
+              "query": [
+                {
+                  "key": "sellerInvestorId",
+                  "value": "aa87ffd5-edf3-4dad-b098-a5184f9f1925",
+                  "disabled": true
+                }
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Get Invoice",
+          "protocolProfileBehavior": {
+            "disableBodyPruning": true
+          },
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "x-activate-account",
+                "value": "true",
+                "type": "text",
+                "disabled": true
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": ""
+            },
+            "url": {
+              "raw": "{{url}}/invoices/:invoiceId",
+              "host": [
+                "{{url}}"
+              ],
+              "path": [
+                "invoices",
+                ":invoiceId"
+              ],
+              "variable": [
+                {
+                  "key": "invoiceId",
+                  "value": "2a296d18-c421-4e72-9f16-a97f71ab4901"
+                }
+              ]
+            }
+          },
+          "response": []
+        }
+      ]
+    },
+    {
+      "name": "Auctions",
+      "item": [
+        {
+          "name": "Create Auction",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n    \"invoiceId\": \"072600c3-ad5f-469b-b370-0df240685df7\",\n    \"startingPrice\": 100,\n    \"auctionDateStart\": \"2026-03-15\",\n    \"auctionDateEnd\": \"2026-03-20\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{url}}/auctions",
+              "host": [
+                "{{url}}"
+              ],
+              "path": [
+                "auctions"
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Get All Auctions",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "body": {
+              "mode": "raw",
+              "raw": ""
+            },
+            "url": {
+              "raw": "{{url}}/auctions",
+              "host": [
+                "{{url}}"
+              ],
+              "path": [
+                "auctions"
+              ],
+              "query": [
+                {
+                  "key": "invoiceId",
+                  "value": "",
+                  "disabled": true
+                },
+                {
+                  "key": "sellerInvestorId",
+                  "value": "",
+                  "disabled": true
+                },
+                {
+                  "key": "sellerCompanyName",
+                  "value": "",
+                  "disabled": true
+                },
+                {
+                  "key": "buyerInvestorId",
+                  "value": "",
+                  "disabled": true
+                },
+                {
+                  "key": "buyerCompanyName",
+                  "value": "",
+                  "disabled": true
+                },
+                {
+                  "key": "debtorId",
+                  "value": "",
+                  "disabled": true
+                },
+                {
+                  "key": "page",
+                  "value": "1",
+                  "disabled": true
+                },
+                {
+                  "key": "limit",
+                  "value": "10",
+                  "disabled": true
+                }
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Get Auction",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "body": {
+              "mode": "raw",
+              "raw": ""
+            },
+            "url": {
+              "raw": "{{url}}/auctions/:auctionId",
+              "host": [
+                "{{url}}"
+              ],
+              "path": [
+                "auctions",
+                ":auctionId"
+              ],
+              "variable": [
+                {
+                  "key": "auctionId",
+                  "value": "35f57e85-2077-4f22-9979-07844423bc1d"
+                }
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Update Auction",
+          "request": {
+            "method": "PATCH",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n    \"invoiceId\": \"072600c3-ad5f-469b-b370-0df240685df7\",\n    \"startingPrice\": 100,\n    \"auctionDateStart\": \"2026-03-15\",\n    \"auctionDateEnd\": \"2026-03-20\",\n    \"status\": \"OPEN\",\n    \"lastCommunication\": \"\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{url}}/auctions/:auctionId",
+              "host": [
+                "{{url}}"
+              ],
+              "path": [
+                "auctions",
+                ":auctionId"
+              ],
+              "variable": [
+                {
+                  "key": "auctionId"
+                }
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Delete Auction",
+          "request": {
+            "method": "DELETE",
+            "header": [],
+            "body": {
+              "mode": "raw",
+              "raw": ""
+            },
+            "url": {
+              "raw": "{{url}}/auctions/:auctionId",
+              "host": [
+                "{{url}}"
+              ],
+              "path": [
+                "auctions",
+                ":auctionId"
+              ],
+              "variable": [
+                {
+                  "key": "auctionId"
+                }
+              ]
+            }
+          },
+          "response": []
+        }
+      ]
+    },
+    {
+      "name": "Bids",
+      "item": [
+        {
+          "name": "Get All Bids",
+          "protocolProfileBehavior": {
+            "disableBodyPruning": true
+          },
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "formdata",
+              "formdata": []
+            },
+            "url": {
+              "raw": "{{url}}/bids?auctionId={{auctionId}}&page=1&limit=1",
+              "host": [
+                "{{url}}"
+              ],
+              "path": [
+                "bids"
+              ],
+              "query": [
+                {
+                  "key": "auctionId",
+                  "value": "{{auctionId}}"
+                },
+                {
+                  "key": "page",
+                  "value": "1",
+                  "type": "text"
+                },
+                {
+                  "key": "limit",
+                  "value": "1",
+                  "type": "text"
+                }
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Get Bid",
+          "protocolProfileBehavior": {
+            "disableBodyPruning": true
+          },
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "formdata",
+              "formdata": []
+            },
+            "url": {
+              "raw": "{{url}}/bids/:bidId",
+              "host": [
+                "{{url}}"
+              ],
+              "path": [
+                "bids",
+                ":bidId"
+              ],
+              "variable": [
+                {
+                  "key": "bidId",
+                  "value": "e8c23b18-418a-42a7-995b-0ddb7064d3c0"
+                }
+              ]
+            }
+          },
+          "response": []
+        }
+      ]
+    }
+  ],
+  "event": [
+    {
+      "listen": "prerequest",
+      "script": {
+        "type": "text/javascript",
+        "packages": {},
+        "requests": {},
+        "exec": [
+          ""
+        ]
+      }
+    },
+    {
+      "listen": "test",
+      "script": {
+        "type": "text/javascript",
+        "packages": {},
+        "requests": {},
+        "exec": [
+          ""
+        ]
+      }
+    }
+  ],
+  "variable": [
+    {
+      "key": "url-local",
+      "value": ""
+    }
+  ]
+}
