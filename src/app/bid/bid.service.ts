@@ -84,20 +84,27 @@ export class BidService {
       );
     }
 
-    const latestBidAmount = latestBid ? latestBid.amount : auction.price.start;
+    const latestBidObject = latestBid;
+    const buyerFeePercentage = auction.invoice.transactionFee.buyerPercentage;
 
-    const buyerFee =
-      (createBidDto.amount * auction.invoice.transactionFee.buyerPercentage) /
-      100;
+    // Start with the base latest bid amount (or starting price if no bids)
+    const latestBidBaseAmount = latestBidObject
+      ? latestBidObject.amount / (1 + buyerFeePercentage / 100)
+      : auction.price.start;
+
+    // Calculate the minimum bid amount (base), then add fee for total
+    const minimumBidBase =
+      latestBidBaseAmount *
+      (1 + Number(process.env.SMALLEST_BID_INCREMENT_PERCENTAGE) / 100);
+    const minimumBidTotal =
+      minimumBidBase + (minimumBidBase * buyerFeePercentage) / 100;
+
+    const buyerFee = (createBidDto.amount * buyerFeePercentage) / 100;
     const newBidAmount = createBidDto.amount + buyerFee;
 
-    if (
-      newBidAmount <
-      latestBidAmount *
-        (1 + Number(process.env.SMALLEST_BID_INCREMENT_PERCENTAGE) / 100)
-    ) {
+    if (newBidAmount < minimumBidTotal) {
       throw new BadRequestException(
-        `Bid amount must be at least ${Number(process.env.SMALLEST_BID_INCREMENT_PERCENTAGE)}% greater than the current highest bid of ${latestBidAmount}`,
+        `Bid amount must be at least ${Number(process.env.SMALLEST_BID_INCREMENT_PERCENTAGE)}% greater than the current highest bid of ${latestBidObject?.amount ?? auction.price.start}`,
       );
     }
 

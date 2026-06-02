@@ -110,7 +110,7 @@ describe('BidService', () => {
       const prevBidder = makeInvestor('buyer-prev', 'ba-prev');
       mockAuctionService.findOne.mockResolvedValue(makeAuction());
       mockBidQueryBuilder.getOne.mockResolvedValue({
-        amount: 150,
+        amount: 153.75,
         investor: prevBidder,
       });
       mockBankAccountService.releaseBalance.mockResolvedValue({
@@ -127,7 +127,7 @@ describe('BidService', () => {
         bidder,
       );
 
-      // Release previous: 150 + (150 * 2.5 / 100) = 150 + 3.75 = 153.75
+      // Release previous: bid.amount already includes fee (150 + 3.75 = 153.75)
       expect(mockBankAccountService.releaseBalance).toHaveBeenCalledWith(
         'ba-prev',
         153.75,

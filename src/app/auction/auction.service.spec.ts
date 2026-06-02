@@ -338,7 +338,7 @@ describe('AuctionService — update balance lifecycle', () => {
       mockBidService.findAll.mockResolvedValue({
         data: [
           {
-            amount: 3000,
+            amount: 3075,
             investor: { id: 'buyer-1' },
           },
         ],
@@ -361,7 +361,7 @@ describe('AuctionService — update balance lifecycle', () => {
 
       expect(mockBankAccountService.releaseBalance).toHaveBeenCalledWith(
         'ba-buyer',
-        3000,
+        3075,
       );
     });
 
