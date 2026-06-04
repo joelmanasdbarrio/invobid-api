@@ -1,0 +1,83 @@
+# Bid
+
+_Use case_: Call GET `/bids` endpoint
+- **Given that**: I'm an existing user of the platform (admin or verified investor) who wants to access the GET `/bids` endpoint
+  - **When**: I make a request to the GET `/bids` endpoint with a valid access token and I query with `GetBidsDto` parameters using wrong type values to filter the results
+    - **Then**:
+      - [ ] It should authorize my access
+      - [ ] It should fail type validation for the provided filters in `GetBidsDto`
+      - [ ] It should return a 400 Bad Request response with an error message list indicating that the provided filters are invalid
+- **Given that**: I'm an existing verified investor user of the platform who wants to access the GET `/bids` endpoint
+  - **When**: I make a request to the GET `/bids` endpoint with a valid access token and a valid `auctionId` of a `PUBLISHED` auction that has 1 or more bids
+    - **Then**:
+      - [ ] It should authorize my access
+      - [ ] It should query the database for all bids on the specified auction, returning only bid scalar fields (amount, discount, profitability, createdAt) only including investor information when the bid belongs to the same requesting investor
+      - [ ] It should return a 200 OK response with a paginated list of all found bids on the specified auction
+  - **When**: I make a request to the GET `/bids` endpoint with a valid access token and a valid `auctionId` of an auction that is **not** in `PUBLISHED` status
+    - **Then**:
+      - [ ] It should authorize my access
+      - [ ] It should query the database for bids on the specified auction and find none (visibility restricted to published auctions)
+      - [ ] It should return a 200 OK response with an empty paginated list of bids
+  - **When**: I make a request to the GET `/bids` endpoint with a valid access token and a valid `auctionId` of a `PUBLISHED` auction that has no bids
+    - **Then**:
+      - [ ] It should authorize my access
+      - [ ] It should query the database for bids on the specified auction and find none
+      - [ ] It should return a 200 OK response with an empty paginated list of bids
+  - **When**: I make a request to the GET `/bids` endpoint with a valid access token and I do not provide an `auctionId` query parameter
+    - **Then**:
+      - [ ] It should authorize my access
+      - [ ] It should return a 400 Bad Request response with an error message indicating that `auctionId` is required
+- **Given that**: I'm an existing administrator user of the platform who wants to access the GET `/bids` endpoint
+  - **When**: I make a request to the GET `/bids` endpoint with a valid access token and a valid `auctionId`
+    - **Then**:
+      - [ ] It should authorize my access
+      - [ ] It should query the database for all bids on the specified auction regardless of auction status, including the related investor information
+      - [ ] It should return a 200 OK response with a paginated list of all found bids on the specified auction
+  - **When**: I make a request to the GET `/bids` endpoint with a valid access token and a valid `investorId`
+    - **Then**:
+      - [ ] It should authorize my access
+      - [ ] It should query the database for all bids placed by the specified investor regardless of auction status, including the related investor information
+      - [ ] It should return a 200 OK response with a paginated list of all found bids placed by the specified investor
+  - **When**: I make a request to the GET `/bids` endpoint with a valid access token and both a valid `auctionId` and a valid `investorId`
+    - **Then**:
+      - [ ] It should authorize my access
+      - [ ] It should query the database for all bids on the specified auction placed by the specified investor, including the related investor information
+      - [ ] It should return a 200 OK response with a paginated list of all found bids matching both filters
+  - **When**: I make a request to the GET `/bids` endpoint with a valid access token and I provide neither `auctionId` nor `investorId` query parameters
+    - **Then**:
+      - [ ] It should authorize my access
+      - [ ] It should return a 400 Bad Request response with an error message indicating that at least one of `auctionId` or `investorId` is required
+
+_Use case_: Call GET `/bids/:id` endpoint
+- **Given that**: I'm an existing user of the platform (admin or verified investor) who wants to access the GET `/bids/:id` endpoint
+  - **When**: I make a request to the GET `/bids/:id` endpoint with a valid access token and an invalid ID
+    - **Then**:
+      - [ ] It should authorize my access
+      - [ ] It should return a 400 Bad Request response with an error message indicating that the specified ID is malformed
+  - **When**: I make a request to the GET `/bids/:id` endpoint with a valid access token and a non-existent bid ID
+    - **Then**:
+      - [ ] It should authorize my access
+      - [ ] It should return a 404 Not Found response with an error message indicating that the specified bid was not found
+- **Given that**: I'm an existing verified investor user of the platform who wants to access the GET `/bids/:id` endpoint
+  - **When**: I make a request to the GET `/bids/:id` endpoint with a valid access token and a valid bid ID that belongs to my investor profile (regardless of auction status)
+    - **Then**:
+      - [ ] It should authorize my access
+      - [ ] It should query the database for the specified bid by ID, including the related investor information
+      - [ ] It should return a 200 OK response with the information of the specified bid
+  - **When**: I make a request to the GET `/bids/:id` endpoint with a valid access token and a valid bid ID placed by another investor on a `PUBLISHED` auction
+    - **Then**:
+      - [ ] It should authorize my access
+      - [ ] It should query the database for the specified bid by ID, including the related investor information
+      - [ ] It should return a 200 OK response with the information of the specified bid
+  - **When**: I make a request to the GET `/bids/:id` endpoint with a valid access token and a valid bid ID placed by another investor on a **non-`PUBLISHED`** auction
+    - **Then**:
+      - [ ] It should authorize my access
+      - [ ] It should return a 404 Not Found response with an error message indicating that the specified bid was not found
+- **Given that**: I'm an existing administrator user of the platform who wants to access the GET `/bids/:id` endpoint
+  - **When**: I make a request to the GET `/bids/:id` endpoint with a valid access token and any valid bid ID
+    - **Then**:
+      - [ ] It should authorize my access
+      - [ ] It should query the database for the specified bid by ID regardless of auction status, including the related investor information
+      - [ ] It should return a 200 OK response with the information of the specified bid
+
+[Bids websocket](bid-websocket.e2e-spec.md)

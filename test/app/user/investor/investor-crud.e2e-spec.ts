@@ -87,15 +87,16 @@ describe('Investor CRUD (e2e)', () => {
       expect(res.body.data.length).toBeGreaterThanOrEqual(1);
     });
 
-    it('should return admin view with full properties including bank account and documents', async () => {
+    it('should return admin view with full properties excluding related entities', async () => {
       const res = await request(server)
         .get(`${API}/investors`)
         .set(authHeader(adminToken));
 
       expect(res.status).toBe(200);
       const inv = res.body.data[0];
-      expect(inv.bankAccount).toBeDefined();
-      expect(inv.documents).toBeDefined();
+      expect(inv.id).toBeDefined();
+      expect(inv.email).toBeDefined();
+      expect(inv.bankAccount).toBeUndefined();
     });
 
     it('should return investor view with limited properties', async () => {
@@ -169,7 +170,6 @@ describe('Investor CRUD (e2e)', () => {
       expect(res.status).toBe(200);
       expect(res.body.data.id).toBe(investorId);
       expect(res.body.data.bankAccount).toBeDefined();
-      expect(res.body.data.documents).toBeDefined();
     });
 
     it('should return 200 with full data for admin', async () => {

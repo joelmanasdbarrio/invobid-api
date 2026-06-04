@@ -203,19 +203,6 @@ describe('InvestorService', () => {
   describe('findAll', () => {
     const query: GetInvestorsDto = { page: 1, limit: 10 } as GetInvestorsDto;
 
-    it('should use leftJoinAndSelect and include documents for admin user', async () => {
-      await service.findAll(query, adminUser);
-
-      expect(mockQueryBuilder.leftJoinAndSelect).toHaveBeenCalledWith(
-        'investor.documents',
-        'document',
-      );
-      expect(mockQueryBuilder.leftJoinAndSelect).toHaveBeenCalledWith(
-        'investor.bankAccount',
-        'bankAccount',
-      );
-    });
-
     it('should restrict fields and filter VERIFIED status for non-admin user', async () => {
       const investorUser = { id: 'inv-id', type: UserType.INVESTOR } as User;
 
@@ -251,7 +238,7 @@ describe('InvestorService', () => {
 
       await service.findOne(investor.id, adminUser);
 
-      expect(mockQueryBuilder.leftJoinAndSelect).toHaveBeenCalledWith(
+      expect(mockQueryBuilder.leftJoinAndSelect).not.toHaveBeenCalledWith(
         'investor.documents',
         'document',
       );
@@ -268,7 +255,7 @@ describe('InvestorService', () => {
 
       await service.findOne(investor.id, selfUser);
 
-      expect(mockQueryBuilder.leftJoinAndSelect).toHaveBeenCalledWith(
+      expect(mockQueryBuilder.leftJoinAndSelect).not.toHaveBeenCalledWith(
         'investor.documents',
         'document',
       );

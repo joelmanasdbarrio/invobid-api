@@ -124,12 +124,6 @@ export class InvestorService {
     const queryBuilder = this.investorRepository.createQueryBuilder('investor');
 
     if (user.type === UserType.ADMIN) {
-      queryBuilder.leftJoinAndSelect('investor.documents', 'document');
-      queryBuilder.leftJoinAndSelect('investor.bankAccount', 'bankAccount');
-      queryBuilder.andWhere('(document.type = :documentType)', {
-        documentType: DocumentType.ID,
-      });
-
       if (query.status) {
         queryBuilder.andWhere('(investor.status = :status)', {
           status: query.status,
@@ -205,7 +199,6 @@ export class InvestorService {
     const queryBuilder = this.investorRepository.createQueryBuilder('investor');
 
     if (user && (user.type === UserType.ADMIN || user.id === id)) {
-      queryBuilder.leftJoinAndSelect('investor.documents', 'document');
       queryBuilder.leftJoinAndSelect('investor.bankAccount', 'bankAccount');
     } else if (user && user.type !== UserType.ADMIN && user.id !== id) {
       queryBuilder.select([
@@ -219,6 +212,8 @@ export class InvestorService {
       queryBuilder.andWhere('(investor.status = :status)', {
         status: InvestorStatus.VERIFIED,
       });
+    } else {
+      queryBuilder.leftJoinAndSelect('investor.bankAccount', 'bankAccount');
     }
 
     const investor = await queryBuilder
@@ -242,7 +237,14 @@ export class InvestorService {
     this.checkPermissions(investor, user);
 
     if (user.type !== UserType.ADMIN) {
-      if (investor.status === InvestorStatus.CORRECTION) {
+      if (
+        investor.status === InvestorStatus.PENDING ||
+        investor.status === InvestorStatus.DENIED
+      ) {
+        throw new ForbiddenException(
+          "You don't have permissions to perform this action",
+        );
+      } else if (investor.status === InvestorStatus.CORRECTION) {
         if (
           updateInvestorDto.status &&
           updateInvestorDto.status.toLowerCase() ===
@@ -256,6 +258,7 @@ export class InvestorService {
           updateInvestorDto.lastCommunication = investor.lastCommunication;
         }
       } else if (
+        updateInvestorDto.status &&
         updateInvestorDto.status !== investor.status &&
         updateInvestorDto.status !== InvestorStatus.PENDING
       ) {

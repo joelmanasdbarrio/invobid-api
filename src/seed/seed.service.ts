@@ -77,19 +77,23 @@ export class SeedService {
       console.log('🔨 Seeding auctions...');
       const auctions = await this.seedAuctions(invoices);
 
-      console.log('🏆 Assigning buyers to finished auctions...');
-      await this.assignBuyersToFinishedInvoices(auctions, invoices, investors);
-
       console.log('💰 Seeding bids...');
-      await this.seedBids(auctions, investors);
+      const latestBidByAuction = await this.seedBids(auctions, investors);
 
+      console.log('🏆 Assigning buyers to finished auctions...');
+      await this.assignBuyersToFinishedInvoices(auctions, latestBidByAuction);
+
+      console.log('💳 Reconciling investor balances...');
+      await this.reconcileBalances(auctions, latestBidByAuction, investors);
+
+      const totalBids = [...latestBidByAuction.values()].length;
       console.log('✅ Database seeding completed successfully!');
       console.log(`\t - ${admins.length} admins created`);
       console.log(`\t - ${investors.length} investors created`);
       console.log(`\t - ${debtors.length} debtors created`);
       console.log(`\t - ${invoices.length} invoices created`);
       console.log(`\t - ${auctions.length} auctions created`);
-      console.log(`\t - ${auctions.length * 5} bids created`);
+      console.log(`\t - ${totalBids} auctions with bids seeded`);
     } catch (error) {
       console.error('❌ Error seeding database:', error);
       throw error;
@@ -218,8 +222,10 @@ export class SeedService {
         company: 'InvestPro Solutions',
         type: InvestorType.INDIVIDUAL,
         balance: 85000,
-        status: InvestorStatus.VERIFIED,
+        status: InvestorStatus.CORRECTION,
         taxId: '56789012B',
+        lastCommunication:
+          'Se requiere documentación adicional para verificar la identidad',
       },
       {
         name: 'Rachel Brown',
@@ -258,8 +264,10 @@ export class SeedService {
         company: 'FinVenture Ltd',
         type: InvestorType.INDIVIDUAL,
         balance: 110000,
-        status: InvestorStatus.VERIFIED,
+        status: InvestorStatus.CORRECTION,
         taxId: '78901234X',
+        lastCommunication:
+          'El documento de identificación está caducado o no es válido',
       },
       {
         name: 'Jennifer Garcia',
@@ -268,8 +276,10 @@ export class SeedService {
         company: 'InvestFlow Capital',
         type: InvestorType.COMPANY,
         balance: 320000,
-        status: InvestorStatus.VERIFIED,
+        status: InvestorStatus.CORRECTION,
         taxId: 'F12345724',
+        lastCommunication:
+          'El CIF de la empresa no coincide con los registros oficiales',
       },
       {
         name: 'Anthony Rodriguez',
@@ -339,8 +349,10 @@ export class SeedService {
         company: 'CapitalFin Partners',
         type: InvestorType.INDIVIDUAL,
         balance: 105000,
-        status: InvestorStatus.VERIFIED,
+        status: InvestorStatus.DENIED,
         taxId: '12345679S',
+        lastCommunication:
+          'La cuenta ha sido denegada por no cumplir los requisitos de solvencia',
       },
       {
         name: 'Karen Allen',
@@ -349,8 +361,10 @@ export class SeedService {
         company: 'WealthCore Advisors',
         type: InvestorType.COMPANY,
         balance: 380000,
-        status: InvestorStatus.VERIFIED,
+        status: InvestorStatus.DENIED,
         taxId: 'U12345765',
+        lastCommunication:
+          'La documentación aportada no es suficiente para verificar la empresa',
       },
       {
         name: 'Daniel Young',
@@ -379,8 +393,9 @@ export class SeedService {
         company: 'TradeCapital Group',
         type: InvestorType.INDIVIDUAL,
         balance: 115000,
-        status: InvestorStatus.VERIFIED,
+        status: InvestorStatus.DENIED,
         taxId: '34567891H',
+        lastCommunication: 'No se pudo verificar la identidad del titular',
       },
       {
         name: 'Sandra Lopez',
@@ -389,8 +404,10 @@ export class SeedService {
         company: 'WealthTrade Partners',
         type: InvestorType.COMPANY,
         balance: 690000,
-        status: InvestorStatus.VERIFIED,
+        status: InvestorStatus.DENIED,
         taxId: 'W12345781',
+        lastCommunication:
+          'La cuenta ha sido denegada por actividad sospechosa',
       },
       {
         name: 'Thomas Hill',
@@ -415,8 +432,9 @@ export class SeedService {
     ];
 
     for (const data of investorData) {
-      const bankAccount = this.bankAccountRepository.create({
+      const bankAccount = await this.bankAccountRepository.save({
         balance: data.balance,
+        reservedBalance: 0,
       });
 
       const documentId = uuidv4();
@@ -532,7 +550,7 @@ export class SeedService {
         email: 'contact@client10.com',
         phoneNumber: '34912345609',
         baseNumber: 11234569,
-        status: DebtorStatus.PENDING,
+        status: DebtorStatus.DENIED,
       },
       {
         companyName: 'Client Company 11',
@@ -588,7 +606,7 @@ export class SeedService {
         email: 'contact@client18.com',
         phoneNumber: '34912345617',
         baseNumber: 99012347,
-        status: DebtorStatus.PENDING,
+        status: DebtorStatus.DENIED,
       },
       {
         companyName: 'Client Company 19',
@@ -609,14 +627,14 @@ export class SeedService {
         email: 'contact@client21.com',
         phoneNumber: '34912345620',
         baseNumber: 32345670,
-        status: DebtorStatus.PENDING,
+        status: DebtorStatus.DENIED,
       },
       {
         companyName: 'Client Company 22',
         email: 'contact@client22.com',
         phoneNumber: '34912345621',
         baseNumber: 43456781,
-        status: DebtorStatus.VERIFIED,
+        status: DebtorStatus.PENDING,
       },
       {
         companyName: 'Client Company 23',
@@ -630,7 +648,7 @@ export class SeedService {
         email: 'contact@client24.com',
         phoneNumber: '34912345623',
         baseNumber: 65678903,
-        status: DebtorStatus.VERIFIED,
+        status: DebtorStatus.PENDING,
       },
     ];
 
@@ -882,9 +900,6 @@ export class SeedService {
 
       let auctionDateStart: Date | undefined;
       let auctionDateEnd: Date;
-      let endingPrice: number | undefined;
-      let endingDiscount: number | undefined;
-      let endingProfitability: number | undefined;
 
       switch (status) {
         case AuctionStatus.FINISHED:
@@ -893,18 +908,8 @@ export class SeedService {
           const endDaysAgo = 1 + Math.floor(Math.random() * 23);
           auctionDateEnd = new Date(now.getTime() - endDaysAgo * DAY_MS);
           auctionDateStart = new Date(auctionDateEnd.getTime() - durationMs);
-          if (status === AuctionStatus.FINISHED) {
-            const startingPrice =
-              invoice.amount * (1 - (Math.random() * 0.15 + 0.05));
-            endingPrice =
-              startingPrice + Math.random() * (invoice.amount - startingPrice);
-            endingDiscount = computeDiscount(invoice.amount, endingPrice);
-            endingProfitability = computeProfitability(
-              invoice.amount,
-              invoice.transactionFee.buyerPercentage,
-              endingPrice,
-            );
-          }
+          // Ending values (price/discount/profitability) are populated after
+          // seedBids() runs, using the actual winning bid — matching app behaviour.
           break;
         }
         case AuctionStatus.PUBLISHED:
@@ -959,12 +964,9 @@ export class SeedService {
 
       const auction = this.auctionRepository.create({
         invoice,
-        price: { start: startingPrice, end: endingPrice },
-        discount: { start: startingDiscount, end: endingDiscount },
-        profitability: {
-          start: startingProfitability,
-          end: endingProfitability,
-        },
+        price: { start: startingPrice },
+        discount: { start: startingDiscount },
+        profitability: { start: startingProfitability },
         date: { start: auctionDateStart, end: auctionDateEnd },
         status,
       });
@@ -975,54 +977,67 @@ export class SeedService {
     return await this.auctionRepository.save(auctions);
   }
 
-  private async assignBuyersToFinishedInvoices(
-    auctions: Auction[],
-    invoices: Invoice[],
-    investors: Investor[],
-  ): Promise<void> {
-    const invoiceSellerMap = new Map(
-      invoices.map((inv) => [inv.id, inv.sellerInvestor?.id]),
-    );
-
-    const finishedAuctions = auctions.filter(
-      (a) => a.status === AuctionStatus.FINISHED,
-    );
-
-    for (let i = 0; i < finishedAuctions.length; i++) {
-      const auction = finishedAuctions[i];
-      const sellerId = invoiceSellerMap.get(auction.invoice.id);
-      const availableBuyers = investors.filter(
-        (inv) => inv.id !== sellerId && inv.status === InvestorStatus.VERIFIED,
-      );
-      const buyer = availableBuyers[i % availableBuyers.length];
-      await this.invoiceRepository.update(auction.invoice.id, {
-        buyerInvestor: { id: buyer.id },
-      });
-    }
-  }
-
+  /**
+   * Seed bids for every non-DRAFT auction.
+   *
+   * Constraints enforced (mirrors bid.service.ts):
+   * - Only VERIFIED investors may bid.
+   * - The invoice seller cannot bid on their own auction.
+   * - No investor can outbid themselves (consecutive bids by same investor prevented).
+   * - Each bid amount ≥ previous × (1 + SMALLEST_BID_INCREMENT_PERCENTAGE / 100).
+   * - Bidder must have sufficient running availableBalance; if not, the next
+   *   eligible investor is tried.
+   *
+   * Returns a map of auctionId → latest bid for downstream use.
+   */
   private async seedBids(
     auctions: Auction[],
     investors: Investor[],
-  ): Promise<Bid[]> {
-    const bids: Bid[] = [];
-
-    // Get only VERIFIED, company investors for creating bids
-    const buyerInvestors = investors.filter(
-      (inv) =>
-        inv.investorType === InvestorType.COMPANY &&
-        inv.status === InvestorStatus.VERIFIED,
+  ): Promise<Map<string, Bid>> {
+    // All VERIFIED investors can bid (any type), matching @WsAuth([UserType.INVESTOR])
+    const verifiedInvestors = investors.filter(
+      (inv) => inv.status === InvestorStatus.VERIFIED,
     );
 
-    for (const auction of auctions) {
-      // Profitability = ((netInvoice - price) / price) * 100
-      // Profitability is positive when price < netInvoice.
-      // Bids step from the auction's starting price up to 99.9% of netInvoice,
-      // ensuring profitability is always strictly positive (≥ ~0.1%).
+    const smallestIncrement =
+      Number(process.env.SMALLEST_BID_INCREMENT_PERCENTAGE ?? 1) / 100;
+
+    // Track each investor's running availableBalance to detect affordability
+    const runningBalance = new Map<string, number>(
+      verifiedInvestors.map((inv) => [
+        inv.id,
+        inv.bankAccount.balance - inv.bankAccount.reservedBalance,
+      ]),
+    );
+
+    // Latest bid per auction — used by assignBuyers and reconcileBalances
+    const latestBidByAuction = new Map<string, Bid>();
+
+    // DRAFT auctions have never been published; no bids exist on them
+    const biddableAuctions = auctions.filter(
+      (a) => a.status !== AuctionStatus.DRAFT,
+    );
+
+    for (const auction of biddableAuctions) {
+      const sellerId = auction.invoice.sellerInvestor.id;
+
+      // Eligible bidders: VERIFIED, not the seller
+      const eligibleBidders = verifiedInvestors.filter(
+        (inv) => inv.id !== sellerId,
+      );
+
+      if (eligibleBidders.length < 2) {
+        console.warn(
+          `⚠️  Auction ${auction.id}: fewer than 2 eligible bidders, skipping`,
+        );
+        continue;
+      }
+
       const buyerPercentage = auction.invoice.transactionFee.buyerPercentage;
       const netInvoice = auction.invoice.amount * (1 - buyerPercentage / 100);
+
+      // Spread 5 bids across a range where profitability stays strictly positive
       const lowerBound = auction.price.start;
-      // Constrain total profitability spread across 5 bids to [0.1%, 1.0%]
       const startProfitability = computeProfitability(
         auction.invoice.amount,
         buyerPercentage,
@@ -1032,32 +1047,190 @@ export class SeedService {
       const endProfitability = Math.max(0.05, startProfitability - profSpread);
       const upperBound = netInvoice / (1 + endProfitability / 100);
       const spread = upperBound - lowerBound;
-      const step = spread / 6; // divide range into 6 steps, use steps 1–5
+      const step = spread / 6; // 6 steps → use steps 1–5
+
+      let previousAmount = lowerBound;
+      let previousBidderId: string | null = null;
+      let bidderRotation = 0;
 
       for (let i = 1; i <= 5; i++) {
-        const investor = buyerInvestors[i % buyerInvestors.length];
-        // Add slight random noise (±5% of step) to avoid perfectly linear bids
         const noise = step * (Math.random() * 0.1 - 0.05);
+        // Ensure minimum increment over the previous bid
+        const minAmount = previousAmount * (1 + smallestIncrement);
+        const rawAmount = lowerBound + step * i + noise;
+        const amount = Math.max(rawAmount, minAmount);
 
-        const amount = lowerBound + step * i + noise;
+        // Pick an eligible bidder who isn't the previous bidder (realistic)
+        // and has enough balance. Try up to eligibleBidders.length candidates.
+        let investor: Investor | undefined;
+        for (let attempt = 0; attempt < eligibleBidders.length; attempt++) {
+          const candidate =
+            eligibleBidders[
+              (bidderRotation + attempt) % eligibleBidders.length
+            ];
+
+          // Don't let the same investor outbid themselves
+          if (candidate.id === previousBidderId) continue;
+
+          // Check running balance
+          const available = runningBalance.get(candidate.id) ?? 0;
+          if (available >= amount) {
+            investor = candidate;
+            bidderRotation =
+              (bidderRotation + attempt + 1) % eligibleBidders.length;
+            break;
+          }
+        }
+
+        if (!investor) {
+          console.warn(
+            `⚠️  Auction ${auction.id} bid #${i}: no eligible investor with sufficient balance, stopping at ${i - 1} bids`,
+          );
+          break;
+        }
+
+        // Release the previous bidder's reservation (they've been outbid)
+        if (previousBidderId) {
+          const prev = runningBalance.get(previousBidderId) ?? 0;
+          runningBalance.set(previousBidderId, prev + previousAmount);
+        }
+
+        // Reserve the new bidder's funds
+        const currentBalance = runningBalance.get(investor.id)!;
+        runningBalance.set(investor.id, currentBalance - amount);
+
         const bid = this.bidRepository.create({
-          auction: auction,
-          investor: investor,
+          auction,
+          investor,
           amount,
           discount: computeDiscount(auction.invoice.amount, amount),
           profitability: computeProfitability(
             auction.invoice.amount,
-            auction.invoice.transactionFee.buyerPercentage,
+            buyerPercentage,
             amount,
           ),
         });
 
         // Save individually so each bid gets a distinct createdAt timestamp,
         // ensuring chronological order reflects ascending bid amounts.
-        bids.push(await this.bidRepository.save(bid));
+        const savedBid = await this.bidRepository.save(bid);
+
+        latestBidByAuction.set(auction.id, savedBid);
+        previousAmount = amount;
+        previousBidderId = investor.id;
       }
     }
 
-    return bids;
+    return latestBidByAuction;
+  }
+
+  /**
+   * For each FINISHED auction: set invoice.buyerInvestor to the winning bidder,
+   * and persist the auction's ending price/discount/profitability from that bid —
+   * mirroring what auction.service.ts does when an admin transitions to FINISHED.
+   */
+  private async assignBuyersToFinishedInvoices(
+    auctions: Auction[],
+    latestBidByAuction: Map<string, Bid>,
+  ): Promise<void> {
+    const finishedAuctions = auctions.filter(
+      (a) => a.status === AuctionStatus.FINISHED,
+    );
+
+    for (const auction of finishedAuctions) {
+      const winningBid = latestBidByAuction.get(auction.id);
+      if (!winningBid) {
+        console.warn(
+          `⚠️  FINISHED auction ${auction.id} has no bids — skipping buyer assignment`,
+        );
+        continue;
+      }
+
+      await this.invoiceRepository.update(auction.invoice.id, {
+        buyerInvestor: { id: winningBid.investor.id },
+      });
+
+      await this.auctionRepository.update(auction.id, {
+        price: { start: auction.price.start, end: Number(winningBid.amount) },
+        discount: {
+          start: auction.discount.start,
+          end: Number(winningBid.discount),
+        },
+        profitability: {
+          start: auction.profitability.start,
+          end: Number(winningBid.profitability),
+        },
+      });
+    }
+  }
+
+  /**
+   * Reconcile every investor's bank account balances after bids are seeded,
+   * mirroring the transactional effects of placing bids in the live app:
+   *
+   *  PUBLISHED / TRANSITIONING: winning bidder has funds reserved
+   *    → availableBalance -= latestBid.amount
+   *  FINISHED: winning bidder's transfer was finalised
+   *    → balance -= latestBid.amount  (availableBalance already reduced by reserve)
+   *  CANCELLED / DRAFT: no net effect (reserves released / no bids)
+   *
+   * If the computed availableBalance would go negative the investor's initial
+   * balance is increased to cover the shortfall, and a warning is logged.
+   */
+  private async reconcileBalances(
+    auctions: Auction[],
+    latestBidByAuction: Map<string, Bid>,
+    investors: Investor[],
+  ): Promise<void> {
+    // Per-investor accumulation
+    const reservedMap = new Map<string, number>(); // for PUBLISHED / TRANSITIONING
+    const finalizedMap = new Map<string, number>(); // for FINISHED
+
+    for (const auction of auctions) {
+      const latestBid = latestBidByAuction.get(auction.id);
+      if (!latestBid) continue;
+
+      const investorId = latestBid.investor.id;
+      const amount = Number(latestBid.amount);
+
+      if (
+        auction.status === AuctionStatus.PUBLISHED ||
+        auction.status === AuctionStatus.TRANSITIONING
+      ) {
+        reservedMap.set(
+          investorId,
+          (reservedMap.get(investorId) ?? 0) + amount,
+        );
+      } else if (auction.status === AuctionStatus.FINISHED) {
+        finalizedMap.set(
+          investorId,
+          (finalizedMap.get(investorId) ?? 0) + amount,
+        );
+      }
+      // CANCELLED / DRAFT: reserves released or never created — no net change
+    }
+
+    for (const investor of investors) {
+      const reserved = reservedMap.get(investor.id) ?? 0;
+      const finalized = finalizedMap.get(investor.id) ?? 0;
+
+      if (reserved === 0 && finalized === 0) continue;
+
+      const initialBalance = Number(investor.bankAccount.balance);
+      const newBalance = initialBalance - finalized;
+
+      // Check if the resulting reservedBalance would cause issues
+      if (reserved > newBalance) {
+        console.warn(
+          `⚠️  ${investor.email} has ${reserved.toFixed(2)} in reserved bids but only ${newBalance.toFixed(2)} balance after finalized auctions. ` +
+            `This may indicate a data consistency issue.`,
+        );
+      }
+
+      await this.bankAccountRepository.update(investor.bankAccount.id, {
+        balance: newBalance,
+        reservedBalance: reserved,
+      });
+    }
   }
 }

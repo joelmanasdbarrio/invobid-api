@@ -94,10 +94,12 @@ describe('Bid REST (e2e)', () => {
       .set(authHeader(companyToken))
       .send(auctionDto);
     auctionId = auctionRes.body.data.id;
+    const publishDate = new Date();
+    publishDate.setDate(publishDate.getDate() + 10);
     await request(server)
       .patch(`${API}/auctions/${auctionId}`)
       .set(authHeader(companyToken))
-      .send({ status: 'published' });
+      .send({ status: 'published', auctionDateEnd: publishDate.toISOString() });
 
     // Insert a bid via direct DB
     const bidResult = await dataSource.query(
@@ -274,10 +276,15 @@ describe('Bid REST (e2e)', () => {
         .post(`${API}/auctions`)
         .set(authHeader(companyToken))
         .send(makeAuctionDto(invoiceRes.body.data.id));
+      const freshPublishDate = new Date();
+      freshPublishDate.setDate(freshPublishDate.getDate() + 10);
       await request(server)
         .patch(`${API}/auctions/${freshAuction.body.data.id}`)
         .set(authHeader(companyToken))
-        .send({ status: 'published' });
+        .send({
+          status: 'published',
+          auctionDateEnd: freshPublishDate.toISOString(),
+        });
 
       const res = await request(server)
         .get(`${API}/bids?auctionId=${freshAuction.body.data.id}`)

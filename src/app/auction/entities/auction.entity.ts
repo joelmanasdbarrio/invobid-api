@@ -37,10 +37,10 @@ class AuctionDiscount {
 }
 
 class AuctionProfitability {
-  @Column('decimal', { precision: 4, scale: 2, nullable: false })
+  @Column('decimal', { precision: 6, scale: 2, nullable: false })
   start: number;
 
-  @Column('decimal', { precision: 4, scale: 2, nullable: true })
+  @Column('decimal', { precision: 6, scale: 2, nullable: true })
   end: number;
 }
 

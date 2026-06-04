@@ -1,6 +1,7 @@
 import { BadRequestException } from '@nestjs/common';
 import { Test, TestingModule } from '@nestjs/testing';
 import { getRepositoryToken } from '@nestjs/typeorm';
+import { BankAccountService } from '../bank-account/bank-account.service';
 import { BidService } from '../bid/bid.service';
 import { Invoice } from '../invoice/entities/invoice.entity';
 import { InvoiceStatus } from '../invoice/enums/invoice-status.enum';
@@ -10,7 +11,9 @@ import { Investor } from '../user/investor/entities/investor.entity';
 import { InvestorService } from '../user/investor/investor.service';
 import { AuctionService } from './auction.service';
 import { CreateAuctionDto } from './dto/create-auction.dto';
+import { UpdateAuctionDto } from './dto/update-auction.dto';
 import { Auction } from './entities/auction.entity';
+import { AuctionStatus } from './enums/auction-status.enum';
 
 /** Returns an ISO date string that is `offsetDays` days from today (UTC). */
 function utcDateOffset(offsetDays: number): string {
@@ -33,6 +36,7 @@ const mockAuctionRepository = {
   save: jest.fn(),
   delete: jest.fn(),
   count: jest.fn().mockResolvedValue(0),
+  createQueryBuilder: jest.fn(),
 };
 
 const mockInvoiceService = {
@@ -83,6 +87,7 @@ describe('AuctionService', () => {
         { provide: BidService, useValue: {} },
         { provide: InvoiceService, useValue: mockInvoiceService },
         { provide: InvestorService, useValue: {} },
+        { provide: BankAccountService, useValue: {} },
       ],
     }).compile();
 
@@ -183,6 +188,201 @@ describe('AuctionService', () => {
       await expect(service.create(makeDto(), sellerInvestor)).rejects.toThrow(
         BadRequestException,
       );
+    });
+  });
+});
+
+describe('AuctionService — update balance lifecycle', () => {
+  let service: AuctionService;
+
+  const mockBidService = {
+    findAll: jest.fn(),
+  };
+  const mockInvestorService = {
+    findOne: jest.fn(),
+  };
+  const mockBankAccountService = {
+    finalizeTransfer: jest.fn(),
+    releaseBalance: jest.fn(),
+    getPlatformAccount: jest.fn(),
+    settleAuction: jest.fn(),
+  };
+  const mockInvoiceRepository = {
+    save: jest.fn(),
+  };
+
+  const adminUser = {
+    id: 'admin-1',
+    type: UserType.ADMIN,
+  } as unknown as Investor;
+
+  const makeTransitioningAuction = () => ({
+    id: 'auction-1',
+    status: AuctionStatus.TRANSITIONING,
+    price: { start: 100, end: null },
+    discount: { start: 5, end: null },
+    profitability: { start: 10, end: null },
+    date: { start: new Date(), end: new Date() },
+    invoice: {
+      id: 'inv-1',
+      amount: 10000,
+      sellerInvestor: { id: 'seller-1' },
+      buyerInvestor: null,
+      transactionFee: { buyerPercentage: 2.5, sellerPercentage: 1.5 },
+    },
+    lastCommunication: 'test',
+    bids: [],
+    removeUndefined: undefined as unknown,
+  });
+
+  const mockQueryBuilder = {
+    leftJoinAndSelect: jest.fn().mockReturnThis(),
+    leftJoin: jest.fn().mockReturnThis(),
+    andWhere: jest.fn().mockReturnThis(),
+    where: jest.fn().mockReturnThis(),
+    withDeleted: jest.fn().mockReturnThis(),
+    getOne: jest.fn(),
+  };
+
+  beforeEach(async () => {
+    jest.clearAllMocks();
+
+    const module: TestingModule = await Test.createTestingModule({
+      providers: [
+        AuctionService,
+        {
+          provide: getRepositoryToken(Auction),
+          useValue: {
+            ...mockAuctionRepository,
+            createQueryBuilder: jest.fn().mockReturnValue(mockQueryBuilder),
+            save: jest.fn((entity) => Promise.resolve(entity)),
+          },
+        },
+        {
+          provide: getRepositoryToken(Invoice),
+          useValue: mockInvoiceRepository,
+        },
+        { provide: BidService, useValue: mockBidService },
+        { provide: InvoiceService, useValue: mockInvoiceService },
+        { provide: InvestorService, useValue: mockInvestorService },
+        { provide: BankAccountService, useValue: mockBankAccountService },
+      ],
+    }).compile();
+
+    service = module.get<AuctionService>(AuctionService);
+  });
+
+  describe('update (FINISHED)', () => {
+    it('should call settleAuction with correct parameters when auction finishes', async () => {
+      const auction = makeTransitioningAuction();
+      mockQueryBuilder.getOne.mockResolvedValue(auction);
+      mockBidService.findAll.mockResolvedValue({
+        data: [
+          {
+            amount: 5125,
+            discount: 50,
+            profitability: 15,
+            investor: { id: 'buyer-1' },
+          },
+        ],
+        total: 1,
+        page: 1,
+        limit: 1,
+      });
+      mockInvestorService.findOne.mockImplementation((id) => {
+        if (id === 'buyer-1') {
+          return Promise.resolve({
+            id: 'buyer-1',
+            bankAccount: { id: 'ba-buyer' },
+          });
+        }
+        if (id === 'seller-1') {
+          return Promise.resolve({
+            id: 'seller-1',
+            bankAccount: { id: 'ba-seller' },
+          });
+        }
+        return Promise.resolve(null);
+      });
+      mockBankAccountService.getPlatformAccount.mockResolvedValue({
+        id: 'ba-platform',
+      });
+      mockBankAccountService.settleAuction.mockResolvedValue(undefined);
+      mockInvoiceRepository.save.mockResolvedValue({});
+
+      const dto = new UpdateAuctionDto();
+      dto.status = AuctionStatus.FINISHED;
+      dto.removeUndefined = (() => dto) as any;
+
+      await service.update('auction-1', dto, adminUser);
+
+      // Verify settleAuction was called with correct fee calculations
+      // bidAmount = 5000
+      // buyerFee = 5000 * 2.5 / 100 = 125
+      // sellerFee = 5000 * 1.5 / 100 = 75
+      expect(mockBankAccountService.settleAuction).toHaveBeenCalledWith({
+        buyerAccountId: 'ba-buyer',
+        sellerAccountId: 'ba-seller',
+        platformAccountId: 'ba-platform',
+        bidAmount: 5000,
+        buyerFee: 125,
+        sellerFee: 75,
+      });
+    });
+  });
+
+  describe('update (CANCELLED)', () => {
+    it('should call releaseBalance for latest bidder when bids exist', async () => {
+      const auction = makeTransitioningAuction();
+      mockQueryBuilder.getOne.mockResolvedValue(auction);
+      mockBidService.findAll.mockResolvedValue({
+        data: [
+          {
+            amount: 3075,
+            investor: { id: 'buyer-1' },
+          },
+        ],
+        total: 1,
+        page: 1,
+        limit: 1,
+      });
+      mockInvestorService.findOne.mockResolvedValue({
+        id: 'buyer-1',
+        bankAccount: { id: 'ba-buyer' },
+      });
+      mockBankAccountService.releaseBalance.mockResolvedValue({});
+
+      const dto = new UpdateAuctionDto();
+      dto.status = AuctionStatus.CANCELLED;
+      dto.lastCommunication = 'Cancelled for testing';
+      dto.removeUndefined = (() => dto) as any;
+
+      await service.update('auction-1', dto, adminUser);
+
+      expect(mockBankAccountService.releaseBalance).toHaveBeenCalledWith(
+        'ba-buyer',
+        3075,
+      );
+    });
+
+    it('should not call releaseBalance when no bids exist', async () => {
+      const auction = makeTransitioningAuction();
+      mockQueryBuilder.getOne.mockResolvedValue(auction);
+      mockBidService.findAll.mockResolvedValue({
+        data: [],
+        total: 0,
+        page: 1,
+        limit: 1,
+      });
+
+      const dto = new UpdateAuctionDto();
+      dto.status = AuctionStatus.CANCELLED;
+      dto.lastCommunication = 'Cancelled for testing';
+      dto.removeUndefined = (() => dto) as any;
+
+      await service.update('auction-1', dto, adminUser);
+
+      expect(mockBankAccountService.releaseBalance).not.toHaveBeenCalled();
     });
   });
 });
