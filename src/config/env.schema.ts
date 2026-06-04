@@ -4,6 +4,7 @@ export const EnvConfigSchema = Joi.object({
   BUYER_TRANSFER_FEE_PERCENTAGE: Joi.number().required(),
   SELLER_TRANSFER_FEE_PERCENTAGE: Joi.number().required(),
   SMALLEST_BID_INCREMENT_PERCENTAGE: Joi.number().required(),
+  MINIMUM_INVOICE_DISCOUNT: Joi.number().required(),
   AUCTION_EXTENSION_MINUTES: Joi.number().integer().positive().required(),
   NODE_ENV: Joi.string()
     .valid('development', 'production', 'local')

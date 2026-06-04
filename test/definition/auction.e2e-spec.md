@@ -1,0 +1,227 @@
+# Auction
+
+_Use case_: Call POST `/auctions` endpoint
+- **Given that**: I'm an existing verified company investor user of the platform who wants to create an auction by accessing the POST `/auctions` endpoint
+  - **When**: I make a request to the POST `/auctions` endpoint with a valid access token and valid information in the request body (`CreateAuctionDto`) using a verified invoice ID that belongs to my investor user profile
+    - **Then**:
+      - [ ] It should authorize my access
+      - [ ] It should create a new draft auction related to an invoice of my investor user profile with the provided information, ignoring fields not specified in `CreateAuctionDto`
+      - [ ] It should persist the created auction in the database, adding the related invoice's seller fee to the specified `startingPrice` value in `CreateAuctionDto` (startingPrice=1000, sellerFee=1% -> final startingPrice=1010)
+      - [ ] It should return a 201 Created response with the created auction's information in the response body
+  - **When**: I make a request to the POST `/auctions` endpoint with a valid access token and missing one or more required fields from `CreateAuctionDto` in the request body
+    - **Then**:
+      - [ ] It should authorize my access
+      - [ ] It should not create a new auction
+      - [ ] It should return a 400 Bad Request response with an error message listing which fields are missing
+  - **When**: I make a request to the POST `/auctions` endpoint with a valid access token using wrong type values for one or more fields in `CreateAuctionDto` in the request body
+    - **Then**:
+      - [ ] It should authorize my access
+      - [ ] It should fail validation for the provided fields in `CreateAuctionDto`
+      - [ ] It should return a 400 Bad Request response with an error message list indicating which fields are invalid
+  - **When**: I make a request to the POST `/auctions` endpoint with a valid access token and a non-verified invoice ID in the request body (`CreateAuctionDto`)
+    - **Then**:
+      - [ ] It should authorize my access
+      - [ ] It should return a 400 Bad Request response with an error message indicating that the specified invoice is not verified
+  - **When**: I make a request to the POST `/auctions` endpoint with a valid access token and a starting price higher than (invoice value + buyer/seller fees) × (1 - MINIMUM_INVOICE_DISCOUNT) in the request body (`CreateAuctionDto`)
+    - **Then**:
+      - [ ] It should authorize my access
+      - [ ] It should return a 400 Bad Request response with an error message indicating that the specified price is not valid
+  - **When**: I make a request to the POST `/auctions` endpoint with a valid access token and an invalid invoice ID in the request body (`CreateAuctionDto`)
+    - **Then**:
+      - [ ] It should authorize my access
+      - [ ] It should return a 400 Bad Request response with an error message indicating that the specified invoice ID is malformed
+  - **When**: I make a request to the POST `/auctions` endpoint with a valid access token and a valid invoice ID in the request body (`CreateAuctionDto`) using auctionDateEnd value that is earlier than 2 days from now, and/or earlier than 1 month before the invoice's due date
+    - **Then**:
+      - [ ] It should authorize my access
+      - [ ] It should return a 400 Bad Request response with an error message indicating that the specified dates are invalid
+  - **When**: I make a request to the POST `/auctions` endpoint with a valid access token and an invoice ID in the request body (`CreateAuctionDto`) that belongs to my investor user profile and already has an active (non-cancelled) auction
+    - **Then**:
+      - [ ] It should authorize my access
+      - [ ] It should return a 400 Bad Request response with an error message indicating that there is already an active auction for the specified invoice
+  - **When**: I make a request to the POST `/auctions` endpoint with a valid access token and an invoice ID in the request body (`CreateAuctionDto`) that does not belong to my investor user profile or has already been sold
+    - **Then**:
+      - [ ] It should authorize my access
+      - [ ] It should return a 404 Not Found response with an error message indicating that the specified invoice was not found
+  - **When**: I make a request to the POST `/auctions` endpoint with a valid access token and a non-existent invoice ID in the request body (`CreateAuctionDto`)
+    - **Then**:
+      - [ ] It should authorize my access
+      - [ ] It should return a 404 Not Found response with an error message indicating that the specified invoice was not found
+
+_Use case_: Call GET `/auctions` endpoint
+- **Given that**: I'm an existing user of the platform (admin or verified investor) who wants to access the GET `/auctions` endpoint
+- **When**: I make a request to the GET `/auctions` endpoint with a valid access token and I query with `GetAuctionsDto` parameters using wrong type values to filter the results while there are 1 or more auctions in the system
+    - **Then**:
+      - [ ] It should authorize my access
+      - [ ] It should fail type validation for the provided filters in `GetAuctionsDto`
+      - [ ] It should return a 400 Bad Request response with an error message list indicating that the provided filters are invalid
+  - **When**: I make a request to the GET `/auctions` endpoint with a valid access token and there are no auctions in the system
+    - **Then**:
+      - [ ] It should authorize my access
+      - [ ] It should query the database for all verified auctions and find none
+      - [ ] It should return a 200 OK response with an empty paginated list of auctions
+- **Given that**: I'm an existing verified investor user of the platform who wants to access the GET `/auctions` endpoint
+  - **When**: I make a request to the GET `/auctions` endpoint with a valid access token while there are 1 or more auctions in the system
+    - **Then**:
+      - [ ] It should authorize my access
+      - [ ] It should query the database for all verified auctions, including my own no matter the status
+      - [ ] It should return a 200 OK response with a paginated list of all found auctions in the system
+  - **When**: I make a request to the GET `/auctions` endpoint with a valid access token and I query with `GetAuctionsDto` parameters to filter the results while there are 1 or more auctions in the system
+    - **Then**:
+      - [ ] It should authorize my access
+      - [ ] It should query the database for verified auctions that match the provided filters in `GetAuctionsDto`, including my own no matter the status, ignoring fields not specified in `GetAuctionsDto`
+      - [ ] It should return a 200 OK response with a paginated list of all found auctions in the system that match the provided filters
+  - **When**: I make a request to the GET `/auctions` endpoint with a valid access token and I query using parameters not specified in `GetAuctionsDto` to filter the results while there are 1 or more auctions in the system
+    - **Then**:
+      - [ ] It should authorize my access
+      - [ ] It should ignore the invalid filters and return results based only on the valid filters provided in `GetAuctionsDto`
+      - [ ] It should query the database for verified auctions that match the provided filters in `GetAuctionsDto`, including my own no matter the status, ignoring fields not specified in `GetAuctionsDto`
+      - [ ] It should return a 200 OK response with a paginated list of all found auctions in the system that match the provided filters
+- **Given that**: I'm an existing administrator user of the platform who wants to access the GET `/auctions` endpoint
+  - **When**: I make a request to the GET `/auctions` endpoint with a valid access token while there are 1 or more auctions in the system
+    - **Then**:
+      - [ ] It should authorize my access
+      - [ ] It should query the database for all auctions
+      - [ ] It should return a 200 OK response with a paginated list of all found auctions in the system
+  - **When**: I make a request to the GET `/auctions` endpoint with a valid access token and I query with `GetAuctionsDto` parameters to filter the results while there are 1 or more auctions in the system
+    - **Then**:
+      - [ ] It should authorize my access
+      - [ ] It should query the database for all auctions that match the provided filters in `GetAuctionsDto`, ignoring fields not specified in `GetAuctionsDto`
+      - [ ] It should return a 200 OK response with a paginated list of all found auctions in the system that match the provided filters
+  - **When**: I make a request to the GET `/auctions` endpoint with a valid access token and I query using parameters not specified in `GetAuctionsDto` to filter the results while there are 1 or more auctions in the system
+    - **Then**:
+      - [ ] It should authorize my access
+      - [ ] It should ignore the invalid filters and return results based only on the valid filters provided in `GetAuctionsDto`
+      - [ ] It should query the database for all auctions that match the provided filters in `GetAuctionsDto`, ignoring fields not specified in `GetAuctionsDto`
+      - [ ] It should return a 200 OK response with a paginated list of all found auctions in the system that match the provided filters
+  - **When**: I make a request to the GET `/auctions` endpoint with a valid access token and I include `includeDeleted=1` in the query parameters to include soft deleted auctions in the results while there are soft deleted auctions in the system
+    - **Then**:
+      - [ ] It should authorize my access
+      - [ ] It should query the database for all auctions, including soft deleted auctions, that match the provided filters in `GetAuctionsDto`, ignoring fields not specified in `GetAuctionsDto`, returning all properties including related invoice, debtor, investor, and documents
+      - [ ] It should return a 200 OK response with a paginated list of all found auctions in the system that match the provided filters, including soft deleted auctions
+
+_Use case_: Call GET `/auctions/:id` endpoint
+- **Given that**: I'm an existing user of the platform (admin or verified investor) who wants to access the GET `/auctions/:id` endpoint
+  - **When**: I make a request to the GET `/auctions/:id` endpoint with a valid access token and an invalid ID
+    - **Then**:
+      - [ ] It should authorize my access
+      - [ ] It should return a 400 Bad Request response with an error message indicating that the specified ID is malformed
+  - **When**: I make a request to the GET `/auctions/:id` endpoint with a valid access token and a non-existent auction ID
+    - **Then**:
+      - [ ] It should authorize my access
+      - [ ] It should return a 404 Not Found response with an error message indicating that the specified auction was not found
+- **Given that**: I'm an existing verified company investor user of the platform who wants to access the GET `/auctions/:id` endpoint
+  - **When**: I make a request to the GET `/auctions/:id` endpoint with a valid access token and a valid auction ID that belongs to my investor profile
+    - **Then**:
+      - [ ] It should authorize my access
+      - [ ] It should query the database for the specified auction by ID, returning all properties including related invoice, debtor, investor, and documents
+      - [ ] It should return a 200 OK response with the information of the specified auction
+  - **When**: I make a request to the GET `/auctions/:id` endpoint with a valid access token and a valid auction ID that does not belong to my investor user profile OR is not in PUBLISHED status (`AuctionStatus`)
+    - **Then**:
+      - [ ] It should authorize my access
+      - [ ] It should return a 404 Not Found response with an error message indicating that the specified auction was not found
+- **Given that**: I'm an existing administrator user of the platform who wants to access the GET `/auctions/:id` endpoint
+  - **When**: I make a request to the GET `/auctions/:id` endpoint with a valid access token and a valid auction ID
+    - **Then**:
+      - [ ] It should authorize my access
+      - [ ] It should query the database for the specified auction by ID, returning all properties including related invoice, debtor, investor, and documents
+      - [ ] It should return a 200 OK response with the information of the specified auction
+
+_Use case_: Call PATCH `/auctions/:id` endpoint
+- **Given that**: I'm an existing user of the platform (admin or verified company investor) who wants to access the PATCH `/auctions/:id` endpoint
+  - **When**: I make a request to the PATCH `/auctions/:id` endpoint with a valid access token, an invalid ID, and valid updated information in the request body (`UpdateAuctionDto`)
+    - **Then**:
+      - [ ] It should authorize my access
+      - [ ] It should return a 400 Bad Request response with an error message indicating that the specified ID is malformed
+  - **When**: I make a request to the PATCH `/auctions/:id` endpoint with a valid access token, a valid auction ID, using wrong type values for one or more fields in `UpdateAuctionDto` in the request body
+    - **Then**:
+      - [ ] It should authorize my access
+      - [ ] It should fail validation for the provided fields in `UpdateAuctionDto`
+      - [ ] It should return a 400 Bad Request response with an error message list indicating which fields are invalid
+  - **When**: I make a request to the PATCH `/auctions/:id` endpoint with a valid access token, a non-existent auction ID, and valid updated information in the request body (`UpdateAuctionDto`)
+    - **Then**:
+      - [ ] It should authorize my access
+      - [ ] It should return a 404 Not Found response with an error message indicating that the specified auction was not found
+- **Given that**: I'm an existing verified company investor user of the platform who wants to access the PATCH `/auctions/:id` endpoint
+  - **When**: I make a request to the PATCH `/auctions/:id` endpoint with a valid access token, a valid auction ID that belongs to my investor profile, and valid updated information in the request body (`UpdateAuctionDto`) using a verified invoice ID that belongs to my investor user profile
+    - **Then**:
+      - [ ] It should authorize my access
+      - [ ] It should update the specified auction's information with the provided data, ignoring fields not specified in `UpdateAuctionDto`
+      - [ ] It should return a 200 OK response with the updated information of the specified auction
+  - **When**: I make a request to the PATCH `/auctions/:id` endpoint with a valid access token, a valid auction ID that is not in DRAFT status (`AuctionStatus`), and valid updated information in the request body (`UpdateAuctionDto`)
+    - **Then**:
+      - [ ] It should authorize my access
+      - [ ] It should return a 400 Bad Request response with an error message indicating that only auctions in DRAFT status can be updated
+  - **When**: I make a request to the PATCH `/auctions/:id` endpoint with a valid access token, a valid auction ID, using a non-verified invoice ID in the request body (`UpdateAuctionDto`)
+    - **Then**:
+      - [ ] It should authorize my access
+      - [ ] It should return a 400 Bad Request response with an error message indicating that the specified invoice is not verified
+  - **When**: I make a request to the PATCH `/auctions/:id` endpoint with a valid access token, a valid auction ID that belongs to my investor profile, and using auctionDateEnd value in the request body (`UpdateAuctionDto`) that is earlier than 2 days from now, and/or earlier than 1 month before the invoice's due date
+    - **Then**:
+      - [ ] It should authorize my access
+      - [ ] It should return a 400 Bad Request response with an error message indicating that the specified dates are invalid
+  - **When**: I make a request to the PATCH `/auctions/:id` endpoint with a valid access token, a valid auction ID that does not belong to my investor user profile, and valid updated information in the request body (`UpdateAuctionDto`)
+    - **Then**:
+      - [ ] It should authorize my access
+      - [ ] It should return a 403 Forbidden response with an error message indicating that I don't have permission to perform this action
+  - **When**: I make a request to the PATCH `/auctions/:id` endpoint with a valid access token, a valid auction ID that belongs to my investor profile, and an invoice ID in the request body (`UpdateAuctionDto`) that does not belong to my investor user profile
+    - **Then**:
+      - [ ] It should authorize my access
+      - [ ] It should return a 404 Not Found response with an error message indicating that the specified invoice was not found
+  - **When**: I make a request to the PATCH `/auctions/:id` endpoint with a valid access token, a valid auction ID, using a non-existent invoice ID in the request body (`UpdateAuctionDto`)
+    - **Then**:
+      - [ ] It should authorize my access
+      - [ ] It should return a 404 Not Found response with an error message indicating that the specified invoice was not found
+
+- **Given that**: I'm an existing administrator user of the platform who wants to access the PATCH `/auctions/:id` endpoint
+  - **When**: I make a request to the PATCH `/auctions/:id` endpoint with a valid access token, a valid auction ID, and valid updated information in the request body (`UpdateAuctionDto`)
+    - **Then**:
+      - [ ] It should authorize my access
+      - [ ] It should update the specified auction's status and lastCommunication properties with the provided data
+      - [ ] When setting status to `FINISHED`, it should persist the winning bidder as `invoice.buyerInvestor`
+      - [ ] It should ignore all other fields not allowed to be updated by the administrator
+      - [ ] It should return a 200 OK response with the updated information of the specified auction
+  - **When**: I make a request to the PATCH `/auctions/:id` endpoint with a valid access token, a valid auction ID that is not in TRANSITIONING status (`AuctionStatus`), and valid updated information in the request body (`UpdateAuctionDto`)
+    - **Then**:
+      - [ ] It should authorize my access
+      - [ ] It should return a 400 Bad Request response with an error message indicating that only auctions in TRANSITIONING status can be updated
+  - **When**: I make a request to the PATCH `/auctions/:id` endpoint with a valid access token, a valid auction ID that is in TRANSITIONING status (`AuctionStatus`), and valid updated information in the request body (`UpdateAuctionDto`) setting the status to `FINISHED` while there are no bids on the auction
+    - **Then**:
+      - [ ] It should authorize my access
+      - [ ] It should return a 400 Bad Request response with an error message indicating that an auction cannot be finished without any bids
+  - **When**: I make a request to the PATCH `/auctions/:id` endpoint with a valid access token, a valid auction ID that is in TRANSITIONING status (`AuctionStatus`), and valid updated information in the request body (`UpdateAuctionDto`) setting the status to `CANCELLED` without providing `lastCommunication`
+    - **Then**:
+      - [ ] It should authorize my access
+      - [ ] It should return a 400 Bad Request response with an error message indicating that `lastCommunication` is required when cancelling an auction
+  - **When**: I set a `TRANSITIONING` auction to `FINISHED` (winning bid exists)
+    - **Then**:
+      - [ ] It should deduct the winning bid amount from the winner's `balance`
+      - [ ] It should NOT change the winner's `availableBalance` (funds were already reserved)
+  - **When**: I set a `TRANSITIONING` auction to `CANCELLED` and a winning bidder exists
+    - **Then**:
+      - [ ] It should restore the winning bidder's `availableBalance` by the bid amount
+      - [ ] It should NOT change the winner's `balance`
+  - **When**: I set a `TRANSITIONING` auction to `CANCELLED` and no bids have been placed
+    - **Then**:
+      - [ ] It should NOT modify any investor's `balance` or `availableBalance`
+
+_Use case_: Call DELETE `/auctions/:id` endpoint
+- **Given that**: I'm an existing verified company investor user of the platform who wants to access the DELETE `/auctions/:id` endpoint
+  - **When**: I make a request to the DELETE `/auctions/:id` endpoint with a valid access token and a valid auction ID that belongs to my investor profile and is in DRAFT status (`AuctionStatus`)
+    - **Then**:
+      - [ ] It should authorize my access
+      - [ ] It should soft delete the specified auction
+      - [ ] It should return a 200 OK response indicating that the auction was deleted
+  - **When**: I make a request to the DELETE `/auctions/:id` endpoint with a valid access token and an invalid ID
+    - **Then**:
+      - [ ] It should authorize my access
+      - [ ] It should return a 400 Bad Request response with an error message indicating that the specified ID is malformed
+  - **When**: I make a request to the DELETE `/auctions/:id` endpoint with a valid access token and a valid auction ID that does not belong to my investor profile OR is not in DRAFT status (`AuctionStatus`)
+    - **Then**:
+      - [ ] It should authorize my access
+      - [ ] It should return a 404 Not Found response with an error message indicating that the specified auction was not found
+  - **When**: I make a request to the DELETE `/auctions/:id` endpoint with a valid access token and a non-existent auction ID
+    - **Then**:
+      - [ ] It should authorize my access
+      - [ ] It should return a 404 Not Found response with an error message indicating that the specified auction was not found
+
+> _TODO_: `GET /auctions/lookup/count` endpoint test cases are not covered in this document.

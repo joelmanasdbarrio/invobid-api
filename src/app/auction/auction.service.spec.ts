@@ -279,7 +279,7 @@ describe('AuctionService — update balance lifecycle', () => {
       mockBidService.findAll.mockResolvedValue({
         data: [
           {
-            amount: 5000,
+            amount: 5125,
             discount: 50,
             profitability: 15,
             investor: { id: 'buyer-1' },

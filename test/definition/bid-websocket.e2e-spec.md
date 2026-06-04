@@ -1,0 +1,113 @@
+## Bid WebSocket Gateway
+
+_Use case_: Connect to the `/auctions` WebSocket namespace
+- **Given that**: I'm a user who wants to connect to the `/auctions` WebSocket namespace
+  - **When**: I attempt to connect without a valid access token
+    - **Then**:
+      - [ ] It should reject the connection with an unauthorized error
+  - **When**: I attempt to connect as an administrator user with a valid access token
+    - **Then**:
+      - [ ] It should reject the connection with an error indicating that only investor users are allowed
+
+_Use case_: Send `join-balance` event on the `/auctions` namespace
+- **Given that**: I'm an existing verified investor user of the platform connected to the `/auctions` namespace
+  - **When**: I send a `join-balance` event without a valid access token
+    - **Then**:
+      - [ ] It should reject the request with an unauthorized error
+  - **When**: I send a `join-balance` event with an invalid access token
+    - **Then**:
+      - [ ] It should reject the request with an unauthorized error
+  - **When**: I send a valid `join-balance` event as a verified investor
+    - **Then**:
+      - [ ] It should register my socket for balance updates
+      - [ ] It should emit a `balance-update` event to my socket whenever a bid I place (or a bid that outbids me) changes my `availableBalance`
+
+_Use case_: Send `join-auction` event on the `/auctions` namespace
+- **Given that**: I'm an existing verified investor user of the platform connected to the `/auctions` namespace
+  - **When**: I send a `join-auction` event with a valid `auctionId`
+    - **Then**:
+      - [ ] It should join me to the Socket.IO room for that auction
+      - [ ] It should emit a `viewer-count` event to all users in the auction room with the updated viewer count
+  - **When**: I send a `join-auction` event with a valid `auctionId` from a second connection using the same user account (duplicate connection)
+    - **Then**:
+      - [ ] It should join the second connection to the Socket.IO room for that auction
+      - [ ] It should emit a `viewer-count` event to all users in the auction room without incrementing the unique viewer count (deduplication by user)
+  - **When**: I disconnect from the namespace after having joined an auction room
+    - **Then**:
+      - [ ] It should remove me from the viewer tracking for the auction room
+      - [ ] It should emit a `viewer-count` event to all remaining users in the auction room with the decremented viewer count
+
+_Use case_: Send `place-bid` event on the `/auctions` namespace
+- **Given that**: I'm an existing verified investor user of the platform connected to the `/auctions` namespace who wants to place a bid
+  - **When**: I send a `place-bid` event with a valid `CreateBidDto` on a `PUBLISHED` auction that does not belong to me, and the bid amount meets the minimum increment requirement
+    - **Then**:
+      - [ ] It should create a new bid on the specified auction
+      - [ ] It should emit a `new-bid` event to all users in the auction room with the new bid information
+      - [ ] It should emit an `auction-bid-update` event to all connected clients
+      - [ ] It should return `{ success: true }` to the sender
+  - **When**: I send a `place-bid` event with a valid `CreateBidDto` on a `PUBLISHED` auction that does not belong to me and has 10min or less remaining before the auction ends, and the bid amount meets the minimum increment requirement
+    - **Then**:
+      - [ ] It should create a new bid on the specified auction
+      - [ ] It should update the auction end time to be 10min from the time of the bid
+      - [ ] It should emit a `new-bid` event to all users in the auction room with the new bid information
+      - [ ] It should emit an `auction-bid-update` event to all connected clients
+      - [ ] It should return `{ success: true }` to the sender
+  - **When**: I send a `place-bid` event with a bid amount equal to the maximum allowed auction price (invoice value, i.e. 0% discount) on a `PUBLISHED` auction
+    - **Then**:
+      - [ ] It should create a new bid on the specified auction
+      - [ ] It should immediately transition the auction status to `TRANSITIONING`, regardless of remaining auction time
+      - [ ] It should emit a `new-bid` event to all users in the auction room with the new bid information
+      - [ ] It should emit an `auction-bid-update` event to all connected clients with the updated auction status (`newStatus: TRANSITIONING`)
+      - [ ] It should return `{ success: true }` to the sender
+  - **When**: I send a `place-bid` event with a bid amount that, while below the maximum allowed price, would make the next minimum valid bid (`currentBidAmount × (1 + SMALLEST_BID_INCREMENT_PERCENTAGE / 100)`) exceed the maximum allowed auction price on a `PUBLISHED` auction
+    - **Then**:
+      - [ ] It should create a new bid on the specified auction
+      - [ ] It should immediately transition the auction status to `TRANSITIONING`, regardless of remaining auction time
+      - [ ] It should emit a `new-bid` event to all users in the auction room with the new bid information
+      - [ ] It should emit an `auction-bid-update` event to all connected clients with the updated auction status (`newStatus: TRANSITIONING`)
+      - [ ] It should return `{ success: true }` to the sender
+  - **When**: I send a `place-bid` event with a valid `auctionId` of an auction that belongs to me (I am the seller)
+    - **Then**:
+      - [ ] It should not create a new bid
+      - [ ] It should return `{ success: false, message }` indicating that sellers cannot place bids on their own auctions
+  - **When**: I send a `place-bid` event with a valid `auctionId` of an auction that is **not** in `PUBLISHED` status (e.g., `DRAFT`, `TRANSITIONING`, `FINISHED`, or `CANCELLED`)
+    - **Then**:
+      - [ ] It should not create a new bid
+      - [ ] It should return `{ success: false, message }` indicating that bids can only be placed on published auctions
+  - **When**: I send a `place-bid` event with a bid amount that is less than the minimum increment over the current highest bid on a `PUBLISHED` auction
+    - **Then**:
+      - [ ] It should not create a new bid
+      - [ ] It should return `{ success: false, message }` indicating the minimum required bid amount based on the configured `SMALLEST_BID_INCREMENT_PERCENTAGE`
+  - **When**: I send a `place-bid` event with a bid amount that is less than the minimum increment over the auction's starting price (no prior bids exist) on a `PUBLISHED` auction
+    - **Then**:
+      - [ ] It should not create a new bid
+      - [ ] It should return `{ success: false, message }` indicating the minimum required bid amount based on the configured `SMALLEST_BID_INCREMENT_PERCENTAGE`
+  - **When**: I send a `place-bid` event with a bid amount that is exactly at the minimum increment boundary (equal to `latestBidAmount * (1 + SMALLEST_BID_INCREMENT_PERCENTAGE / 100)`)
+    - **Then**:
+      - [ ] It should create a new bid on the specified auction
+      - [ ] It should return `{ success: true }` to the sender
+  - **When**: I send a `place-bid` event with missing or invalid fields in `CreateBidDto` (e.g., missing `auctionId` or a non-positive `amount`)
+    - **Then**:
+      - [ ] It should not create a new bid
+      - [ ] It should return `{ success: false, message }` indicating which fields are missing or invalid
+  - **When**: I send a `place-bid` event with a non-existent `auctionId`
+    - **Then**:
+      - [ ] It should not create a new bid
+      - [ ] It should return `{ success: false, message }` indicating that the specified auction was not found
+  - **When**: I send a `place-bid` event with a bid amount exceeding my `availableBalance`
+    - **Then**:
+      - [ ] It should not create a new bid
+      - [ ] It should return `{ success: false, message }` indicating insufficient funds
+  - **When**: I send a valid `place-bid` event and my `availableBalance` is sufficient
+    - **Then**:
+      - [ ] It should decrease my `availableBalance` by the bid amount
+      - [ ] It should NOT change my `balance`
+      - [ ] It should emit a `balance-update` event only to my sockets with my new `availableBalance`
+  - **When**: Another investor places a higher bid on the same auction (I am outbid)
+    - **Then**:
+      - [ ] It should restore my `availableBalance` by my previously reserved bid amount
+      - [ ] It should NOT change my `balance`
+      - [ ] It should emit a `balance-update` event only to my sockets with my restored `availableBalance`
+  - **When**: A `balance-update` event is emitted after any bid
+    - **Then**:
+      - [ ] It should NOT be visible to other investors who are not the bidder or the outbid investor

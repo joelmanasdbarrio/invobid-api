@@ -1,0 +1,156 @@
+# Debtor
+
+_Use case_: Call POST `/debtors` endpoint
+- **Given that**: I'm an existing verified company investor user of the platform who wants to create a debtor by accessing the POST `/debtors` endpoint
+  - **When**: I make a request to the POST `/debtors` endpoint with a valid access token and valid information in the request body (`CreateDebtorDto`)
+    - **Then**:
+      - [ ] It should authorize my access
+      - [ ] It should create a new debtor related to my investor user profile with the provided information, ignoring fields not specified in `CreateDebtorDto`
+      - [ ] It should return a 201 Created response with the created debtor's information in the response body
+  - **When**: I make a request to the POST `/debtors` endpoint with a valid access token and missing one or more required fields from `CreateDebtorDto` in the request body
+    - **Then**:
+      - [ ] It should authorize my access
+      - [ ] It should not create a new debtor
+      - [ ] It should return a 400 Bad Request response with an error message listing which fields are missing
+  - **When**: I make a request to the POST `/debtors` endpoint with a valid access token using wrong type values for one or more fields in `CreateDebtorDto` in the request body
+    - **Then**:
+      - [ ] It should authorize my access
+      - [ ] It should fail validation for the provided fields in `CreateDebtorDto`
+      - [ ] It should return a 400 Bad Request response with an error message list indicating which fields are invalid
+  - **When**: I make a request to the POST `/debtors` endpoint with a valid access token and valid information in the request body (`CreateDebtorDto`) with an email, phoneNumber, companyName, and/or taxId that is already registered by me and submit it
+    - **Then**:
+      - [ ] It should authorize my access
+      - [ ] It should return a 400 Bad Request response with an error message indicating that the email, phoneNumber, companyName, or taxId is already in use by me for another debtor
+
+_Use case_: Call GET `/debtors` endpoint
+- **Given that**: I'm an existing user of the platform (admin or verified investor) who wants to access the GET `/debtors` endpoint
+  - **When**: I make a request to the GET `/debtors` endpoint with a valid access token and I query with `GetDebtorsDto` parameters using wrong type values to filter the results
+    - **Then**:
+      - [ ] It should authorize my access
+      - [ ] It should fail type validation for the provided filters in `GetDebtorsDto`
+      - [ ] It should return a 400 Bad Request response with an error message list indicating that the provided filters are invalid
+- **Given that**: I'm an existing verified investor user of the platform who wants to access the GET `/debtors` endpoint
+  - **When**: I make a request to the GET `/debtors` endpoint with a valid access token while there are 1 or more debtors in the system
+    - **Then**:
+      - [ ] It should authorize my access
+      - [ ] It should query the database for all verified debtors, including my own no matter the status
+      - [ ] It should return a 200 OK response with a paginated list of all found debtors in the system
+  - **When**: I make a request to the GET `/debtors` endpoint with a valid access token and there are no debtors in the system
+    - **Then**:
+      - [ ] It should authorize my access
+      - [ ] It should query the database for all verified debtors and find none
+      - [ ] It should return a 200 OK response with an empty paginated list of debtors
+  - **When**: I make a request to the GET `/debtors` endpoint with a valid access token and I query with `GetDebtorsDto` parameters to filter the results while there are 1 or more debtors in the system
+    - **Then**:
+      - [ ] It should authorize my access
+      - [ ] It should query the database for verified debtors that match the provided filters in `GetDebtorsDto`, ignoring fields not specified in `GetDebtorsDto`
+      - [ ] It should return a 200 OK response with a paginated list of all found debtors in the system that match the provided filters
+- **Given that**: I'm an existing administrator user of the platform who wants to access the GET `/debtors` endpoint
+  - **When**: I make a request to the GET `/debtors` endpoint with a valid access token while there are 1 or more debtors in the system
+    - **Then**:
+      - [ ] It should authorize my access
+      - [ ] It should query the database for all debtors
+      - [ ] It should return a 200 OK response with a paginated list of all found debtors in the system
+  - **When**: I make a request to the GET `/debtors` endpoint with a valid access token and there are no debtors in the system
+    - **Then**:
+      - [ ] It should authorize my access
+      - [ ] It should query the database for all debtors and find none
+      - [ ] It should return a 200 OK response with an empty paginated list of debtors
+  - **When**: I make a request to the GET `/debtors` endpoint with a valid access token and I query with `GetDebtorsDto` parameters to filter the results while there are 1 or more debtors in the system
+    - **Then**:
+      - [ ] It should authorize my access
+      - [ ] It should query the database for all debtors that match the provided filters in `GetDebtorsDto`
+      - [ ] It should return a 200 OK response with a paginated list of all found debtors in the system that match the provided filters
+  - **When**: I make a request to the GET `/debtors` endpoint with a valid access token and I query using parameters not specified in `GetDebtorsDto` to filter the results while there are 1 or more debtors in the system
+    - **Then**:
+      - [ ] It should authorize my access
+      - [ ] It should ignore the invalid filters and return results based only on the valid filters provided in `GetDebtorsDto`
+      - [ ] It should query the database for all debtors that match the provided filters in `GetDebtorsDto`, ignoring fields not specified in `GetDebtorsDto`
+      - [ ] It should return a 200 OK response with a paginated list of all found debtors in the system that match the provided filters
+  - **When**: I make a request to the GET `/debtors` endpoint with a valid access token and I include `includeDeleted=1` in the query parameters to include soft deleted debtors in the results while there are soft deleted debtors in the system
+    - **Then**:
+      - [ ] It should authorize my access
+      - [ ] It should query the database for all debtors, including soft deleted debtors, that match the provided filters in `GetDebtorsDto`, ignoring fields not specified in `GetDebtorsDto`, returning all debtor properties including related investor
+      - [ ] It should return a 200 OK response with a paginated list of all found debtors in the system that match the provided filters, including soft deleted debtors
+
+_Use case_: Call GET `/debtors/:id` endpoint
+- **Given that**: I'm an existing user of the platform (admin or verified investor) who wants to access the GET `/debtors/:id` endpoint
+  - **When**: I make a request to the GET `/debtors/:id` endpoint with a valid access token and a valid debtor ID
+    - **Then**:
+      - [ ] It should authorize my access
+      - [ ] It should query the database for the specified debtor by ID and return all properties, including related investor
+      - [ ] It should return a 200 OK response with the information of the specified debtor
+  - **When**: I make a request to the GET `/debtors/:id` endpoint with a valid access token and an invalid ID
+    - **Then**:
+      - [ ] It should authorize my access
+      - [ ] It should return a 400 Bad Request response with an error message indicating that the specified ID is malformed
+  - **When**: I make a request to the GET `/debtors/:id` endpoint with a valid access token and a non-existent debtor ID
+    - **Then**:
+      - [ ] It should authorize my access
+      - [ ] It should return a 404 Not Found response with an error message indicating that the specified debtor was not found
+
+_Use case_: Call PATCH `/debtors/:id` endpoint
+- **Given that**: I'm an existing verified company investor user of the platform who wants to access the PATCH `/debtors/:id` endpoint
+  - **When**: I make a request to the PATCH `/debtors/:id` endpoint with a valid access token, a valid debtor ID that belongs to my investor user profile, and valid updated information in the request body (`UpdateDebtorDto`)
+    - **Then**:
+      - [ ] It should authorize my access
+      - [ ] It should update the specified debtor's information with the provided data, ignoring fields not specified in `UpdateDebtorDto`
+      - [ ] It should return a 200 OK response with the updated information of the specified debtor
+  - **When**: I make a request to the PATCH `/debtors/:id` endpoint with a valid access token, an invalid ID, and valid updated information in the request body (`UpdateDebtorDto`)
+    - **Then**:
+      - [ ] It should authorize my access
+      - [ ] It should return a 400 Bad Request response with an error message indicating that the specified ID is malformed
+  - **When**: I make a request to the PATCH `/debtors/:id` endpoint with a valid access token, a valid debtor ID, using wrong type values for one or more fields in `UpdateDebtorDto` in the request body
+    - **Then**:
+      - [ ] It should authorize my access
+      - [ ] It should fail validation for the provided fields in `UpdateDebtorDto`
+      - [ ] It should return a 400 Bad Request response with an error message list indicating which fields are invalid
+  - **When**: I make a request to the PATCH `/debtors/:id` endpoint with a valid access token, a valid debtor ID that does not belong to my investor user profile, and valid updated information in the request body (`UpdateDebtorDto`)
+    - **Then**:
+      - [ ] It should authorize my access
+      - [ ] It should return a 403 Forbidden response with an error message indicating that I don't have permission to perform this action
+  - **When**: I make a request to the PATCH `/debtors/:id` endpoint with a valid access token, a non-existent debtor ID, and valid updated information in the request body (`UpdateDebtorDto`)
+    - **Then**:
+      - [ ] It should authorize my access
+      - [ ] It should return a 404 Not Found response with an error message indicating that the specified debtor was not found
+- **Given that**: I'm an existing administrator user of the platform who wants to access the PATCH `/debtors/:id` endpoint
+  - **When**: I make a request to the PATCH `/debtors/:id` endpoint with a valid access token, a valid debtor ID, and valid updated information in the request body (`UpdateDebtorDto`)
+    - **Then**:
+      - [ ] It should authorize my access
+      - [ ] It should update the specified debtor's information with the provided data, ignoring fields not specified in `UpdateDebtorDto`
+      - [ ] It should return a 200 OK response with the updated information of the specified debtor
+  - **When**: I make a request to the PATCH `/debtors/:id` endpoint with a valid access token, an invalid ID, and valid updated information in the request body (`UpdateDebtorDto`)
+    - **Then**:
+      - [ ] It should authorize my access
+      - [ ] It should return a 400 Bad Request response with an error message indicating that the specified ID is malformed
+  - **When**: I make a request to the PATCH `/debtors/:id` endpoint with a valid access token, a valid debtor ID, using wrong type values for one or more fields in `UpdateDebtorDto` in the request body
+    - **Then**:
+      - [ ] It should authorize my access
+      - [ ] It should fail validation for the provided fields in `UpdateDebtorDto`
+      - [ ] It should return a 400 Bad Request response with an error message list indicating which fields are invalid
+  - **When**: I make a request to the PATCH `/debtors/:id` endpoint with a valid access token, a non-existent debtor ID, and valid updated information in the request body (`UpdateDebtorDto`)
+    - **Then**:
+      - [ ] It should authorize my access
+      - [ ] It should return a 404 Not Found response with an error message indicating that the specified debtor was not found
+
+_Use case_: Call DELETE `/debtors/:id` endpoint
+- **Given that**: I'm an existing verified company investor user of the platform who wants to access the DELETE `/debtors/:id` endpoint
+  - **When**: I make a request to the DELETE `/debtors/:id` endpoint with a valid access token and a valid debtor ID that belongs to my investor user profile
+    - **Then**:
+      - [ ] It should authorize my access
+      - [ ] It should soft delete the specified debtor
+      - [ ] It should return a 200 OK response indicating that the debtor was deleted
+  - **When**: I make a request to the DELETE `/debtors/:id` endpoint with a valid access token and an invalid ID
+    - **Then**:
+      - [ ] It should authorize my access
+      - [ ] It should return a 400 Bad Request response with an error message indicating that the specified ID is malformed
+  - **When**: I make a request to the DELETE `/debtors/:id` endpoint with a valid access token and a valid debtor ID that does not belong to my investor user profile
+    - **Then**:
+      - [ ] It should authorize my access
+      - [ ] It should return a 404 Not Found response with an error message indicating that the specified debtor was not found
+  - **When**: I make a request to the DELETE `/debtors/:id` endpoint with a valid access token and a non-existent debtor ID
+    - **Then**:
+      - [ ] It should authorize my access
+      - [ ] It should return a 404 Not Found response with an error message indicating that the specified debtor was not found
+
+> _TODO_: `GET /debtors/lookup/count` endpoint test cases are not covered in this document.

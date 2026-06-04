@@ -29,6 +29,7 @@ export interface BidBalanceUpdate {
 export interface CreateBidResult {
   bid: Bid;
   balanceUpdates: BidBalanceUpdate[];
+  reachedMaxPrice: boolean;
 }
 
 @Injectable()
@@ -108,49 +109,59 @@ export class BidService {
       );
     }
 
-    return await this.dataSource.transaction(async (manager) => {
-      const balanceUpdates: BidBalanceUpdate[] = [];
+    const maxBidAmount = Number(auction.invoice.amount);
+    const nextMinBidTotal =
+      newBidAmount *
+      (1 + Number(process.env.SMALLEST_BID_INCREMENT_PERCENTAGE) / 100);
+    const reachedMaxPrice = nextMinBidTotal > maxBidAmount;
 
-      if (latestBid) {
-        const prevBankAccountId = latestBid.investor?.bankAccount?.id;
-        if (prevBankAccountId) {
-          const released = await this.bankAccountService.releaseBalance(
-            prevBankAccountId,
-            latestBid.amount,
-            manager,
-          );
-          balanceUpdates.push({
-            investorId: latestBid.investor.id,
-            reservedBalance: Number(released.reservedBalance),
-          });
+    const transactionResult = await this.dataSource.transaction(
+      async (manager) => {
+        const balanceUpdates: BidBalanceUpdate[] = [];
+
+        if (latestBid) {
+          const prevBankAccountId = latestBid.investor?.bankAccount?.id;
+          if (prevBankAccountId) {
+            const released = await this.bankAccountService.releaseBalance(
+              prevBankAccountId,
+              latestBid.amount,
+              manager,
+            );
+            balanceUpdates.push({
+              investorId: latestBid.investor.id,
+              reservedBalance: Number(released.reservedBalance),
+            });
+          }
         }
-      }
 
-      const reserved = await this.bankAccountService.reserveBalance(
-        user.bankAccount.id,
-        newBidAmount,
-        manager,
-      );
-      balanceUpdates.push({
-        investorId: user.id,
-        reservedBalance: Number(reserved.reservedBalance),
-      });
-
-      const bid = manager.create(Bid, {
-        auction,
-        investor: user,
-        amount: newBidAmount,
-        discount: computeDiscount(auction.invoice.amount, newBidAmount),
-        profitability: computeProfitability(
-          auction.invoice.amount,
-          auction.invoice.transactionFee.buyerPercentage,
+        const reserved = await this.bankAccountService.reserveBalance(
+          user.bankAccount.id,
           newBidAmount,
-        ),
-      });
+          manager,
+        );
+        balanceUpdates.push({
+          investorId: user.id,
+          reservedBalance: Number(reserved.reservedBalance),
+        });
 
-      const savedBid = await manager.save(bid);
-      return { bid: savedBid, balanceUpdates };
-    });
+        const bid = manager.create(Bid, {
+          auction,
+          investor: user,
+          amount: newBidAmount,
+          discount: computeDiscount(auction.invoice.amount, newBidAmount),
+          profitability: computeProfitability(
+            auction.invoice.amount,
+            auction.invoice.transactionFee.buyerPercentage,
+            newBidAmount,
+          ),
+        });
+
+        const savedBid = await manager.save(bid);
+        return { bid: savedBid, balanceUpdates };
+      },
+    );
+
+    return { ...transactionResult, reachedMaxPrice };
   }
 
   async findAll(query: GetBidsDto, user: User) {

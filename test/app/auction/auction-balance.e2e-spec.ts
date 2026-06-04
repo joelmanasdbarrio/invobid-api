@@ -149,10 +149,12 @@ describe('Auction Balance Lifecycle (e2e)', () => {
       .post(`${API}/auctions`)
       .set(authHeader(sellerToken))
       .send(auctionDto);
+    const publishDate = new Date();
+    publishDate.setDate(publishDate.getDate() + 10);
     await request(server)
       .patch(`${API}/auctions/${auctionRes.body.data.id}`)
       .set(authHeader(sellerToken))
-      .send({ status: 'published' });
+      .send({ status: 'published', auctionDateEnd: publishDate.toISOString() });
 
     return {
       auctionId: auctionRes.body.data.id,
@@ -173,6 +175,9 @@ describe('Auction Balance Lifecycle (e2e)', () => {
     server = app.getHttpServer() as App;
     dataSource = app.get(DataSource);
     await cleanDatabase(dataSource);
+    await dataSource.query(
+      `INSERT INTO bank_accounts (balance, "reservedBalance", platform) VALUES (0, 0, true)`,
+    );
 
     await new Promise<void>((resolve) => {
       (server as any).listen(0, () => resolve());
@@ -315,10 +320,17 @@ describe('Auction Balance Lifecycle (e2e)', () => {
       );
       expect(bidResult.success).toBe(true);
 
-      // Verify available balance is reduced
+      // Verify available balance is reduced (bid reserves bidAmount + buyerFee)
+      const auctionInfoRes = await request(server)
+        .get(`${API}/auctions/${auctionId}`)
+        .set(authHeader(adminToken));
+      const buyerPct =
+        auctionInfoRes.body.data.invoice.transactionFee.buyerPercentage;
+      const bidFee = (bidAmount * buyerPct) / 100;
+      const totalReserved = bidAmount + bidFee;
       const beforeCancel = await getInvestorBalance(buyerId, adminToken);
       expect(beforeCancel.availableBalance).toBeCloseTo(
-        fundAmount - bidAmount,
+        fundAmount - totalReserved,
         1,
       );
 

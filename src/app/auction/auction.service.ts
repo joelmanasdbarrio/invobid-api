@@ -420,6 +420,17 @@ export class AuctionService {
     return null;
   }
 
+  async transitionToTransitioning(auctionId: string): Promise<void> {
+    const auction = await this.auctionRepository.findOne({
+      where: { id: auctionId },
+    });
+
+    if (!auction) return;
+
+    auction.status = AuctionStatus.TRANSITIONING;
+    await this.auctionRepository.save(auction);
+  }
+
   private computeMetrics(
     invoiceAmount: number,
     buyerPercentage: number,
@@ -541,9 +552,10 @@ export class AuctionService {
 
     const platformAccount = await this.bankAccountService.getPlatformAccount();
 
-    const bidAmount = parseFloat(latestBid.amount.toString());
-    const buyerFee =
-      (bidAmount * auction.invoice.transactionFee.buyerPercentage) / 100;
+    const totalReserved = parseFloat(latestBid.amount.toString());
+    const buyerFeePercentage = auction.invoice.transactionFee.buyerPercentage;
+    const bidAmount = totalReserved / (1 + buyerFeePercentage / 100);
+    const buyerFee = totalReserved - bidAmount;
     const sellerFee =
       (bidAmount * auction.invoice.transactionFee.sellerPercentage) / 100;
 

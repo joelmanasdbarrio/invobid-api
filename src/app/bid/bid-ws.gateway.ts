@@ -7,6 +7,7 @@ import {
 } from '@nestjs/websockets';
 import { Server, Socket } from 'socket.io';
 import { AuctionService } from '../auction/auction.service';
+import { AuctionStatus } from '../auction/enums/auction-status.enum';
 import { WsAuth } from '../user/auth/decorators/ws-auth.decorator';
 import { User } from '../user/common/entities/user.entity';
 import { UserType } from '../user/common/enums/user-type.enum';
@@ -76,17 +77,23 @@ export class BidWsGateway implements OnGatewayConnection, OnGatewayDisconnect {
   ): Promise<{ success: boolean; message?: string }> {
     try {
       const user = (client.data as Record<string, unknown>).user as Investor;
-      const { bid, balanceUpdates } = await this.bidService.create(
-        payload,
-        user,
-      );
-      const newEndDate = await this.auctionService.extendAuctionIfNeeded(
-        payload.auctionId,
-      );
-      this.server.to(payload.auctionId).emit('new-bid', bid.id);
+      const { bid, balanceUpdates, reachedMaxPrice } =
+        await this.bidService.create(payload, user);
+
+      let newEndDate: string | null = null;
+      if (reachedMaxPrice) {
+        await this.auctionService.transitionToTransitioning(payload.auctionId);
+      } else {
+        newEndDate = await this.auctionService.extendAuctionIfNeeded(
+          payload.auctionId,
+        );
+      }
+
+      this.server.to(payload.auctionId).emit('new-bid', bid);
       this.server.emit('auction-bid-update', {
         auctionId: payload.auctionId,
         newEndDate,
+        ...(reachedMaxPrice && { newStatus: AuctionStatus.TRANSITIONING }),
       });
 
       for (const update of balanceUpdates) {

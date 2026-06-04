@@ -174,7 +174,7 @@ price: AuctionPrice;  // DB: price_start, price_end
 | [src/main.ts](src/main.ts) | Bootstrap, global ValidationPipe setup |
 | [src/app/user/auth/strategies/jwt.strategy.ts](src/app/user/auth/strategies/jwt.strategy.ts) | JWT validation, user extraction |
 | [src/app/user/auth/decorators/auth.decorator.ts](src/app/user/auth/decorators/auth.decorator.ts) | Role-based access control decorator |
-| [test/e2e-spec.md](test/e2e-spec.md) | **Complete API contract (BDD format)** |
+| [test/definition/e2e-spec.md](test/definition/e2e-spec.md) | **Complete API contract (BDD format)** |
 | [test/helpers/test-app.helper.ts](test/helpers/test-app.helper.ts) | Test app factory |
 | [src/validations/is-nif-cif.validator.ts](src/validations/is-nif-cif.validator.ts) | Spanish tax ID validation |
 
@@ -183,7 +183,7 @@ price: AuctionPrice;  // DB: price_start, price_end
 1. [README.md](README.md) - Setup & environment
 2. [src/app.module.ts](src/app.module.ts) - Module structure
 3. [src/main.ts](src/main.ts) - Bootstrap & validation
-4. [test/e2e-spec.md](test/e2e-spec.md) - **API contract (must read)**
+4. [test/definition/e2e-spec.md](test/definition/e2e-spec.md) - **API contract (must read)**
 5. Example module: [src/app/auction/auction.module.ts](src/app/auction/auction.module.ts)
 6. JWT strategy: [src/app/user/auth/strategies/jwt.strategy.ts](src/app/user/auth/strategies/jwt.strategy.ts)
 
@@ -227,7 +227,3 @@ Expected response includes `access_token` and `user` data.
 - **Real-time**: Socket.io
 - **Testing**: Jest + Supertest
 - **Node.js**: 22+
-
----
-
-**Last Updated**: April 2026 | **Version**: 1.0

@@ -124,8 +124,6 @@ export class InvestorService {
     const queryBuilder = this.investorRepository.createQueryBuilder('investor');
 
     if (user.type === UserType.ADMIN) {
-      queryBuilder.leftJoinAndSelect('investor.bankAccount', 'bankAccount');
-
       if (query.status) {
         queryBuilder.andWhere('(investor.status = :status)', {
           status: query.status,

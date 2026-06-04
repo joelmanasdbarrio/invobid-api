@@ -64,6 +64,9 @@ describe('Auction (e2e)', () => {
     server = app.getHttpServer() as App;
     dataSource = app.get(DataSource);
     await cleanDatabase(dataSource);
+    await dataSource.query(
+      `INSERT INTO bank_accounts (balance, "reservedBalance", platform) VALUES (0, 0, true)`,
+    );
 
     const admin = await registerAdmin(server, makeAdminDto());
     adminToken = admin.accessToken;
@@ -386,10 +389,15 @@ describe('Auction (e2e)', () => {
       auctionId = res.body.data.id;
 
       // Publish so it's visible
+      const publishDate = new Date();
+      publishDate.setDate(publishDate.getDate() + 10);
       await request(server)
         .patch(`${API}/auctions/${auctionId}`)
         .set(authHeader(companyToken))
-        .send({ status: 'published' });
+        .send({
+          status: 'published',
+          auctionDateEnd: publishDate.toISOString(),
+        });
     });
 
     it('should return 200 for admin', async () => {
@@ -469,10 +477,15 @@ describe('Auction (e2e)', () => {
         .set(authHeader(companyToken))
         .send(dto);
 
+      const publishDate = new Date();
+      publishDate.setDate(publishDate.getDate() + 10);
       const res = await request(server)
         .patch(`${API}/auctions/${created.body.data.id}`)
         .set(authHeader(companyToken))
-        .send({ status: 'published' });
+        .send({
+          status: 'published',
+          auctionDateEnd: publishDate.toISOString(),
+        });
 
       expect(res.status).toBe(200);
 
@@ -496,10 +509,15 @@ describe('Auction (e2e)', () => {
         .set(authHeader(companyToken))
         .send(dto);
 
+      const publishDate2 = new Date();
+      publishDate2.setDate(publishDate2.getDate() + 10);
       await request(server)
         .patch(`${API}/auctions/${created.body.data.id}`)
         .set(authHeader(companyToken))
-        .send({ status: 'published' });
+        .send({
+          status: 'published',
+          auctionDateEnd: publishDate2.toISOString(),
+        });
 
       const res = await request(server)
         .patch(`${API}/auctions/${created.body.data.id}`)
@@ -756,10 +774,15 @@ describe('Auction (e2e)', () => {
         .send(dto);
 
       // Publish it (not transitioning)
+      const publishDate3 = new Date();
+      publishDate3.setDate(publishDate3.getDate() + 10);
       await request(server)
         .patch(`${API}/auctions/${created.body.data.id}`)
         .set(authHeader(companyToken))
-        .send({ status: 'published' });
+        .send({
+          status: 'published',
+          auctionDateEnd: publishDate3.toISOString(),
+        });
 
       const res = await request(server)
         .patch(`${API}/auctions/${created.body.data.id}`)
