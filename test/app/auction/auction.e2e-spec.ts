@@ -267,6 +267,53 @@ describe('Auction (e2e)', () => {
       // But the ownership check (sellerInvestor.id !== user.id) catches it → 400
       expect(res.status).toBe(400);
     });
+
+    it('should return 400 when starting price exceeds maximum based on MINIMUM_INVOICE_DISCOUNT', async () => {
+      const { invoiceId, invoiceSvc } = await createVerifiedInvoice(
+        server,
+        companyToken,
+        adminToken,
+        debtorId,
+      );
+
+      // Retrieve the invoice to get fee percentages
+      const invoiceRes = await request(server)
+        .get(`${API}/invoices/${invoiceId}`)
+        .set(authHeader(companyToken));
+
+      const invoice = invoiceRes.body.data;
+      const invoiceAmount = parseFloat(invoice.amount);
+      const buyerPercentage = parseFloat(
+        invoice.transactionFee.buyerPercentage,
+      );
+      const sellerPercentage = parseFloat(
+        invoice.transactionFee.sellerPercentage,
+      );
+      const minimumDiscount = 10; // Default MINIMUM_INVOICE_DISCOUNT
+
+      // Calculate max allowed price
+      const totalFeePercentage = buyerPercentage + sellerPercentage;
+      const totalFeeAmount = (invoiceAmount * totalFeePercentage) / 100;
+      const invoiceWithFees = invoiceAmount + totalFeeAmount;
+      const maxAllowedPrice = invoiceWithFees * (1 - minimumDiscount / 100);
+
+      // Test with price exceeding the maximum
+      const excessivePrice = maxAllowedPrice + 100;
+
+      const res = await request(server)
+        .post(`${API}/auctions`)
+        .set(authHeader(companyToken))
+        .send({
+          svc: invoiceId,
+          startingPrice: excessivePrice,
+          auctionDateEnd: new Date(Date.now() + 30 * 86400000)
+            .toISOString()
+            .split('T')[0],
+        });
+
+      expect(res.status).toBe(400);
+      expect(res.body.message).toContain('Starting price is too high');
+    });
   });
 
   // GET /auctions

@@ -1,4 +1,5 @@
 import { Module, forwardRef } from '@nestjs/common';
+import { ConfigModule } from '@nestjs/config';
 import { TypeOrmModule } from '@nestjs/typeorm';
 import { BankAccountModule } from '../bank-account/bank-account.module';
 import { BidModule } from '../bid/bid.module';
@@ -15,6 +16,7 @@ import { Auction } from './entities/auction.entity';
 
 @Module({
   imports: [
+    ConfigModule,
     TypeOrmModule.forFeature([Auction, Bid, Invoice]),
     InvoiceModule,
     forwardRef(() => BidModule),

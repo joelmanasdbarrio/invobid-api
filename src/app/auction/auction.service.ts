@@ -7,6 +7,7 @@ import {
   NotFoundException,
   forwardRef,
 } from '@nestjs/common';
+import { ConfigService } from '@nestjs/config';
 import { InjectRepository } from '@nestjs/typeorm';
 import { In, Not, Repository } from 'typeorm';
 import { BankAccountService } from '../bank-account/bank-account.service';
@@ -42,6 +43,7 @@ export class AuctionService {
     private readonly invoiceService: InvoiceService,
     private readonly investorService: InvestorService,
     private readonly bankAccountService: BankAccountService,
+    private readonly configService: ConfigService,
   ) {}
 
   async create(createAuctionDto: CreateAuctionDto, user: Investor) {
@@ -83,6 +85,22 @@ export class AuctionService {
     if (activeAuctions > 0) {
       throw new BadRequestException(
         `There is already an active auction for this invoice`,
+      );
+    }
+
+    const minimumDiscount = Number(
+      this.configService.get<number>('minimumInvoiceDiscount'),
+    );
+    const maxAllowedPrice = this.calculateMaxAllowedPrice(
+      Number(invoice.amount),
+      Number(invoice.transactionFee.buyerPercentage),
+      Number(invoice.transactionFee.sellerPercentage),
+      minimumDiscount,
+    );
+
+    if (createAuctionDto.startingPrice > maxAllowedPrice) {
+      throw new BadRequestException(
+        `Starting price is too high. Maximum allowed price for this invoice is ${maxAllowedPrice.toFixed(2)}`,
       );
     }
 
@@ -444,6 +462,19 @@ export class AuctionService {
         startingPrice,
       ),
     };
+  }
+
+  private calculateMaxAllowedPrice(
+    invoiceAmount: number,
+    buyerPercentage: number,
+    sellerPercentage: number,
+    minimumDiscount: number,
+  ): number {
+    const totalFeePercentage = buyerPercentage + sellerPercentage;
+    const totalFeeAmount = (invoiceAmount * totalFeePercentage) / 100;
+    const invoiceWithFees = invoiceAmount + totalFeeAmount;
+    const discountFraction = minimumDiscount / 100;
+    return invoiceWithFees * (1 - discountFraction);
   }
 
   private publishAuction(auction: Auction, updateAuctionDto: UpdateAuctionDto) {

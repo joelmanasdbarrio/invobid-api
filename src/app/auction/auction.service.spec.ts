@@ -1,4 +1,5 @@
 import { BadRequestException } from '@nestjs/common';
+import { ConfigService } from '@nestjs/config';
 import { Test, TestingModule } from '@nestjs/testing';
 import { getRepositoryToken } from '@nestjs/typeorm';
 import { BankAccountService } from '../bank-account/bank-account.service';
@@ -41,6 +42,10 @@ const mockAuctionRepository = {
 
 const mockInvoiceService = {
   findOne: jest.fn(),
+};
+
+const mockConfigService = {
+  get: jest.fn().mockReturnValue(10),
 };
 
 const sellerInvestor = {
@@ -88,6 +93,7 @@ describe('AuctionService', () => {
         { provide: InvoiceService, useValue: mockInvoiceService },
         { provide: InvestorService, useValue: {} },
         { provide: BankAccountService, useValue: {} },
+        { provide: ConfigService, useValue: mockConfigService },
       ],
     }).compile();
 
@@ -190,6 +196,43 @@ describe('AuctionService', () => {
       );
     });
   });
+
+  // Canonical cross-layer test dataset — must match frontend test/lib/calculate-max-price.test.ts
+  // invoiceAmount=5000, buyerPct=1%, sellerPct=2%, minDiscount=10%
+  // maxAllowedPrice = (5000 + 5000*3/100) * 0.9 = 5150 * 0.9 = 4635
+  describe('create — price validation', () => {
+    const priceTestInvoice = {
+      id: 'invoice-id',
+      status: InvoiceStatus.VERIFIED,
+      sellerInvestor: { id: 'seller-id' },
+      dueDate: utcMonthOffset(2),
+      amount: 5000,
+      transactionFee: { buyerPercentage: 1, sellerPercentage: 2 },
+    };
+
+    it('succeeds when startingPrice equals the maximum allowed price (4635)', async () => {
+      mockInvoiceService.findOne.mockResolvedValue(priceTestInvoice);
+      const savedAuction = { id: 'auction-id' };
+      mockAuctionRepository.create.mockReturnValue(savedAuction);
+      mockAuctionRepository.save.mockResolvedValue(savedAuction);
+
+      const dto = makeDto({ startingPrice: 4635 });
+
+      await expect(service.create(dto, sellerInvestor)).resolves.toBe(
+        savedAuction,
+      );
+    });
+
+    it('throws BadRequestException when startingPrice exceeds maximum allowed price (4636 > 4635)', async () => {
+      mockInvoiceService.findOne.mockResolvedValue(priceTestInvoice);
+
+      const dto = makeDto({ startingPrice: 4636 });
+
+      await expect(service.create(dto, sellerInvestor)).rejects.toThrow(
+        BadRequestException,
+      );
+    });
+  });
 });
 
 describe('AuctionService — update balance lifecycle', () => {
@@ -266,6 +309,7 @@ describe('AuctionService — update balance lifecycle', () => {
         { provide: InvoiceService, useValue: mockInvoiceService },
         { provide: InvestorService, useValue: mockInvestorService },
         { provide: BankAccountService, useValue: mockBankAccountService },
+        { provide: ConfigService, useValue: mockConfigService },
       ],
     }).compile();
 
