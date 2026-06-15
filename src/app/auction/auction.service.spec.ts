@@ -155,9 +155,7 @@ describe('AuctionService', () => {
       );
     });
 
-    it('strips the time component from ISO datetime strings (toUTCDate boundary)', async () => {
-      // "2026-04-10T23:30:00.000Z" and "2026-04-10T00:00:00.000Z" must both
-      // resolve to the same calendar day (April 10 UTC) after toUTCDate strips time.
+    it('accepts ISO datetime strings and preserves the exact timestamp', async () => {
       const dueDate = utcMonthOffset(2);
       mockInvoiceService.findOne.mockResolvedValue(makeInvoice(dueDate));
       const savedAuction = { id: 'auction-id' };
@@ -166,11 +164,19 @@ describe('AuctionService', () => {
 
       const endDay = utcDateOffset(4);
 
-      // Pass a full ISO string with a time component — should still succeed
-      const dto = makeDto({ auctionDateEnd: endDay + 'T00:01:00.000Z' });
+      const expectedDateTime = endDay + 'T00:01:00.000Z';
+      const dto = makeDto({ auctionDateEnd: expectedDateTime });
 
       await expect(service.create(dto, sellerInvestor)).resolves.toBe(
         savedAuction,
+      );
+
+      expect(mockAuctionRepository.create).toHaveBeenCalledWith(
+        expect.objectContaining({
+          date: expect.objectContaining({
+            end: new Date(expectedDateTime),
+          }),
+        }),
       );
     });
 

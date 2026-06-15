@@ -1,11 +1,11 @@
 import {
   BadRequestException,
   ForbiddenException,
+  forwardRef,
   Inject,
   Injectable,
   InternalServerErrorException,
   NotFoundException,
-  forwardRef,
 } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { InjectRepository } from '@nestjs/typeorm';
@@ -26,9 +26,23 @@ import { UpdateAuctionDto } from './dto/update-auction.dto';
 import { Auction } from './entities/auction.entity';
 import { AuctionStatus } from './enums/auction-status.enum';
 
-const toUTCDate = (val: string | Date): Date => {
-  const str = val instanceof Date ? val.toISOString().slice(0, 10) : val;
-  return new Date(str + 'T00:00:00Z');
+const parseDateTime = (val: string | Date | null | undefined): Date => {
+  if (val === null || val === undefined) {
+    throw new BadRequestException(`Auction dates are not valid`);
+  }
+
+  const parsed = val instanceof Date ? val : new Date(val);
+  if (Number.isNaN(parsed.getTime())) {
+    throw new BadRequestException(`Auction dates are not valid`);
+  }
+
+  return parsed;
+};
+
+const toUTCStartOfDay = (date: Date): Date => {
+  return new Date(
+    Date.UTC(date.getUTCFullYear(), date.getUTCMonth(), date.getUTCDate()),
+  );
 };
 
 @Injectable()
@@ -61,17 +75,21 @@ export class AuctionService {
       );
     }
 
-    const endDate = toUTCDate(createAuctionDto.auctionDateEnd);
+    const endDate = parseDateTime(createAuctionDto.auctionDateEnd);
+    const endDateForValidation = toUTCStartOfDay(endDate);
     const today = new Date();
     today.setUTCHours(0, 0, 0, 0);
     const minEndDate = new Date(today);
     minEndDate.setUTCDate(minEndDate.getUTCDate() + 2);
 
-    const dueDateUTC = toUTCDate(invoice.dueDate);
+    const dueDateUTC = toUTCStartOfDay(parseDateTime(invoice.dueDate));
     const oneMonthBeforeDue = new Date(dueDateUTC);
     oneMonthBeforeDue.setUTCMonth(oneMonthBeforeDue.getUTCMonth() - 1);
 
-    if (endDate < minEndDate || endDate > oneMonthBeforeDue) {
+    if (
+      endDateForValidation < minEndDate ||
+      endDateForValidation > oneMonthBeforeDue
+    ) {
       throw new BadRequestException(`Auction dates are not valid`);
     }
 
@@ -91,11 +109,13 @@ export class AuctionService {
     const minimumDiscount = Number(
       this.configService.get<number>('minimumInvoiceDiscount'),
     );
-    const maxAllowedPrice = this.calculateMaxAllowedPrice(
-      Number(invoice.amount),
-      Number(invoice.transactionFee.buyerPercentage),
-      Number(invoice.transactionFee.sellerPercentage),
-      minimumDiscount,
+    const maxAllowedPrice = Number(
+      this.calculateMaxAllowedPrice(
+        Number(invoice.amount),
+        Number(invoice.transactionFee.buyerPercentage),
+        Number(invoice.transactionFee.sellerPercentage),
+        minimumDiscount,
+      ).toFixed(2),
     );
 
     if (createAuctionDto.startingPrice > maxAllowedPrice) {
@@ -117,7 +137,7 @@ export class AuctionService {
         discount: { start: metrics.discount },
         profitability: { start: metrics.profitability },
         date: {
-          end: createAuctionDto.auctionDateEnd,
+          end: endDate,
         },
       });
 
@@ -383,20 +403,25 @@ export class AuctionService {
       }
 
       if (updateAuctionDto.status === AuctionStatus.PUBLISHED) {
-        this.publishAuction(auction, updateAuctionDto);
+        this.publishAuction(auction);
+      } else {
+        auction.date.end = updateAuctionDto.auctionDateEnd
+          ? parseDateTime(updateAuctionDto.auctionDateEnd)
+          : auction.date.end;
+        auction.price.start =
+          updateAuctionDto.startingPrice ?? auction.price.start;
+        const { discount, profitability } = this.computeMetrics(
+          auction.invoice.amount,
+          auction.invoice.transactionFee.buyerPercentage,
+          auction.price.start,
+        );
+        auction.discount.start = discount;
+        auction.profitability.start = profitability;
       }
 
       updateAuctionDto.lastCommunication = auction.lastCommunication;
     }
 
-    Object.assign(auction, updateAuctionDto.removeUndefined());
-    const { discount, profitability } = this.computeMetrics(
-      auction.invoice.amount,
-      auction.invoice.transactionFee.buyerPercentage,
-      auction.price.start,
-    );
-    auction.discount.start = discount;
-    auction.profitability.start = profitability;
     return await this.auctionRepository.save(auction);
   }
 
@@ -477,28 +502,34 @@ export class AuctionService {
     return invoiceWithFees * (1 - discountFraction);
   }
 
-  private publishAuction(auction: Auction, updateAuctionDto: UpdateAuctionDto) {
+  private publishAuction(auction: Auction) {
     auction.date.start = new Date();
 
-    if (updateAuctionDto.auctionDateEnd === undefined) {
+    if (auction.date.end === undefined) {
       throw new BadRequestException(
         `auctionDateEnd is required when publishing an auction`,
       );
     }
 
-    const endDate = toUTCDate(updateAuctionDto.auctionDateEnd);
+    const endDate = parseDateTime(auction.date.end);
+    const endDateForValidation = toUTCStartOfDay(endDate);
     const today = new Date();
     today.setUTCHours(0, 0, 0, 0);
     const minEndDate = new Date(today);
     minEndDate.setUTCDate(minEndDate.getUTCDate() + 2);
 
-    const dueDateUTC = toUTCDate(auction.invoice.dueDate);
+    const dueDateUTC = toUTCStartOfDay(parseDateTime(auction.invoice.dueDate));
     const oneMonthBeforeDue = new Date(dueDateUTC);
     oneMonthBeforeDue.setUTCMonth(oneMonthBeforeDue.getUTCMonth() - 1);
 
-    if (endDate < minEndDate || endDate > oneMonthBeforeDue) {
+    if (
+      endDateForValidation < minEndDate ||
+      endDateForValidation > oneMonthBeforeDue
+    ) {
       throw new BadRequestException(`Auction dates are not valid`);
     }
+
+    auction.status = AuctionStatus.PUBLISHED;
   }
 
   private async cancelAuction(
@@ -528,6 +559,9 @@ export class AuctionService {
         );
       }
     }
+
+    auction.lastCommunication = updateAuctionDto.lastCommunication;
+    auction.status = AuctionStatus.CANCELLED;
   }
 
   private async finishAuction(auction: Auction, user: User) {
@@ -604,5 +638,7 @@ export class AuctionService {
       buyerFee,
       sellerFee,
     });
+
+    auction.status = AuctionStatus.FINISHED;
   }
 }
