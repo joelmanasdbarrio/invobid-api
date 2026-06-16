@@ -2,7 +2,7 @@ import { InternalServerErrorException } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { Client } from 'minio';
 import { PassThrough } from 'stream';
-import { MinioStorageService } from './minio-storage.service';
+import { MinioStorageProvider } from './minio-storage.provider';
 
 jest.mock('minio', () => ({
   Client: jest.fn().mockImplementation(() => ({
@@ -30,7 +30,7 @@ const makeConfigService = (
   } as unknown as ConfigService;
 };
 
-describe('MinioStorageService', () => {
+describe('MinioStorageProvider', () => {
   beforeEach(() => {
     jest.clearAllMocks();
   });
@@ -39,7 +39,7 @@ describe('MinioStorageService', () => {
     it('should throw InternalServerErrorException when MINIO_ENDPOINT is missing', () => {
       expect(
         () =>
-          new MinioStorageService(
+          new MinioStorageProvider(
             makeConfigService({ MINIO_ENDPOINT: undefined }),
           ),
       ).toThrow(InternalServerErrorException);
@@ -48,7 +48,7 @@ describe('MinioStorageService', () => {
     it('should throw InternalServerErrorException when MINIO_ACCESS_KEY is missing', () => {
       expect(
         () =>
-          new MinioStorageService(
+          new MinioStorageProvider(
             makeConfigService({ MINIO_ACCESS_KEY: undefined }),
           ),
       ).toThrow(InternalServerErrorException);
@@ -57,7 +57,7 @@ describe('MinioStorageService', () => {
     it('should throw InternalServerErrorException when MINIO_SECRET_KEY is missing', () => {
       expect(
         () =>
-          new MinioStorageService(
+          new MinioStorageProvider(
             makeConfigService({ MINIO_SECRET_KEY: undefined }),
           ),
       ).toThrow(InternalServerErrorException);
@@ -66,14 +66,14 @@ describe('MinioStorageService', () => {
     it('should throw InternalServerErrorException when MINIO_BUCKET is missing', () => {
       expect(
         () =>
-          new MinioStorageService(
+          new MinioStorageProvider(
             makeConfigService({ MINIO_BUCKET: undefined }),
           ),
       ).toThrow(InternalServerErrorException);
     });
 
     it('should instantiate MinioClient with provided config', () => {
-      new MinioStorageService(makeConfigService());
+      new MinioStorageProvider(makeConfigService());
 
       expect(MockClient).toHaveBeenCalledWith(
         expect.objectContaining({
@@ -87,7 +87,7 @@ describe('MinioStorageService', () => {
   });
 
   describe('uploadFile', () => {
-    let service: MinioStorageService;
+    let service: MinioStorageProvider;
     let mockClient: {
       putObject: jest.Mock;
       getObject: jest.Mock;
@@ -95,7 +95,7 @@ describe('MinioStorageService', () => {
     };
 
     beforeEach(() => {
-      service = new MinioStorageService(makeConfigService());
+      service = new MinioStorageProvider(makeConfigService());
       mockClient = MockClient.mock.results[MockClient.mock.results.length - 1]
         .value as typeof mockClient;
     });
@@ -125,7 +125,7 @@ describe('MinioStorageService', () => {
   });
 
   describe('getFile', () => {
-    let service: MinioStorageService;
+    let service: MinioStorageProvider;
     let mockClient: {
       putObject: jest.Mock;
       getObject: jest.Mock;
@@ -133,7 +133,7 @@ describe('MinioStorageService', () => {
     };
 
     beforeEach(() => {
-      service = new MinioStorageService(makeConfigService());
+      service = new MinioStorageProvider(makeConfigService());
       mockClient = MockClient.mock.results[MockClient.mock.results.length - 1]
         .value as typeof mockClient;
     });
@@ -181,7 +181,7 @@ describe('MinioStorageService', () => {
   });
 
   describe('deleteFile', () => {
-    let service: MinioStorageService;
+    let service: MinioStorageProvider;
     let mockClient: {
       putObject: jest.Mock;
       getObject: jest.Mock;
@@ -189,7 +189,7 @@ describe('MinioStorageService', () => {
     };
 
     beforeEach(() => {
-      service = new MinioStorageService(makeConfigService());
+      service = new MinioStorageProvider(makeConfigService());
       mockClient = MockClient.mock.results[MockClient.mock.results.length - 1]
         .value as typeof mockClient;
     });

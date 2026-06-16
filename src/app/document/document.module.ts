@@ -4,8 +4,8 @@ import { TypeOrmModule } from '@nestjs/typeorm';
 import { DocumentController } from './document.controller';
 import { DocumentService } from './document.service';
 import { Document } from './entities/document.entity';
-import { IStorageService } from './interfaces/storage.interface';
-import { MinioStorageService } from './services/minio-storage.service';
+import { IStorageProvider } from './interfaces/storage-provider.interface';
+import { MinioStorageProvider } from 'src/app/document/providers/minio-storage.provider';
 
 @Module({
   imports: [TypeOrmModule.forFeature([Document]), ConfigModule],
@@ -14,11 +14,11 @@ import { MinioStorageService } from './services/minio-storage.service';
     DocumentService,
     {
       provide: 'STORAGE_SERVICE',
-      useFactory: (configService: ConfigService): IStorageService => {
+      useFactory: (configService: ConfigService): IStorageProvider => {
         const environment = configService.get<string>('NODE_ENV');
 
         if (environment !== 'production') {
-          return new MinioStorageService(configService);
+          return new MinioStorageProvider(configService);
         }
 
         throw new InternalServerErrorException(

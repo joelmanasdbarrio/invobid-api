@@ -1,10 +1,10 @@
 import { Injectable, InternalServerErrorException } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { Client as MinioClient } from 'minio';
-import { IStorageService } from '../interfaces/storage.interface';
+import { IStorageProvider } from '../interfaces/storage-provider.interface';
 
 @Injectable()
-export class MinioStorageService implements IStorageService {
+export class MinioStorageProvider implements IStorageProvider {
   private minioClient: MinioClient;
   private bucket: string;
 

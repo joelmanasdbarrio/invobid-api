@@ -148,7 +148,7 @@ See: [src/app/auction/auction.service.ts](src/app/auction/auction.service.ts) (u
 | TypeORM circular import error | Add `forwardRef(() => Module)` in imports |
 | Extra request fields not rejected | DTO validation has `forbidNonWhitelisted: false` (warns but allows) |
 | File upload MIME type mismatch | FileTypePipe only allows: pdf, jpeg, jpg, png |
-| MinIO not found | MinioStorageService only works in `NODE_ENV=local` |
+| MinIO not found | MinioStorageProvider only works in `NODE_ENV=local` |
 | Investor blocked despite empty roles in `@Auth()` | `@Auth()` defaults status to `VERIFIED`; pass second arg `[]` to allow all investor statuses |
 
 ## Database

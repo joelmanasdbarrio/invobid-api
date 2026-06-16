@@ -15,7 +15,7 @@ import { Debtor } from 'src/app/debtor/entities/debtor.entity';
 import { DebtorStatus } from 'src/app/debtor/enums/debtor-status.enum';
 import { Document } from 'src/app/document/entities/document.entity';
 import { DocumentType } from 'src/app/document/enums/document-type.enum';
-import { MinioStorageService } from 'src/app/document/services/minio-storage.service';
+import { MinioStorageProvider } from 'src/app/document/providers/minio-storage.provider';
 import { Invoice } from 'src/app/invoice/entities/invoice.entity';
 import { InvoiceStatus } from 'src/app/invoice/enums/invoice-status.enum';
 import { Admin } from 'src/app/user/admin/entities/admin.entity';
@@ -45,7 +45,7 @@ export class SeedService {
     private readonly auctionRepository: Repository<Auction>,
     @InjectRepository(Bid)
     private readonly bidRepository: Repository<Bid>,
-    private readonly storageService: MinioStorageService,
+    private readonly storageService: MinioStorageProvider,
   ) {}
 
   async run() {

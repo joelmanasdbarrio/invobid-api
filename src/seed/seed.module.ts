@@ -6,7 +6,7 @@ import { BankAccount } from 'src/app/bank-account/entities/bank-account.entity';
 import { Bid } from 'src/app/bid/entities/bid.entity';
 import { Debtor } from 'src/app/debtor/entities/debtor.entity';
 import { Document } from 'src/app/document/entities/document.entity';
-import { MinioStorageService } from 'src/app/document/services/minio-storage.service';
+import { MinioStorageProvider } from 'src/app/document/providers/minio-storage.provider';
 import { Invoice } from 'src/app/invoice/entities/invoice.entity';
 import { Admin } from 'src/app/user/admin/entities/admin.entity';
 import { User } from 'src/app/user/common/entities/user.entity';
@@ -47,6 +47,6 @@ import { SeedService } from './seed.service';
       Bid,
     ]),
   ],
-  providers: [SeedService, MinioStorageService],
+  providers: [SeedService, MinioStorageProvider],
 })
 export class SeedModule {}

@@ -18,7 +18,7 @@ import { Investor } from '../user/investor/entities/investor.entity';
 import { CreateDocumentDto } from './dto/create-document.dto';
 import { UpdateDocumentDto } from './dto/update-document.dto';
 import { Document } from './entities/document.entity';
-import { type IStorageService } from './interfaces/storage.interface';
+import { type IStorageProvider } from './interfaces/storage-provider.interface';
 
 @Injectable()
 export class DocumentService {
@@ -27,7 +27,7 @@ export class DocumentService {
     @InjectRepository(Document)
     private readonly documentRepository: Repository<Document>,
     @Inject('STORAGE_SERVICE')
-    private readonly documentStorageService: IStorageService,
+    private readonly documentStorageService: IStorageProvider,
   ) {}
 
   async create(

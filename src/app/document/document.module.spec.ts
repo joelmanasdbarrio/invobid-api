@@ -1,12 +1,12 @@
 import { InternalServerErrorException } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { DocumentModule } from './document.module';
-import { MinioStorageService } from './services/minio-storage.service';
+import { MinioStorageProvider } from 'src/app/document/providers/minio-storage.provider';
 
-jest.mock('./services/minio-storage.service');
+jest.mock('src/app/document/providers/minio-storage.provider');
 
-const MockMinioStorageService = MinioStorageService as jest.MockedClass<
-  typeof MinioStorageService
+const MockMinioStorageService = MinioStorageProvider as jest.MockedClass<
+  typeof MinioStorageProvider
 >;
 
 type FactoryProvider = {
@@ -33,14 +33,14 @@ describe('DocumentModule — STORAGE_SERVICE factory', () => {
     jest.clearAllMocks();
   });
 
-  it('should return a MinioStorageService when NODE_ENV is "local"', () => {
+  it('should return a MinioStorageProvider when NODE_ENV is "local"', () => {
     const mockConfig = makeConfigService('local');
     const factory = getStorageFactory();
 
     const result = factory(mockConfig);
 
     expect(MockMinioStorageService).toHaveBeenCalledWith(mockConfig);
-    expect(result).toBeInstanceOf(MinioStorageService);
+    expect(result).toBeInstanceOf(MinioStorageProvider);
   });
 
   it('should throw InternalServerErrorException for any other environment', () => {
