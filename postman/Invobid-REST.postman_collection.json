@@ -2,6 +2,7 @@
   "info": {
     "_postman_id": "32c22e82-5da9-4d25-81df-6de65a6ad611",
     "name": "Invobid REST",
+    "description": "On the VPS, pgAdmin and Minio are only accessible via SSH port forwarding:\n\n``` sh\nssh -L 8080:localhost:8080 invobid@invobid.com\n\n ```",
     "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json",
     "_exporter_id": "24297190"
   },
@@ -31,13 +32,12 @@
               {
                 "key": "x-activate-account",
                 "value": "true",
-                "type": "text",
-                "disabled": true
+                "type": "text"
               }
             ],
             "body": {
               "mode": "raw",
-              "raw": "{\r\n    // \"email\": \"seller2@globaltrade.com\",\r\n    // \"password\": \"Investor123!\"\r\n    \"email\": \"seller1@techcorp.com\",\r\n    \"password\": \"Investor123!\"\r\n    // \"email\": \"admin1@invobid.com\",\r\n    // \"password\": \"Admin123!\"\r\n}",
+              "raw": "{\r\n    // \"email\": \"{{individual-email}}\",\r\n    // \"password\": \"{{individual-password}}\"\r\n    // \"email\": \"{{company-email}}\",\r\n    // \"password\": \"{{company-password}}\",\r\n    \"email\": \"{{admin-email}}\",\r\n    \"password\": \"{{admin-password}}\"\r\n}",
               "options": {
                 "raw": {
                   "language": "json"
@@ -55,7 +55,335 @@
               ]
             }
           },
-          "response": []
+          "response": [
+            {
+              "name": "200 OK",
+              "originalRequest": {
+                "method": "POST",
+                "header": [
+                  {
+                    "key": "x-activate-account",
+                    "value": "true",
+                    "type": "text",
+                    "disabled": true
+                  }
+                ],
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\r\n    // \"email\": \"seller2@globaltrade.com\",\r\n    // \"password\": \"Investor123!\"\r\n    // \"email\": \"seller1@techcorp.com\",\r\n    // \"password\": \"Investor123!\"\r\n    \"email\": \"admin1@invobid.com\",\r\n    \"password\": \"Admin123!\"\r\n}",
+                  "options": {
+                    "raw": {
+                      "language": "json"
+                    }
+                  }
+                },
+                "url": {
+                  "raw": "{{url}}/auth/login",
+                  "host": [
+                    "{{url}}"
+                  ],
+                  "path": [
+                    "auth",
+                    "login"
+                  ]
+                }
+              },
+              "status": "OK",
+              "code": 200,
+              "_postman_previewlanguage": null,
+              "header": [
+                {
+                  "key": "X-Powered-By",
+                  "value": "Express"
+                },
+                {
+                  "key": "Access-Control-Allow-Origin",
+                  "value": "http://localhost:5173"
+                },
+                {
+                  "key": "Vary",
+                  "value": "Origin"
+                },
+                {
+                  "key": "Access-Control-Allow-Credentials",
+                  "value": "true"
+                },
+                {
+                  "key": "Set-Cookie",
+                  "value": "access_token=eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpZCI6IjM0NzI5MDk0LWRhMzMtNDFhZS04ZjRlLWY3NzE1NmFmZDQ4OCIsImVtYWlsIjoiYWRtaW4xQGludm9iaWQuY29tIiwidHlwZSI6ImFkbWluIiwiaWF0IjoxNzc1OTIwNDA1LCJleHAiOjE3NzYwMDY4MDV9.pRY64FIaJUKD4B-i1SgumyW_CH14z3smNr-74XXpQGs; Max-Age=86400; Path=/; Expires=Sun, 12 Apr 2026 15:13:25 GMT; HttpOnly; SameSite=Lax"
+                },
+                {
+                  "key": "Content-Type",
+                  "value": "application/json; charset=utf-8"
+                },
+                {
+                  "key": "Content-Length",
+                  "value": "499"
+                },
+                {
+                  "key": "ETag",
+                  "value": "W/\"1f3-UM5AFhua+RNf6yLLnUrmOUeFmd0\""
+                },
+                {
+                  "key": "Date",
+                  "value": "Sat, 11 Apr 2026 15:13:25 GMT"
+                },
+                {
+                  "key": "Connection",
+                  "value": "keep-alive"
+                },
+                {
+                  "key": "Keep-Alive",
+                  "value": "timeout=5"
+                }
+              ],
+              "cookie": [],
+              "body": "{\n    \"status\": \"success\",\n    \"data\": {\n        \"id\": \"34729094-da33-41ae-8f4e-f77156afd488\",\n        \"email\": \"admin1@invobid.com\",\n        \"password\": \"$2b$10$B9w2gk3NHCm0jrkxahYpFubaWqpL.P0M0czqayHf2Z35wXyXW3Jh.\",\n        \"name\": \"John Administrator\",\n        \"deletedAt\": null,\n        \"type\": \"admin\"\n    },\n    \"access_token\": \"eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpZCI6IjM0NzI5MDk0LWRhMzMtNDFhZS04ZjRlLWY3NzE1NmFmZDQ4OCIsImVtYWlsIjoiYWRtaW4xQGludm9iaWQuY29tIiwidHlwZSI6ImFkbWluIiwiaWF0IjoxNzc1OTIwNDA1LCJleHAiOjE3NzYwMDY4MDV9.pRY64FIaJUKD4B-i1SgumyW_CH14z3smNr-74XXpQGs\"\n}"
+            },
+            {
+              "name": "401 Unauthorized",
+              "originalRequest": {
+                "method": "POST",
+                "header": [
+                  {
+                    "key": "x-activate-account",
+                    "value": "true",
+                    "type": "text",
+                    "disabled": true
+                  }
+                ],
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\r\n    // \"email\": \"seller2@globaltrade.com\",\r\n    // \"password\": \"Investor123!\"\r\n    // \"email\": \"seller1@techcorp.com\",\r\n    // \"password\": \"Investor123!\"\r\n    \"email\": \"admin1@invobid.com\",\r\n    \"password\": \"Admin123a!\"\r\n}",
+                  "options": {
+                    "raw": {
+                      "language": "json"
+                    }
+                  }
+                },
+                "url": {
+                  "raw": "{{url}}/auth/login",
+                  "host": [
+                    "{{url}}"
+                  ],
+                  "path": [
+                    "auth",
+                    "login"
+                  ]
+                }
+              },
+              "status": "Unauthorized",
+              "code": 401,
+              "_postman_previewlanguage": null,
+              "header": [
+                {
+                  "key": "X-Powered-By",
+                  "value": "Express"
+                },
+                {
+                  "key": "Access-Control-Allow-Origin",
+                  "value": "http://localhost:5173"
+                },
+                {
+                  "key": "Vary",
+                  "value": "Origin"
+                },
+                {
+                  "key": "Access-Control-Allow-Credentials",
+                  "value": "true"
+                },
+                {
+                  "key": "Content-Type",
+                  "value": "application/json; charset=utf-8"
+                },
+                {
+                  "key": "Content-Length",
+                  "value": "73"
+                },
+                {
+                  "key": "ETag",
+                  "value": "W/\"49-Fx+yDPXfDSYD3nxIxyU6P47CVX0\""
+                },
+                {
+                  "key": "Date",
+                  "value": "Sat, 11 Apr 2026 15:13:43 GMT"
+                },
+                {
+                  "key": "Connection",
+                  "value": "keep-alive"
+                },
+                {
+                  "key": "Keep-Alive",
+                  "value": "timeout=5"
+                }
+              ],
+              "cookie": [],
+              "body": "{\n    \"message\": \"Invalid credentials\",\n    \"error\": \"Unauthorized\",\n    \"statusCode\": 401\n}"
+            },
+            {
+              "name": "423 Locked",
+              "originalRequest": {
+                "method": "POST",
+                "header": [
+                  {
+                    "key": "x-activate-account",
+                    "value": "true",
+                    "type": "text",
+                    "disabled": true
+                  }
+                ],
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\r\n    // \"email\": \"seller2@globaltrade.com\",\r\n    // \"password\": \"Investor123!\"\r\n    // \"email\": \"seller1@techcorp.com\",\r\n    // \"password\": \"Investor123!\"\r\n    \"email\": \"admin1@invobid.com\",\r\n    \"password\": \"Admin123!\"\r\n}",
+                  "options": {
+                    "raw": {
+                      "language": "json"
+                    }
+                  }
+                },
+                "url": {
+                  "raw": "{{url}}/auth/login",
+                  "host": [
+                    "{{url}}"
+                  ],
+                  "path": [
+                    "auth",
+                    "login"
+                  ]
+                }
+              },
+              "status": "Locked",
+              "code": 423,
+              "_postman_previewlanguage": null,
+              "header": [
+                {
+                  "key": "X-Powered-By",
+                  "value": "Express"
+                },
+                {
+                  "key": "Access-Control-Allow-Origin",
+                  "value": "http://localhost:5173"
+                },
+                {
+                  "key": "Vary",
+                  "value": "Origin"
+                },
+                {
+                  "key": "Access-Control-Allow-Credentials",
+                  "value": "true"
+                },
+                {
+                  "key": "Content-Type",
+                  "value": "application/json; charset=utf-8"
+                },
+                {
+                  "key": "Content-Length",
+                  "value": "53"
+                },
+                {
+                  "key": "ETag",
+                  "value": "W/\"35-XGDjzzC0A2MpZMXWph3TgNq7hdM\""
+                },
+                {
+                  "key": "Date",
+                  "value": "Sat, 11 Apr 2026 15:16:51 GMT"
+                },
+                {
+                  "key": "Connection",
+                  "value": "keep-alive"
+                },
+                {
+                  "key": "Keep-Alive",
+                  "value": "timeout=5"
+                }
+              ],
+              "cookie": [],
+              "body": "{\n    \"statusCode\": 423,\n    \"message\": \"User account is locked\"\n}"
+            },
+            {
+              "name": "200 OK (Unlock)",
+              "originalRequest": {
+                "method": "POST",
+                "header": [
+                  {
+                    "key": "x-activate-account",
+                    "value": "true",
+                    "type": "text"
+                  }
+                ],
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\r\n    // \"email\": \"seller2@globaltrade.com\",\r\n    // \"password\": \"Investor123!\"\r\n    // \"email\": \"seller1@techcorp.com\",\r\n    // \"password\": \"Investor123!\"\r\n    \"email\": \"admin1@invobid.com\",\r\n    \"password\": \"Admin123!\"\r\n}",
+                  "options": {
+                    "raw": {
+                      "language": "json"
+                    }
+                  }
+                },
+                "url": {
+                  "raw": "{{url}}/auth/login",
+                  "host": [
+                    "{{url}}"
+                  ],
+                  "path": [
+                    "auth",
+                    "login"
+                  ]
+                }
+              },
+              "status": "OK",
+              "code": 200,
+              "_postman_previewlanguage": null,
+              "header": [
+                {
+                  "key": "X-Powered-By",
+                  "value": "Express"
+                },
+                {
+                  "key": "Access-Control-Allow-Origin",
+                  "value": "http://localhost:5173"
+                },
+                {
+                  "key": "Vary",
+                  "value": "Origin"
+                },
+                {
+                  "key": "Access-Control-Allow-Credentials",
+                  "value": "true"
+                },
+                {
+                  "key": "Set-Cookie",
+                  "value": "access_token=eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpZCI6IjM0NzI5MDk0LWRhMzMtNDFhZS04ZjRlLWY3NzE1NmFmZDQ4OCIsImVtYWlsIjoiYWRtaW4xQGludm9iaWQuY29tIiwidHlwZSI6ImFkbWluIiwiaWF0IjoxNzc1OTIwNjkzLCJleHAiOjE3NzYwMDcwOTN9.hSsoMLsIDWJbkMVrWm7E0JPTqWrpOQMU2ra_fouS1NA; Max-Age=86400; Path=/; Expires=Sun, 12 Apr 2026 15:18:13 GMT; HttpOnly; SameSite=Lax"
+                },
+                {
+                  "key": "Content-Type",
+                  "value": "application/json; charset=utf-8"
+                },
+                {
+                  "key": "Content-Length",
+                  "value": "538"
+                },
+                {
+                  "key": "ETag",
+                  "value": "W/\"21a-8q1EEGjxRehakmXjGJcRoW/ak4Y\""
+                },
+                {
+                  "key": "Date",
+                  "value": "Sat, 11 Apr 2026 15:18:13 GMT"
+                },
+                {
+                  "key": "Connection",
+                  "value": "keep-alive"
+                },
+                {
+                  "key": "Keep-Alive",
+                  "value": "timeout=5"
+                }
+              ],
+              "cookie": [],
+              "body": "{\n    \"status\": \"success\",\n    \"data\": {\n        \"id\": \"34729094-da33-41ae-8f4e-f77156afd488\",\n        \"email\": \"admin1@invobid.com\",\n        \"password\": \"$2b$10$B9w2gk3NHCm0jrkxahYpFubaWqpL.P0M0czqayHf2Z35wXyXW3Jh.\",\n        \"name\": \"John Administrator\",\n        \"updatedAt\": \"2026-04-11T15:18:13.531Z\",\n        \"deletedAt\": null,\n        \"type\": \"admin\"\n    },\n    \"access_token\": \"eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpZCI6IjM0NzI5MDk0LWRhMzMtNDFhZS04ZjRlLWY3NzE1NmFmZDQ4OCIsImVtYWlsIjoiYWRtaW4xQGludm9iaWQuY29tIiwidHlwZSI6ImFkbWluIiwiaWF0IjoxNzc1OTIwNjkzLCJleHAiOjE3NzYwMDcwOTN9.hSsoMLsIDWJbkMVrWm7E0JPTqWrpOQMU2ra_fouS1NA\"\n}"
+            }
+          ]
         },
         {
           "name": "Create Administrator",
@@ -97,7 +425,234 @@
               ]
             }
           },
-          "response": []
+          "response": [
+            {
+              "name": "201 Created",
+              "originalRequest": {
+                "method": "POST",
+                "header": [],
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\r\n    \"email\": \"email@mail.com\",\r\n    \"password\": \"pass1234\",\r\n    \"passwordRepeat\": \"pass1234\",\r\n    \"name\": \"Admin 1\"\r\n}",
+                  "options": {
+                    "raw": {
+                      "language": "json"
+                    }
+                  }
+                },
+                "url": {
+                  "raw": "{{url}}/auth/register/admin",
+                  "host": [
+                    "{{url}}"
+                  ],
+                  "path": [
+                    "auth",
+                    "register",
+                    "admin"
+                  ]
+                }
+              },
+              "status": "Created",
+              "code": 201,
+              "_postman_previewlanguage": null,
+              "header": [
+                {
+                  "key": "X-Powered-By",
+                  "value": "Express"
+                },
+                {
+                  "key": "Access-Control-Allow-Origin",
+                  "value": "http://localhost:5173"
+                },
+                {
+                  "key": "Vary",
+                  "value": "Origin"
+                },
+                {
+                  "key": "Access-Control-Allow-Credentials",
+                  "value": "true"
+                },
+                {
+                  "key": "Set-Cookie",
+                  "value": "access_token=eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpZCI6IjE2MGNlN2M0LTdmM2ItNDdmOS1hZTA5LTBkYjk2Y2U0ZGRkNSIsImVtYWlsIjoiZW1haWxAbWFpbC5jb20iLCJ0eXBlIjoiYWRtaW4iLCJpYXQiOjE3NzU5MjA0NDgsImV4cCI6MTc3NjAwNjg0OH0._kGZuG5-bYhHuhAKaC411zp5DBXfEpaDrIlDhfjmXgY; Max-Age=86400; Path=/; Expires=Sun, 12 Apr 2026 15:14:08 GMT; HttpOnly; SameSite=Lax"
+                },
+                {
+                  "key": "Content-Type",
+                  "value": "application/json; charset=utf-8"
+                },
+                {
+                  "key": "Content-Length",
+                  "value": "511"
+                },
+                {
+                  "key": "ETag",
+                  "value": "W/\"1ff-fNsh1uOWgbmrFxiEoq9F+DZT/8s\""
+                },
+                {
+                  "key": "Date",
+                  "value": "Sat, 11 Apr 2026 15:14:08 GMT"
+                },
+                {
+                  "key": "Connection",
+                  "value": "keep-alive"
+                },
+                {
+                  "key": "Keep-Alive",
+                  "value": "timeout=5"
+                }
+              ],
+              "cookie": [],
+              "body": "{\n    \"status\": \"success\",\n    \"data\": {\n        \"email\": \"email@mail.com\",\n        \"passwordRepeat\": \"pass1234\",\n        \"name\": \"Admin 1\",\n        \"type\": \"admin\",\n        \"id\": \"160ce7c4-7f3b-47f9-ae09-0db96ce4ddd5\",\n        \"createdAt\": \"2026-04-11T15:14:08.227Z\",\n        \"updatedAt\": \"2026-04-11T15:14:08.227Z\",\n        \"deletedAt\": null\n    },\n    \"access_token\": \"eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpZCI6IjE2MGNlN2M0LTdmM2ItNDdmOS1hZTA5LTBkYjk2Y2U0ZGRkNSIsImVtYWlsIjoiZW1haWxAbWFpbC5jb20iLCJ0eXBlIjoiYWRtaW4iLCJpYXQiOjE3NzU5MjA0NDgsImV4cCI6MTc3NjAwNjg0OH0._kGZuG5-bYhHuhAKaC411zp5DBXfEpaDrIlDhfjmXgY\"\n}"
+            },
+            {
+              "name": "400 Bad Request (Email already exists)",
+              "originalRequest": {
+                "method": "POST",
+                "header": [],
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\r\n    \"email\": \"email@mail.com\",\r\n    \"password\": \"pass1234\",\r\n    \"passwordRepeat\": \"pass1234\",\r\n    \"name\": \"Admin 1\"\r\n}",
+                  "options": {
+                    "raw": {
+                      "language": "json"
+                    }
+                  }
+                },
+                "url": {
+                  "raw": "{{url}}/auth/register/admin",
+                  "host": [
+                    "{{url}}"
+                  ],
+                  "path": [
+                    "auth",
+                    "register",
+                    "admin"
+                  ]
+                }
+              },
+              "status": "Bad Request",
+              "code": 400,
+              "_postman_previewlanguage": null,
+              "header": [
+                {
+                  "key": "X-Powered-By",
+                  "value": "Express"
+                },
+                {
+                  "key": "Access-Control-Allow-Origin",
+                  "value": "http://localhost:5173"
+                },
+                {
+                  "key": "Vary",
+                  "value": "Origin"
+                },
+                {
+                  "key": "Access-Control-Allow-Credentials",
+                  "value": "true"
+                },
+                {
+                  "key": "Content-Type",
+                  "value": "application/json; charset=utf-8"
+                },
+                {
+                  "key": "Content-Length",
+                  "value": "100"
+                },
+                {
+                  "key": "ETag",
+                  "value": "W/\"64-q5QQ7USmYW6iZbZAfZjAzw9nKz8\""
+                },
+                {
+                  "key": "Date",
+                  "value": "Sat, 11 Apr 2026 15:14:15 GMT"
+                },
+                {
+                  "key": "Connection",
+                  "value": "keep-alive"
+                },
+                {
+                  "key": "Keep-Alive",
+                  "value": "timeout=5"
+                }
+              ],
+              "cookie": [],
+              "body": "{\n    \"message\": \"User with email 'email@mail.com' already exists\",\n    \"error\": \"Bad Request\",\n    \"statusCode\": 400\n}"
+            },
+            {
+              "name": "400 Bad Request (Passwords do not match)",
+              "originalRequest": {
+                "method": "POST",
+                "header": [],
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\r\n    \"email\": \"email1@mail.com\",\r\n    \"password\": \"pass12341\",\r\n    \"passwordRepeat\": \"pass1234\",\r\n    \"name\": \"Admin 1\"\r\n}",
+                  "options": {
+                    "raw": {
+                      "language": "json"
+                    }
+                  }
+                },
+                "url": {
+                  "raw": "{{url}}/auth/register/admin",
+                  "host": [
+                    "{{url}}"
+                  ],
+                  "path": [
+                    "auth",
+                    "register",
+                    "admin"
+                  ]
+                }
+              },
+              "status": "Bad Request",
+              "code": 400,
+              "_postman_previewlanguage": null,
+              "header": [
+                {
+                  "key": "X-Powered-By",
+                  "value": "Express"
+                },
+                {
+                  "key": "Access-Control-Allow-Origin",
+                  "value": "http://localhost:5173"
+                },
+                {
+                  "key": "Vary",
+                  "value": "Origin"
+                },
+                {
+                  "key": "Access-Control-Allow-Credentials",
+                  "value": "true"
+                },
+                {
+                  "key": "Content-Type",
+                  "value": "application/json; charset=utf-8"
+                },
+                {
+                  "key": "Content-Length",
+                  "value": "75"
+                },
+                {
+                  "key": "ETag",
+                  "value": "W/\"4b-c1ztYHQZ1XERVR/UWrFX6yQp73M\""
+                },
+                {
+                  "key": "Date",
+                  "value": "Sat, 11 Apr 2026 15:14:29 GMT"
+                },
+                {
+                  "key": "Connection",
+                  "value": "keep-alive"
+                },
+                {
+                  "key": "Keep-Alive",
+                  "value": "timeout=5"
+                }
+              ],
+              "cookie": [],
+              "body": "{\n    \"message\": \"Passwords do not match\",\n    \"error\": \"Bad Request\",\n    \"statusCode\": 400\n}"
+            }
+          ]
         },
         {
           "name": "Create Investor",
@@ -266,7 +821,32 @@
               "variable": [
                 {
                   "key": "documentId",
-                  "value": "18948de3-6893-4292-82e2-a9c754b0c90f"
+                  "value": "18d4803b-ba30-429f-9f1d-39e1cdc4dbc2"
+                }
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Get Document Preview",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{url}}/documents/:documentId/preview",
+              "host": [
+                "{{url}}"
+              ],
+              "path": [
+                "documents",
+                ":documentId",
+                "preview"
+              ],
+              "variable": [
+                {
+                  "key": "documentId",
+                  "value": "18d4803b-ba30-429f-9f1d-39e1cdc4dbc2"
                 }
               ]
             }
@@ -353,7 +933,134 @@
                   ]
                 }
               },
-              "response": []
+              "response": [
+                {
+                  "name": "200 OK",
+                  "originalRequest": {
+                    "method": "GET",
+                    "header": [],
+                    "url": {
+                      "raw": "{{url}}/admins",
+                      "host": [
+                        "{{url}}"
+                      ],
+                      "path": [
+                        "admins"
+                      ]
+                    }
+                  },
+                  "status": "OK",
+                  "code": 200,
+                  "_postman_previewlanguage": null,
+                  "header": [
+                    {
+                      "key": "X-Powered-By",
+                      "value": "Express"
+                    },
+                    {
+                      "key": "Access-Control-Allow-Origin",
+                      "value": "http://localhost:5173"
+                    },
+                    {
+                      "key": "Vary",
+                      "value": "Origin"
+                    },
+                    {
+                      "key": "Access-Control-Allow-Credentials",
+                      "value": "true"
+                    },
+                    {
+                      "key": "Content-Type",
+                      "value": "application/json; charset=utf-8"
+                    },
+                    {
+                      "key": "Content-Length",
+                      "value": "645"
+                    },
+                    {
+                      "key": "ETag",
+                      "value": "W/\"285-2ta/3PmIx1EXihhRm2rzVVnM5TQ\""
+                    },
+                    {
+                      "key": "Date",
+                      "value": "Sat, 11 Apr 2026 15:15:23 GMT"
+                    },
+                    {
+                      "key": "Connection",
+                      "value": "keep-alive"
+                    },
+                    {
+                      "key": "Keep-Alive",
+                      "value": "timeout=5"
+                    }
+                  ],
+                  "cookie": [],
+                  "body": "{\n    \"status\": \"success\",\n    \"data\": [\n        {\n            \"id\": \"34729094-da33-41ae-8f4e-f77156afd488\",\n            \"email\": \"admin1@invobid.com\",\n            \"name\": \"John Administrator\",\n            \"createdAt\": \"2026-04-11T15:12:59.082Z\",\n            \"updatedAt\": \"2026-04-11T15:12:59.082Z\",\n            \"deletedAt\": null,\n            \"type\": \"admin\"\n        },\n        {\n            \"id\": \"02da9903-246f-416f-a7c3-97acac45699b\",\n            \"email\": \"admin2@invobid.com\",\n            \"name\": \"Jane Admin\",\n            \"createdAt\": \"2026-04-11T15:12:59.082Z\",\n            \"updatedAt\": \"2026-04-11T15:12:59.082Z\",\n            \"deletedAt\": null,\n            \"type\": \"admin\"\n        },\n        {\n            \"id\": \"160ce7c4-7f3b-47f9-ae09-0db96ce4ddd5\",\n            \"email\": \"email@mail.com\",\n            \"name\": \"Admin 1\",\n            \"createdAt\": \"2026-04-11T15:14:08.227Z\",\n            \"updatedAt\": \"2026-04-11T15:14:08.227Z\",\n            \"deletedAt\": null,\n            \"type\": \"admin\"\n        }\n    ]\n}"
+                },
+                {
+                  "name": "403 Forbidden",
+                  "originalRequest": {
+                    "method": "GET",
+                    "header": [],
+                    "url": {
+                      "raw": "{{url}}/admins",
+                      "host": [
+                        "{{url}}"
+                      ],
+                      "path": [
+                        "admins"
+                      ]
+                    }
+                  },
+                  "status": "Forbidden",
+                  "code": 403,
+                  "_postman_previewlanguage": null,
+                  "header": [
+                    {
+                      "key": "X-Powered-By",
+                      "value": "Express"
+                    },
+                    {
+                      "key": "Access-Control-Allow-Origin",
+                      "value": "http://localhost:5173"
+                    },
+                    {
+                      "key": "Vary",
+                      "value": "Origin"
+                    },
+                    {
+                      "key": "Access-Control-Allow-Credentials",
+                      "value": "true"
+                    },
+                    {
+                      "key": "Content-Type",
+                      "value": "application/json; charset=utf-8"
+                    },
+                    {
+                      "key": "Content-Length",
+                      "value": "100"
+                    },
+                    {
+                      "key": "ETag",
+                      "value": "W/\"64-O3ZUf/MLySEOmRH05A6BAmfyOr4\""
+                    },
+                    {
+                      "key": "Date",
+                      "value": "Sat, 11 Apr 2026 15:25:49 GMT"
+                    },
+                    {
+                      "key": "Connection",
+                      "value": "keep-alive"
+                    },
+                    {
+                      "key": "Keep-Alive",
+                      "value": "timeout=5"
+                    }
+                  ],
+                  "cookie": [],
+                  "body": "{\n    \"message\": \"You don't have permissions to perform this action\",\n    \"error\": \"Forbidden\",\n    \"statusCode\": 403\n}"
+                }
+              ]
             },
             {
               "name": "Get Administrator",
@@ -372,12 +1079,293 @@
                   "variable": [
                     {
                       "key": "adminId",
-                      "value": "4fb3bfd0-0fb4-4d83-9e45-668b36e18279"
+                      "value": "7f015b18-0555-4809-8afc-e8d873441f87"
                     }
                   ]
                 }
               },
-              "response": []
+              "response": [
+                {
+                  "name": "200 OK",
+                  "originalRequest": {
+                    "method": "GET",
+                    "header": [],
+                    "url": {
+                      "raw": "{{url}}/admins/:adminId",
+                      "host": [
+                        "{{url}}"
+                      ],
+                      "path": [
+                        "admins",
+                        ":adminId"
+                      ],
+                      "variable": [
+                        {
+                          "key": "adminId",
+                          "value": "5235548e-c2e8-483c-be85-1a9e23c70ce5"
+                        }
+                      ]
+                    }
+                  },
+                  "status": "OK",
+                  "code": 200,
+                  "_postman_previewlanguage": null,
+                  "header": [
+                    {
+                      "key": "X-Powered-By",
+                      "value": "Express"
+                    },
+                    {
+                      "key": "Access-Control-Allow-Origin",
+                      "value": "http://localhost:5173"
+                    },
+                    {
+                      "key": "Vary",
+                      "value": "Origin"
+                    },
+                    {
+                      "key": "Access-Control-Allow-Credentials",
+                      "value": "true"
+                    },
+                    {
+                      "key": "Content-Type",
+                      "value": "application/json; charset=utf-8"
+                    },
+                    {
+                      "key": "Content-Length",
+                      "value": "240"
+                    },
+                    {
+                      "key": "ETag",
+                      "value": "W/\"f0-kNIQSpyG9RUYsQtPwqZsrqoH7fM\""
+                    },
+                    {
+                      "key": "Date",
+                      "value": "Sat, 11 Apr 2026 14:59:59 GMT"
+                    },
+                    {
+                      "key": "Connection",
+                      "value": "keep-alive"
+                    },
+                    {
+                      "key": "Keep-Alive",
+                      "value": "timeout=5"
+                    }
+                  ],
+                  "cookie": [],
+                  "body": "{\n    \"status\": \"success\",\n    \"data\": {\n        \"id\": \"5235548e-c2e8-483c-be85-1a9e23c70ce5\",\n        \"email\": \"admin1@invobid.com\",\n        \"name\": \"John Administrator\",\n        \"createdAt\": \"2026-04-11T14:34:51.925Z\",\n        \"updatedAt\": \"2026-04-11T14:34:51.925Z\",\n        \"deletedAt\": null,\n        \"type\": \"admin\"\n    }\n}"
+                },
+                {
+                  "name": "400 Bad Request",
+                  "originalRequest": {
+                    "method": "GET",
+                    "header": [],
+                    "url": {
+                      "raw": "{{url}}/admins/:adminId",
+                      "host": [
+                        "{{url}}"
+                      ],
+                      "path": [
+                        "admins",
+                        ":adminId"
+                      ],
+                      "variable": [
+                        {
+                          "key": "adminId",
+                          "value": "7f015b18-0555-4809-8afc-e8d873441f8"
+                        }
+                      ]
+                    }
+                  },
+                  "status": "Bad Request",
+                  "code": 400,
+                  "_postman_previewlanguage": null,
+                  "header": [
+                    {
+                      "key": "X-Powered-By",
+                      "value": "Express"
+                    },
+                    {
+                      "key": "Access-Control-Allow-Origin",
+                      "value": "http://localhost:5173"
+                    },
+                    {
+                      "key": "Vary",
+                      "value": "Origin"
+                    },
+                    {
+                      "key": "Access-Control-Allow-Credentials",
+                      "value": "true"
+                    },
+                    {
+                      "key": "Content-Type",
+                      "value": "application/json; charset=utf-8"
+                    },
+                    {
+                      "key": "Content-Length",
+                      "value": "89"
+                    },
+                    {
+                      "key": "ETag",
+                      "value": "W/\"59-kArN5xCcYXjUJs5yv8pQBq+GJsU\""
+                    },
+                    {
+                      "key": "Date",
+                      "value": "Sat, 11 Apr 2026 17:31:47 GMT"
+                    },
+                    {
+                      "key": "Connection",
+                      "value": "keep-alive"
+                    },
+                    {
+                      "key": "Keep-Alive",
+                      "value": "timeout=5"
+                    }
+                  ],
+                  "cookie": [],
+                  "body": "{\n    \"message\": \"Validation failed (uuid is expected)\",\n    \"error\": \"Bad Request\",\n    \"statusCode\": 400\n}"
+                },
+                {
+                  "name": "403 Forbidden",
+                  "originalRequest": {
+                    "method": "GET",
+                    "header": [],
+                    "url": {
+                      "raw": "{{url}}/admins/:adminId",
+                      "host": [
+                        "{{url}}"
+                      ],
+                      "path": [
+                        "admins",
+                        ":adminId"
+                      ],
+                      "variable": [
+                        {
+                          "key": "adminId",
+                          "value": "5235548e-c2e8-483c-be85-1a9e23c70ce5"
+                        }
+                      ]
+                    }
+                  },
+                  "status": "Forbidden",
+                  "code": 403,
+                  "_postman_previewlanguage": null,
+                  "header": [
+                    {
+                      "key": "X-Powered-By",
+                      "value": "Express"
+                    },
+                    {
+                      "key": "Access-Control-Allow-Origin",
+                      "value": "http://localhost:5173"
+                    },
+                    {
+                      "key": "Vary",
+                      "value": "Origin"
+                    },
+                    {
+                      "key": "Access-Control-Allow-Credentials",
+                      "value": "true"
+                    },
+                    {
+                      "key": "Content-Type",
+                      "value": "application/json; charset=utf-8"
+                    },
+                    {
+                      "key": "Content-Length",
+                      "value": "100"
+                    },
+                    {
+                      "key": "ETag",
+                      "value": "W/\"64-O3ZUf/MLySEOmRH05A6BAmfyOr4\""
+                    },
+                    {
+                      "key": "Date",
+                      "value": "Sat, 11 Apr 2026 15:26:23 GMT"
+                    },
+                    {
+                      "key": "Connection",
+                      "value": "keep-alive"
+                    },
+                    {
+                      "key": "Keep-Alive",
+                      "value": "timeout=5"
+                    }
+                  ],
+                  "cookie": [],
+                  "body": "{\n    \"message\": \"You don't have permissions to perform this action\",\n    \"error\": \"Forbidden\",\n    \"statusCode\": 403\n}"
+                },
+                {
+                  "name": "404 Not Found",
+                  "originalRequest": {
+                    "method": "GET",
+                    "header": [],
+                    "url": {
+                      "raw": "{{url}}/admins/:adminId",
+                      "host": [
+                        "{{url}}"
+                      ],
+                      "path": [
+                        "admins",
+                        ":adminId"
+                      ],
+                      "variable": [
+                        {
+                          "key": "adminId",
+                          "value": "5235548e-c2e8-483c-be85-1a9e23c70ce3"
+                        }
+                      ]
+                    }
+                  },
+                  "status": "Not Found",
+                  "code": 404,
+                  "_postman_previewlanguage": null,
+                  "header": [
+                    {
+                      "key": "X-Powered-By",
+                      "value": "Express"
+                    },
+                    {
+                      "key": "Access-Control-Allow-Origin",
+                      "value": "http://localhost:5173"
+                    },
+                    {
+                      "key": "Vary",
+                      "value": "Origin"
+                    },
+                    {
+                      "key": "Access-Control-Allow-Credentials",
+                      "value": "true"
+                    },
+                    {
+                      "key": "Content-Type",
+                      "value": "application/json; charset=utf-8"
+                    },
+                    {
+                      "key": "Content-Length",
+                      "value": "113"
+                    },
+                    {
+                      "key": "ETag",
+                      "value": "W/\"71-+7ZhtpIsyg37mxtzxxlBT05mCo4\""
+                    },
+                    {
+                      "key": "Date",
+                      "value": "Sat, 11 Apr 2026 15:06:22 GMT"
+                    },
+                    {
+                      "key": "Connection",
+                      "value": "keep-alive"
+                    },
+                    {
+                      "key": "Keep-Alive",
+                      "value": "timeout=5"
+                    }
+                  ],
+                  "cookie": [],
+                  "body": "{\n    \"message\": \"Admin with ID '5235548e-c2e8-483c-be85-1a9e23c70ce3' not found\",\n    \"error\": \"Not Found\",\n    \"statusCode\": 404\n}"
+                }
+              ]
             },
             {
               "name": "Update Administrator",
@@ -405,12 +1393,250 @@
                   "variable": [
                     {
                       "key": "adminId",
-                      "value": "4fb3bfd0-0fb4-4d83-9e45-668b36e18279"
+                      "value": "5235548e-c2e8-483c-be85-1a9e23c70ce5"
                     }
                   ]
                 }
               },
-              "response": []
+              "response": [
+                {
+                  "name": "200 OK",
+                  "originalRequest": {
+                    "method": "PATCH",
+                    "header": [],
+                    "body": {
+                      "mode": "raw",
+                      "raw": "{\r\n    \"email\": \"email@mail.com\"\r\n}",
+                      "options": {
+                        "raw": {
+                          "language": "json"
+                        }
+                      }
+                    },
+                    "url": {
+                      "raw": "{{url}}/admins/:adminId",
+                      "host": [
+                        "{{url}}"
+                      ],
+                      "path": [
+                        "admins",
+                        ":adminId"
+                      ],
+                      "variable": [
+                        {
+                          "key": "adminId",
+                          "value": "5235548e-c2e8-483c-be85-1a9e23c70ce5"
+                        }
+                      ]
+                    }
+                  },
+                  "status": "OK",
+                  "code": 200,
+                  "_postman_previewlanguage": null,
+                  "header": [
+                    {
+                      "key": "X-Powered-By",
+                      "value": "Express"
+                    },
+                    {
+                      "key": "Access-Control-Allow-Origin",
+                      "value": "http://localhost:5173"
+                    },
+                    {
+                      "key": "Vary",
+                      "value": "Origin"
+                    },
+                    {
+                      "key": "Access-Control-Allow-Credentials",
+                      "value": "true"
+                    },
+                    {
+                      "key": "Content-Type",
+                      "value": "application/json; charset=utf-8"
+                    },
+                    {
+                      "key": "Content-Length",
+                      "value": "236"
+                    },
+                    {
+                      "key": "ETag",
+                      "value": "W/\"ec-/KEU37+s9qmoZEFmUw2gPSHUMq8\""
+                    },
+                    {
+                      "key": "Date",
+                      "value": "Sat, 11 Apr 2026 15:10:57 GMT"
+                    },
+                    {
+                      "key": "Connection",
+                      "value": "keep-alive"
+                    },
+                    {
+                      "key": "Keep-Alive",
+                      "value": "timeout=5"
+                    }
+                  ],
+                  "cookie": [],
+                  "body": "{\n    \"status\": \"success\",\n    \"data\": {\n        \"id\": \"5235548e-c2e8-483c-be85-1a9e23c70ce5\",\n        \"email\": \"email@mail.com\",\n        \"name\": \"John Administrator\",\n        \"createdAt\": \"2026-04-11T14:34:51.925Z\",\n        \"updatedAt\": \"2026-04-11T15:10:57.222Z\",\n        \"deletedAt\": null,\n        \"type\": \"admin\"\n    }\n}"
+                },
+                {
+                  "name": "401 Unauthorized",
+                  "originalRequest": {
+                    "method": "PATCH",
+                    "header": [],
+                    "body": {
+                      "mode": "raw",
+                      "raw": "{\r\n    \"email\": \"email@mail.com\"\r\n}",
+                      "options": {
+                        "raw": {
+                          "language": "json"
+                        }
+                      }
+                    },
+                    "url": {
+                      "raw": "{{url}}/admins/:adminId",
+                      "host": [
+                        "{{url}}"
+                      ],
+                      "path": [
+                        "admins",
+                        ":adminId"
+                      ],
+                      "variable": [
+                        {
+                          "key": "adminId",
+                          "value": "5235548e-c2e8-483c-be85-1a9e23c70ce5"
+                        }
+                      ]
+                    }
+                  },
+                  "status": "Unauthorized",
+                  "code": 401,
+                  "_postman_previewlanguage": null,
+                  "header": [
+                    {
+                      "key": "X-Powered-By",
+                      "value": "Express"
+                    },
+                    {
+                      "key": "Access-Control-Allow-Origin",
+                      "value": "http://localhost:5173"
+                    },
+                    {
+                      "key": "Vary",
+                      "value": "Origin"
+                    },
+                    {
+                      "key": "Access-Control-Allow-Credentials",
+                      "value": "true"
+                    },
+                    {
+                      "key": "Content-Type",
+                      "value": "application/json; charset=utf-8"
+                    },
+                    {
+                      "key": "Content-Length",
+                      "value": "72"
+                    },
+                    {
+                      "key": "ETag",
+                      "value": "W/\"48-uFvHPH2uYRbDWurQPx92NYI7dFo\""
+                    },
+                    {
+                      "key": "Date",
+                      "value": "Sat, 11 Apr 2026 15:12:21 GMT"
+                    },
+                    {
+                      "key": "Connection",
+                      "value": "keep-alive"
+                    },
+                    {
+                      "key": "Keep-Alive",
+                      "value": "timeout=5"
+                    }
+                  ],
+                  "cookie": [],
+                  "body": "{\n    \"message\": \"Token is not valid\",\n    \"error\": \"Unauthorized\",\n    \"statusCode\": 401\n}"
+                },
+                {
+                  "name": "403 Forbidden",
+                  "originalRequest": {
+                    "method": "PATCH",
+                    "header": [],
+                    "body": {
+                      "mode": "raw",
+                      "raw": "{\r\n    \"email\": \"email@mail.com\"\r\n}",
+                      "options": {
+                        "raw": {
+                          "language": "json"
+                        }
+                      }
+                    },
+                    "url": {
+                      "raw": "{{url}}/admins/:adminId",
+                      "host": [
+                        "{{url}}"
+                      ],
+                      "path": [
+                        "admins",
+                        ":adminId"
+                      ],
+                      "variable": [
+                        {
+                          "key": "adminId",
+                          "value": "5235548e-c2e8-483c-be85-1a9e23c70ce5"
+                        }
+                      ]
+                    }
+                  },
+                  "status": "Forbidden",
+                  "code": 403,
+                  "_postman_previewlanguage": null,
+                  "header": [
+                    {
+                      "key": "X-Powered-By",
+                      "value": "Express"
+                    },
+                    {
+                      "key": "Access-Control-Allow-Origin",
+                      "value": "http://localhost:5173"
+                    },
+                    {
+                      "key": "Vary",
+                      "value": "Origin"
+                    },
+                    {
+                      "key": "Access-Control-Allow-Credentials",
+                      "value": "true"
+                    },
+                    {
+                      "key": "Content-Type",
+                      "value": "application/json; charset=utf-8"
+                    },
+                    {
+                      "key": "Content-Length",
+                      "value": "100"
+                    },
+                    {
+                      "key": "ETag",
+                      "value": "W/\"64-O3ZUf/MLySEOmRH05A6BAmfyOr4\""
+                    },
+                    {
+                      "key": "Date",
+                      "value": "Sat, 11 Apr 2026 15:26:14 GMT"
+                    },
+                    {
+                      "key": "Connection",
+                      "value": "keep-alive"
+                    },
+                    {
+                      "key": "Keep-Alive",
+                      "value": "timeout=5"
+                    }
+                  ],
+                  "cookie": [],
+                  "body": "{\n    \"message\": \"You don't have permissions to perform this action\",\n    \"error\": \"Forbidden\",\n    \"statusCode\": 403\n}"
+                }
+              ]
             },
             {
               "name": "Delete Administrator",
@@ -434,7 +1660,218 @@
                   ]
                 }
               },
-              "response": []
+              "response": [
+                {
+                  "name": "200 OK",
+                  "originalRequest": {
+                    "method": "DELETE",
+                    "header": [],
+                    "url": {
+                      "raw": "{{url}}/admins/:adminId",
+                      "host": [
+                        "{{url}}"
+                      ],
+                      "path": [
+                        "admins",
+                        ":adminId"
+                      ],
+                      "variable": [
+                        {
+                          "key": "adminId",
+                          "value": "34729094-da33-41ae-8f4e-f77156afd488"
+                        }
+                      ]
+                    }
+                  },
+                  "status": "OK",
+                  "code": 200,
+                  "_postman_previewlanguage": null,
+                  "header": [
+                    {
+                      "key": "X-Powered-By",
+                      "value": "Express"
+                    },
+                    {
+                      "key": "Access-Control-Allow-Origin",
+                      "value": "http://localhost:5173"
+                    },
+                    {
+                      "key": "Vary",
+                      "value": "Origin"
+                    },
+                    {
+                      "key": "Access-Control-Allow-Credentials",
+                      "value": "true"
+                    },
+                    {
+                      "key": "Content-Type",
+                      "value": "application/json; charset=utf-8"
+                    },
+                    {
+                      "key": "Content-Length",
+                      "value": "20"
+                    },
+                    {
+                      "key": "ETag",
+                      "value": "W/\"14-Y53wuE/mmbSikKcT/WualL1N65U\""
+                    },
+                    {
+                      "key": "Date",
+                      "value": "Sat, 11 Apr 2026 15:16:34 GMT"
+                    },
+                    {
+                      "key": "Connection",
+                      "value": "keep-alive"
+                    },
+                    {
+                      "key": "Keep-Alive",
+                      "value": "timeout=5"
+                    }
+                  ],
+                  "cookie": [],
+                  "body": "{\n    \"status\": \"success\"\n}"
+                },
+                {
+                  "name": "403 Forbidden",
+                  "originalRequest": {
+                    "method": "DELETE",
+                    "header": [],
+                    "url": {
+                      "raw": "{{url}}/admins/:adminId",
+                      "host": [
+                        "{{url}}"
+                      ],
+                      "path": [
+                        "admins",
+                        ":adminId"
+                      ],
+                      "variable": [
+                        {
+                          "key": "adminId",
+                          "value": "f5c9876a-845c-411a-a957-3904e0652e6e"
+                        }
+                      ]
+                    }
+                  },
+                  "status": "Forbidden",
+                  "code": 403,
+                  "_postman_previewlanguage": null,
+                  "header": [
+                    {
+                      "key": "X-Powered-By",
+                      "value": "Express"
+                    },
+                    {
+                      "key": "Access-Control-Allow-Origin",
+                      "value": "http://localhost:5173"
+                    },
+                    {
+                      "key": "Vary",
+                      "value": "Origin"
+                    },
+                    {
+                      "key": "Access-Control-Allow-Credentials",
+                      "value": "true"
+                    },
+                    {
+                      "key": "Content-Type",
+                      "value": "application/json; charset=utf-8"
+                    },
+                    {
+                      "key": "Content-Length",
+                      "value": "100"
+                    },
+                    {
+                      "key": "ETag",
+                      "value": "W/\"64-O3ZUf/MLySEOmRH05A6BAmfyOr4\""
+                    },
+                    {
+                      "key": "Date",
+                      "value": "Sat, 11 Apr 2026 15:25:57 GMT"
+                    },
+                    {
+                      "key": "Connection",
+                      "value": "keep-alive"
+                    },
+                    {
+                      "key": "Keep-Alive",
+                      "value": "timeout=5"
+                    }
+                  ],
+                  "cookie": [],
+                  "body": "{\n    \"message\": \"You don't have permissions to perform this action\",\n    \"error\": \"Forbidden\",\n    \"statusCode\": 403\n}"
+                },
+                {
+                  "name": "404 Not Found",
+                  "originalRequest": {
+                    "method": "DELETE",
+                    "header": [],
+                    "url": {
+                      "raw": "{{url}}/admins/:adminId",
+                      "host": [
+                        "{{url}}"
+                      ],
+                      "path": [
+                        "admins",
+                        ":adminId"
+                      ],
+                      "variable": [
+                        {
+                          "key": "adminId",
+                          "value": "34729094-da33-41ae-8f4e-f77156afd482"
+                        }
+                      ]
+                    }
+                  },
+                  "status": "Not Found",
+                  "code": 404,
+                  "_postman_previewlanguage": null,
+                  "header": [
+                    {
+                      "key": "X-Powered-By",
+                      "value": "Express"
+                    },
+                    {
+                      "key": "Access-Control-Allow-Origin",
+                      "value": "http://localhost:5173"
+                    },
+                    {
+                      "key": "Vary",
+                      "value": "Origin"
+                    },
+                    {
+                      "key": "Access-Control-Allow-Credentials",
+                      "value": "true"
+                    },
+                    {
+                      "key": "Content-Type",
+                      "value": "application/json; charset=utf-8"
+                    },
+                    {
+                      "key": "Content-Length",
+                      "value": "113"
+                    },
+                    {
+                      "key": "ETag",
+                      "value": "W/\"71-AjJlsNdY45n17XWvZASW9RxIRr0\""
+                    },
+                    {
+                      "key": "Date",
+                      "value": "Sat, 11 Apr 2026 15:16:15 GMT"
+                    },
+                    {
+                      "key": "Connection",
+                      "value": "keep-alive"
+                    },
+                    {
+                      "key": "Keep-Alive",
+                      "value": "timeout=5"
+                    }
+                  ],
+                  "cookie": [],
+                  "body": "{\n    \"message\": \"Admin with ID '34729094-da33-41ae-8f4e-f77156afd482' not found\",\n    \"error\": \"Not Found\",\n    \"statusCode\": 404\n}"
+                }
+              ]
             }
           ]
         },
@@ -450,18 +1887,149 @@
                     "method": "GET",
                     "header": [],
                     "url": {
-                      "raw": "{{url}}/investors/lookup/countPending",
+                      "raw": "{{url}}/investors/lookup/count",
                       "host": [
                         "{{url}}"
                       ],
                       "path": [
                         "investors",
                         "lookup",
-                        "countPending"
+                        "count"
                       ]
                     }
                   },
-                  "response": []
+                  "response": [
+                    {
+                      "name": "200 OK",
+                      "originalRequest": {
+                        "method": "GET",
+                        "header": [],
+                        "url": {
+                          "raw": "{{url}}/investors/lookup/count",
+                          "host": [
+                            "{{url}}"
+                          ],
+                          "path": [
+                            "investors",
+                            "lookup",
+                            "count"
+                          ]
+                        }
+                      },
+                      "status": "OK",
+                      "code": 200,
+                      "_postman_previewlanguage": null,
+                      "header": [
+                        {
+                          "key": "X-Powered-By",
+                          "value": "Express"
+                        },
+                        {
+                          "key": "Access-Control-Allow-Origin",
+                          "value": "http://localhost:5173"
+                        },
+                        {
+                          "key": "Vary",
+                          "value": "Origin"
+                        },
+                        {
+                          "key": "Access-Control-Allow-Credentials",
+                          "value": "true"
+                        },
+                        {
+                          "key": "Content-Type",
+                          "value": "application/json; charset=utf-8"
+                        },
+                        {
+                          "key": "Content-Length",
+                          "value": "30"
+                        },
+                        {
+                          "key": "ETag",
+                          "value": "W/\"1e-6Z4Cq6m52YnIILovijwoataKaIU\""
+                        },
+                        {
+                          "key": "Date",
+                          "value": "Sat, 11 Apr 2026 15:27:56 GMT"
+                        },
+                        {
+                          "key": "Connection",
+                          "value": "keep-alive"
+                        },
+                        {
+                          "key": "Keep-Alive",
+                          "value": "timeout=5"
+                        }
+                      ],
+                      "cookie": [],
+                      "body": "{\n    \"status\": \"success\",\n    \"data\": 27\n}"
+                    },
+                    {
+                      "name": "403 Forbidden",
+                      "originalRequest": {
+                        "method": "GET",
+                        "header": [],
+                        "url": {
+                          "raw": "{{url}}/investors/lookup/count",
+                          "host": [
+                            "{{url}}"
+                          ],
+                          "path": [
+                            "investors",
+                            "lookup",
+                            "count"
+                          ]
+                        }
+                      },
+                      "status": "Forbidden",
+                      "code": 403,
+                      "_postman_previewlanguage": null,
+                      "header": [
+                        {
+                          "key": "X-Powered-By",
+                          "value": "Express"
+                        },
+                        {
+                          "key": "Access-Control-Allow-Origin",
+                          "value": "http://localhost:5173"
+                        },
+                        {
+                          "key": "Vary",
+                          "value": "Origin"
+                        },
+                        {
+                          "key": "Access-Control-Allow-Credentials",
+                          "value": "true"
+                        },
+                        {
+                          "key": "Content-Type",
+                          "value": "application/json; charset=utf-8"
+                        },
+                        {
+                          "key": "Content-Length",
+                          "value": "100"
+                        },
+                        {
+                          "key": "ETag",
+                          "value": "W/\"64-O3ZUf/MLySEOmRH05A6BAmfyOr4\""
+                        },
+                        {
+                          "key": "Date",
+                          "value": "Sat, 11 Apr 2026 15:27:20 GMT"
+                        },
+                        {
+                          "key": "Connection",
+                          "value": "keep-alive"
+                        },
+                        {
+                          "key": "Keep-Alive",
+                          "value": "timeout=5"
+                        }
+                      ],
+                      "cookie": [],
+                      "body": "{\n    \"message\": \"You don't have permissions to perform this action\",\n    \"error\": \"Forbidden\",\n    \"statusCode\": 403\n}"
+                    }
+                  ]
                 }
               ]
             },
@@ -478,7 +2046,7 @@
                   "formdata": []
                 },
                 "url": {
-                  "raw": "{{url}}/investors?email=seller2@globaltrade.com&includeDeleted=false",
+                  "raw": "{{url}}/investors",
                   "host": [
                     "{{url}}"
                   ],
@@ -488,7 +2056,8 @@
                   "query": [
                     {
                       "key": "email",
-                      "value": "seller2@globaltrade.com"
+                      "value": "seller2@globaltrade.com",
+                      "disabled": true
                     },
                     {
                       "key": "name",
@@ -535,12 +2104,379 @@
                     },
                     {
                       "key": "includeDeleted",
-                      "value": "false"
+                      "value": "0",
+                      "disabled": true
                     }
                   ]
                 }
               },
-              "response": []
+              "response": [
+                {
+                  "name": "200 OK (administrator)",
+                  "originalRequest": {
+                    "method": "GET",
+                    "header": [],
+                    "body": {
+                      "mode": "formdata",
+                      "formdata": []
+                    },
+                    "url": {
+                      "raw": "{{url}}/investors",
+                      "host": [
+                        "{{url}}"
+                      ],
+                      "path": [
+                        "investors"
+                      ],
+                      "query": [
+                        {
+                          "key": "email",
+                          "value": "seller2@globaltrade.com",
+                          "disabled": true
+                        },
+                        {
+                          "key": "name",
+                          "value": "Robert",
+                          "disabled": true
+                        },
+                        {
+                          "key": "companyName",
+                          "value": "Solutions",
+                          "disabled": true
+                        },
+                        {
+                          "key": "phoneNumber",
+                          "value": "34912345678",
+                          "disabled": true
+                        },
+                        {
+                          "key": "documentValue",
+                          "value": "12345678Z",
+                          "disabled": true
+                        },
+                        {
+                          "key": "investorType",
+                          "value": "individual",
+                          "description": "company or individual",
+                          "disabled": true
+                        },
+                        {
+                          "key": "status",
+                          "value": "",
+                          "description": "pending, verified, correction or denied",
+                          "type": "text",
+                          "disabled": true
+                        },
+                        {
+                          "key": "page",
+                          "value": "1",
+                          "disabled": true
+                        },
+                        {
+                          "key": "limit",
+                          "value": "1",
+                          "disabled": true
+                        },
+                        {
+                          "key": "includeDeleted",
+                          "value": "0",
+                          "disabled": true
+                        }
+                      ]
+                    }
+                  },
+                  "status": "OK",
+                  "code": 200,
+                  "_postman_previewlanguage": null,
+                  "header": [
+                    {
+                      "key": "X-Powered-By",
+                      "value": "Express"
+                    },
+                    {
+                      "key": "Access-Control-Allow-Origin",
+                      "value": "http://localhost:5173"
+                    },
+                    {
+                      "key": "Vary",
+                      "value": "Origin"
+                    },
+                    {
+                      "key": "Access-Control-Allow-Credentials",
+                      "value": "true"
+                    },
+                    {
+                      "key": "Content-Type",
+                      "value": "application/json; charset=utf-8"
+                    },
+                    {
+                      "key": "Content-Length",
+                      "value": "7831"
+                    },
+                    {
+                      "key": "ETag",
+                      "value": "W/\"1e97-qfsrKrWkSDkj3jLgHI35d9uj3vo\""
+                    },
+                    {
+                      "key": "Date",
+                      "value": "Mon, 13 Apr 2026 07:14:26 GMT"
+                    },
+                    {
+                      "key": "Connection",
+                      "value": "keep-alive"
+                    },
+                    {
+                      "key": "Keep-Alive",
+                      "value": "timeout=5"
+                    }
+                  ],
+                  "cookie": [],
+                  "body": "{\n    \"status\": \"success\",\n    \"data\": [\n        {\n            \"id\": \"00a4605a-39ea-4cb6-91de-5e0e19249182\",\n            \"email\": \"seller1@techcorp.com\",\n            \"name\": \"Robert Tech\",\n            \"createdAt\": \"2026-04-13T07:00:16.514Z\",\n            \"updatedAt\": \"2026-04-13T07:00:16.514Z\",\n            \"deletedAt\": null,\n            \"type\": \"investor\",\n            \"phoneNumber\": \"34912345678\",\n            \"companyName\": \"TechCorp Solutions\",\n            \"taxId\": \"12345678Z\",\n            \"investorType\": \"company\",\n            \"status\": \"verified\",\n            \"lastCommunication\": null,\n            \"isOptedInNotificationsEmail\": true,\n            \"isOptedInNotificationsSMS\": false,\n            \"documents\": [\n                {\n                    \"id\": \"6f2594e4-a9ea-401c-906c-475d418e917c\",\n                    \"title\": \"TechCorp Solutions NIF/CIF Document\",\n                    \"filename\": \"cif.jpg\",\n                    \"value\": \"12345678Z\",\n                    \"type\": \"identification\",\n                    \"createdAt\": \"2026-04-13T07:00:16.514Z\",\n                    \"updatedAt\": \"2026-04-13T07:00:16.514Z\"\n                }\n            ],\n            \"bankAccount\": {\n                \"id\": \"e4d03d44-e764-43e4-8921-5505b57d31e6\",\n                \"balance\": \"50000.00\"\n            }\n        },\n        {\n            \"id\": \"561496bd-415b-497f-8292-da4e0ec501f9\",\n            \"email\": \"buyer1@wealthfund.com\",\n            \"name\": \"Michael Wealth\",\n            \"createdAt\": \"2026-04-13T07:00:16.514Z\",\n            \"updatedAt\": \"2026-04-13T07:00:16.514Z\",\n            \"deletedAt\": null,\n            \"type\": \"investor\",\n            \"phoneNumber\": \"34934567890\",\n            \"companyName\": \"WealthFund Capital\",\n            \"taxId\": \"A12345674\",\n            \"investorType\": \"company\",\n            \"status\": \"correction\",\n            \"lastCommunication\": \"El documento de identificación es incorrecto o no es legible\",\n            \"isOptedInNotificationsEmail\": true,\n            \"isOptedInNotificationsSMS\": true,\n            \"documents\": [\n                {\n                    \"id\": \"612bf3ab-bb36-485e-90dc-6f93e55d9e0d\",\n                    \"title\": \"WealthFund Capital NIF/CIF Document\",\n                    \"filename\": \"cif.jpg\",\n                    \"value\": \"A12345674\",\n                    \"type\": \"identification\",\n                    \"createdAt\": \"2026-04-13T07:00:16.514Z\",\n                    \"updatedAt\": \"2026-04-13T07:00:16.514Z\"\n                }\n            ],\n            \"bankAccount\": {\n                \"id\": \"100c216e-208b-44ec-bd7a-b8f11f4465b3\",\n                \"balance\": \"500000.00\"\n            }\n        },\n        {\n            \"id\": \"157d029f-270c-43bb-bc01-c8a547081554\",\n            \"email\": \"investor6@investpro.com\",\n            \"name\": \"James Wilson\",\n            \"createdAt\": \"2026-04-13T07:00:16.514Z\",\n            \"updatedAt\": \"2026-04-13T07:00:16.514Z\",\n            \"deletedAt\": null,\n            \"type\": \"investor\",\n            \"phoneNumber\": \"34989012345\",\n            \"companyName\": \"InvestPro Solutions\",\n            \"taxId\": \"56789012B\",\n            \"investorType\": \"individual\",\n            \"status\": \"verified\",\n            \"lastCommunication\": null,\n            \"isOptedInNotificationsEmail\": true,\n            \"isOptedInNotificationsSMS\": true,\n            \"documents\": [\n                {\n                    \"id\": \"ff7bf544-4bce-43c0-91b4-913193ac1b06\",\n                    \"title\": \"InvestPro Solutions NIF/CIF Document\",\n                    \"filename\": \"dni.jpg\",\n                    \"value\": \"56789012B\",\n                    \"type\": \"identification\",\n                    \"createdAt\": \"2026-04-13T07:00:16.514Z\",\n                    \"updatedAt\": \"2026-04-13T07:00:16.514Z\"\n                }\n            ],\n            \"bankAccount\": {\n                \"id\": \"6cbc9822-a44c-4742-a6c5-f8d492b93d4a\",\n                \"balance\": \"85000.00\"\n            }\n        },\n        {\n            \"id\": \"25aadf26-1105-4499-9b0b-64a47179ed71\",\n            \"email\": \"investor7@financecore.com\",\n            \"name\": \"Rachel Brown\",\n            \"createdAt\": \"2026-04-13T07:00:16.514Z\",\n            \"updatedAt\": \"2026-04-13T07:00:16.514Z\",\n            \"deletedAt\": null,\n            \"type\": \"investor\",\n            \"phoneNumber\": \"34912345679\",\n            \"companyName\": \"FinanceCore Partners\",\n            \"taxId\": \"D12345708\",\n            \"investorType\": \"company\",\n            \"status\": \"verified\",\n            \"lastCommunication\": null,\n            \"isOptedInNotificationsEmail\": true,\n            \"isOptedInNotificationsSMS\": true,\n            \"documents\": [\n                {\n                    \"id\": \"640f8751-f36d-42a1-80a8-7f3d37bc4be8\",\n                    \"title\": \"FinanceCore Partners NIF/CIF Document\",\n                    \"filename\": \"cif.jpg\",\n                    \"value\": \"D12345708\",\n                    \"type\": \"identification\",\n                    \"createdAt\": \"2026-04-13T07:00:16.514Z\",\n                    \"updatedAt\": \"2026-04-13T07:00:16.514Z\"\n                }\n            ],\n            \"bankAccount\": {\n                \"id\": \"88e5bc58-2bf5-43c4-ab09-bd6360436cfd\",\n                \"balance\": \"450000.00\"\n            }\n        },\n        {\n            \"id\": \"19fc529a-eb90-4d99-ab12-97bd35c4b2d5\",\n            \"email\": \"investor10@finventure.com\",\n            \"name\": \"Mark Taylor\",\n            \"createdAt\": \"2026-04-13T07:00:16.514Z\",\n            \"updatedAt\": \"2026-04-13T07:00:16.514Z\",\n            \"deletedAt\": null,\n            \"type\": \"investor\",\n            \"phoneNumber\": \"34945678902\",\n            \"companyName\": \"FinVenture Ltd\",\n            \"taxId\": \"78901234X\",\n            \"investorType\": \"individual\",\n            \"status\": \"verified\",\n            \"lastCommunication\": null,\n            \"isOptedInNotificationsEmail\": true,\n            \"isOptedInNotificationsSMS\": true,\n            \"documents\": [\n                {\n                    \"id\": \"48b835b4-c1ce-4ac3-ade4-6f7fcc797f67\",\n                    \"title\": \"FinVenture Ltd NIF/CIF Document\",\n                    \"filename\": \"dni.jpg\",\n                    \"value\": \"78901234X\",\n                    \"type\": \"identification\",\n                    \"createdAt\": \"2026-04-13T07:00:16.514Z\",\n                    \"updatedAt\": \"2026-04-13T07:00:16.514Z\"\n                }\n            ],\n            \"bankAccount\": {\n                \"id\": \"00609b0f-509a-4bd5-b942-e878e1854ed5\",\n                \"balance\": \"110000.00\"\n            }\n        },\n        {\n            \"id\": \"41e34fe2-b243-467c-9457-8e1d0f3e98ff\",\n            \"email\": \"investor14@financepro.com\",\n            \"name\": \"Steven Harris\",\n            \"createdAt\": \"2026-04-13T07:00:16.514Z\",\n            \"updatedAt\": \"2026-04-13T07:00:16.514Z\",\n            \"deletedAt\": null,\n            \"type\": \"investor\",\n            \"phoneNumber\": \"34989012346\",\n            \"companyName\": \"FinancePro Advisory\",\n            \"taxId\": \"90123456A\",\n            \"investorType\": \"individual\",\n            \"status\": \"verified\",\n            \"lastCommunication\": null,\n            \"isOptedInNotificationsEmail\": true,\n            \"isOptedInNotificationsSMS\": false,\n            \"documents\": [\n                {\n                    \"id\": \"f4d118d8-0db2-448a-88c7-6fb0061e561d\",\n                    \"title\": \"FinancePro Advisory NIF/CIF Document\",\n                    \"filename\": \"dni.jpg\",\n                    \"value\": \"90123456A\",\n                    \"type\": \"identification\",\n                    \"createdAt\": \"2026-04-13T07:00:16.514Z\",\n                    \"updatedAt\": \"2026-04-13T07:00:16.514Z\"\n                }\n            ],\n            \"bankAccount\": {\n                \"id\": \"d8e3b617-2783-46f0-848f-670674f565aa\",\n                \"balance\": \"130000.00\"\n            }\n        },\n        {\n            \"id\": \"0b791519-15f1-4536-949e-7a7ea8a1a42a\",\n            \"email\": \"investor16@investcore.com\",\n            \"name\": \"Paul Lewis\",\n            \"createdAt\": \"2026-04-13T07:00:16.514Z\",\n            \"updatedAt\": \"2026-04-13T07:00:16.514Z\",\n            \"deletedAt\": null,\n            \"type\": \"investor\",\n            \"phoneNumber\": \"34923456781\",\n            \"companyName\": \"InvestCore Ltd\",\n            \"taxId\": \"01234567L\",\n            \"investorType\": \"individual\",\n            \"status\": \"pending\",\n            \"lastCommunication\": null,\n            \"isOptedInNotificationsEmail\": true,\n            \"isOptedInNotificationsSMS\": true,\n            \"documents\": [\n                {\n                    \"id\": \"708b90c6-085e-49e1-acb7-9e56f8bb2ee2\",\n                    \"title\": \"InvestCore Ltd NIF/CIF Document\",\n                    \"filename\": \"dni.jpg\",\n                    \"value\": \"01234567L\",\n                    \"type\": \"identification\",\n                    \"createdAt\": \"2026-04-13T07:00:16.514Z\",\n                    \"updatedAt\": \"2026-04-13T07:00:16.514Z\"\n                }\n            ],\n            \"bankAccount\": {\n                \"id\": \"872946d4-f48b-4b13-a9e0-1f423eb26e00\",\n                \"balance\": \"88000.00\"\n            }\n        },\n        {\n            \"id\": \"23215a64-b5a3-47ed-af49-957341fe39e9\",\n            \"email\": \"investor19@wealthcore.com\",\n            \"name\": \"Karen Allen\",\n            \"createdAt\": \"2026-04-13T07:00:16.514Z\",\n            \"updatedAt\": \"2026-04-13T07:00:16.514Z\",\n            \"deletedAt\": null,\n            \"type\": \"investor\",\n            \"phoneNumber\": \"34956789014\",\n            \"companyName\": \"WealthCore Advisors\",\n            \"taxId\": \"U12345765\",\n            \"investorType\": \"company\",\n            \"status\": \"verified\",\n            \"lastCommunication\": null,\n            \"isOptedInNotificationsEmail\": true,\n            \"isOptedInNotificationsSMS\": false,\n            \"documents\": [\n                {\n                    \"id\": \"82cb52d0-9f42-456e-ac0d-7efaab553038\",\n                    \"title\": \"WealthCore Advisors NIF/CIF Document\",\n                    \"filename\": \"cif.jpg\",\n                    \"value\": \"U12345765\",\n                    \"type\": \"identification\",\n                    \"createdAt\": \"2026-04-13T07:00:16.514Z\",\n                    \"updatedAt\": \"2026-04-13T07:00:16.514Z\"\n                }\n            ],\n            \"bankAccount\": {\n                \"id\": \"ede73e6b-9723-49f0-bbc4-607b254583a3\",\n                \"balance\": \"380000.00\"\n            }\n        },\n        {\n            \"id\": \"2a732e2c-ae9f-4677-afd6-e8cbd50a39f6\",\n            \"email\": \"investor21@investplus.com\",\n            \"name\": \"Betty King\",\n            \"createdAt\": \"2026-04-13T07:00:16.514Z\",\n            \"updatedAt\": \"2026-04-13T07:00:16.514Z\",\n            \"deletedAt\": null,\n            \"type\": \"investor\",\n            \"phoneNumber\": \"34978901236\",\n            \"companyName\": \"InvestPlus Global\",\n            \"taxId\": \"V12345773\",\n            \"investorType\": \"company\",\n            \"status\": \"verified\",\n            \"lastCommunication\": null,\n            \"isOptedInNotificationsEmail\": true,\n            \"isOptedInNotificationsSMS\": true,\n            \"documents\": [\n                {\n                    \"id\": \"64d41b8d-e244-4b81-b8fe-d4cfaaf8d4fc\",\n                    \"title\": \"InvestPlus Global NIF/CIF Document\",\n                    \"filename\": \"cif.jpg\",\n                    \"value\": \"V12345773\",\n                    \"type\": \"identification\",\n                    \"createdAt\": \"2026-04-13T07:00:16.514Z\",\n                    \"updatedAt\": \"2026-04-13T07:00:16.514Z\"\n                }\n            ],\n            \"bankAccount\": {\n                \"id\": \"c9484e18-f22a-4b8e-894b-709d52019c2a\",\n                \"balance\": \"510000.00\"\n            }\n        },\n        {\n            \"id\": \"191b69b8-9f9b-4742-8b5b-bd60a5edd626\",\n            \"email\": \"investor23@wealthtrade.com\",\n            \"name\": \"Sandra Lopez\",\n            \"createdAt\": \"2026-04-13T07:00:16.514Z\",\n            \"updatedAt\": \"2026-04-13T07:00:16.514Z\",\n            \"deletedAt\": null,\n            \"type\": \"investor\",\n            \"phoneNumber\": \"34912345681\",\n            \"companyName\": \"WealthTrade Partners\",\n            \"taxId\": \"W12345781\",\n            \"investorType\": \"company\",\n            \"status\": \"verified\",\n            \"lastCommunication\": null,\n            \"isOptedInNotificationsEmail\": true,\n            \"isOptedInNotificationsSMS\": false,\n            \"documents\": [\n                {\n                    \"id\": \"7dffbf41-649f-4c1e-8499-5e10363d3f2b\",\n                    \"title\": \"WealthTrade Partners NIF/CIF Document\",\n                    \"filename\": \"cif.jpg\",\n                    \"value\": \"W12345781\",\n                    \"type\": \"identification\",\n                    \"createdAt\": \"2026-04-13T07:00:16.514Z\",\n                    \"updatedAt\": \"2026-04-13T07:00:16.514Z\"\n                }\n            ],\n            \"bankAccount\": {\n                \"id\": \"4f934cf3-892c-47b2-afb1-09e1dc99c7f3\",\n                \"balance\": \"690000.00\"\n            }\n        }\n    ],\n    \"_metadata\": {\n        \"total\": 27,\n        \"length\": 10,\n        \"page\": 1,\n        \"limit\": 10\n    }\n}"
+                },
+                {
+                  "name": "200 OK (investor)",
+                  "originalRequest": {
+                    "method": "GET",
+                    "header": [],
+                    "body": {
+                      "mode": "formdata",
+                      "formdata": []
+                    },
+                    "url": {
+                      "raw": "{{url}}/investors",
+                      "host": [
+                        "{{url}}"
+                      ],
+                      "path": [
+                        "investors"
+                      ],
+                      "query": [
+                        {
+                          "key": "email",
+                          "value": "seller2@globaltrade.com",
+                          "disabled": true
+                        },
+                        {
+                          "key": "name",
+                          "value": "Robert",
+                          "disabled": true
+                        },
+                        {
+                          "key": "companyName",
+                          "value": "Solutions",
+                          "disabled": true
+                        },
+                        {
+                          "key": "phoneNumber",
+                          "value": "34912345678",
+                          "disabled": true
+                        },
+                        {
+                          "key": "documentValue",
+                          "value": "12345678Z",
+                          "disabled": true
+                        },
+                        {
+                          "key": "investorType",
+                          "value": "individual",
+                          "description": "company or individual",
+                          "disabled": true
+                        },
+                        {
+                          "key": "status",
+                          "value": "",
+                          "description": "pending, verified, correction or denied",
+                          "type": "text",
+                          "disabled": true
+                        },
+                        {
+                          "key": "page",
+                          "value": "1",
+                          "disabled": true
+                        },
+                        {
+                          "key": "limit",
+                          "value": "1",
+                          "disabled": true
+                        },
+                        {
+                          "key": "includeDeleted",
+                          "value": "0",
+                          "disabled": true
+                        }
+                      ]
+                    }
+                  },
+                  "status": "OK",
+                  "code": 200,
+                  "_postman_previewlanguage": null,
+                  "header": [
+                    {
+                      "key": "X-Powered-By",
+                      "value": "Express"
+                    },
+                    {
+                      "key": "Access-Control-Allow-Origin",
+                      "value": "http://localhost:5173"
+                    },
+                    {
+                      "key": "Vary",
+                      "value": "Origin"
+                    },
+                    {
+                      "key": "Access-Control-Allow-Credentials",
+                      "value": "true"
+                    },
+                    {
+                      "key": "Content-Type",
+                      "value": "application/json; charset=utf-8"
+                    },
+                    {
+                      "key": "Content-Length",
+                      "value": "2015"
+                    },
+                    {
+                      "key": "ETag",
+                      "value": "W/\"7df-OnQqT1eWMJOXDihEwOvgEee+Bs8\""
+                    },
+                    {
+                      "key": "Date",
+                      "value": "Mon, 13 Apr 2026 07:13:59 GMT"
+                    },
+                    {
+                      "key": "Connection",
+                      "value": "keep-alive"
+                    },
+                    {
+                      "key": "Keep-Alive",
+                      "value": "timeout=5"
+                    }
+                  ],
+                  "cookie": [],
+                  "body": "{\n    \"status\": \"success\",\n    \"data\": [\n        {\n            \"id\": \"00a4605a-39ea-4cb6-91de-5e0e19249182\",\n            \"email\": \"seller1@techcorp.com\",\n            \"name\": \"Robert Tech\",\n            \"phoneNumber\": \"34912345678\",\n            \"companyName\": \"TechCorp Solutions\",\n            \"investorType\": \"company\"\n        },\n        {\n            \"id\": \"9db86302-05a2-472b-84f0-91e449273f11\",\n            \"email\": \"buyer2@capitalpartners.com\",\n            \"name\": \"John Doe\",\n            \"phoneNumber\": \"34945678901\",\n            \"companyName\": \"Capital Partners\",\n            \"investorType\": \"individual\"\n        },\n        {\n            \"id\": \"aef8785d-0106-4600-84d0-f91ae5600796\",\n            \"email\": \"investor3@financeplus.com\",\n            \"name\": \"Emma Johnson\",\n            \"phoneNumber\": \"34956789012\",\n            \"companyName\": \"Finance Plus Ltd\",\n            \"investorType\": \"company\"\n        },\n        {\n            \"id\": \"157d029f-270c-43bb-bc01-c8a547081554\",\n            \"email\": \"investor6@investpro.com\",\n            \"name\": \"James Wilson\",\n            \"phoneNumber\": \"34989012345\",\n            \"companyName\": \"InvestPro Solutions\",\n            \"investorType\": \"individual\"\n        },\n        {\n            \"id\": \"25aadf26-1105-4499-9b0b-64a47179ed71\",\n            \"email\": \"investor7@financecore.com\",\n            \"name\": \"Rachel Brown\",\n            \"phoneNumber\": \"34912345679\",\n            \"companyName\": \"FinanceCore Partners\",\n            \"investorType\": \"company\"\n        },\n        {\n            \"id\": \"989fff5c-2cb6-4021-b150-a035fdb30212\",\n            \"email\": \"investor9@wealthmanage.com\",\n            \"name\": \"Patricia Martinez\",\n            \"phoneNumber\": \"34934567891\",\n            \"companyName\": \"Wealth Management Corp\",\n            \"investorType\": \"company\"\n        },\n        {\n            \"id\": \"19fc529a-eb90-4d99-ab12-97bd35c4b2d5\",\n            \"email\": \"investor10@finventure.com\",\n            \"name\": \"Mark Taylor\",\n            \"phoneNumber\": \"34945678902\",\n            \"companyName\": \"FinVenture Ltd\",\n            \"investorType\": \"individual\"\n        },\n        {\n            \"id\": \"b5ed42db-db24-4812-b199-356c6906d415\",\n            \"email\": \"investor11@investflow.com\",\n            \"name\": \"Jennifer Garcia\",\n            \"phoneNumber\": \"34956789013\",\n            \"companyName\": \"InvestFlow Capital\",\n            \"investorType\": \"company\"\n        },\n        {\n            \"id\": \"41e34fe2-b243-467c-9457-8e1d0f3e98ff\",\n            \"email\": \"investor14@financepro.com\",\n            \"name\": \"Steven Harris\",\n            \"phoneNumber\": \"34989012346\",\n            \"companyName\": \"FinancePro Advisory\",\n            \"investorType\": \"individual\"\n        },\n        {\n            \"id\": \"88201dd5-01b7-43c7-936a-e1e4e0076add\",\n            \"email\": \"investor15@wealthplus.com\",\n            \"name\": \"Dorothy Clark\",\n            \"phoneNumber\": \"34912345680\",\n            \"companyName\": \"WealthPlus Group\",\n            \"investorType\": \"company\"\n        }\n    ],\n    \"_metadata\": {\n        \"total\": 17,\n        \"length\": 10,\n        \"page\": 1,\n        \"limit\": 10\n    }\n}"
+                },
+                {
+                  "name": "400 Bad Request",
+                  "originalRequest": {
+                    "method": "GET",
+                    "header": [],
+                    "body": {
+                      "mode": "formdata",
+                      "formdata": []
+                    },
+                    "url": {
+                      "raw": "{{url}}/investors?status=a",
+                      "host": [
+                        "{{url}}"
+                      ],
+                      "path": [
+                        "investors"
+                      ],
+                      "query": [
+                        {
+                          "key": "email",
+                          "value": "seller2@globaltrade.com",
+                          "disabled": true
+                        },
+                        {
+                          "key": "name",
+                          "value": "Robert",
+                          "disabled": true
+                        },
+                        {
+                          "key": "companyName",
+                          "value": "Solutions",
+                          "disabled": true
+                        },
+                        {
+                          "key": "phoneNumber",
+                          "value": "34912345678",
+                          "disabled": true
+                        },
+                        {
+                          "key": "documentValue",
+                          "value": "12345678Z",
+                          "disabled": true
+                        },
+                        {
+                          "key": "investorType",
+                          "value": "individual",
+                          "description": "company or individual",
+                          "disabled": true
+                        },
+                        {
+                          "key": "status",
+                          "value": "a",
+                          "description": "pending, verified, correction or denied",
+                          "type": "text"
+                        },
+                        {
+                          "key": "page",
+                          "value": "1",
+                          "disabled": true
+                        },
+                        {
+                          "key": "limit",
+                          "value": "1",
+                          "disabled": true
+                        },
+                        {
+                          "key": "includeDeleted",
+                          "value": "0",
+                          "disabled": true
+                        }
+                      ]
+                    }
+                  },
+                  "status": "Bad Request",
+                  "code": 400,
+                  "_postman_previewlanguage": null,
+                  "header": [
+                    {
+                      "key": "X-Powered-By",
+                      "value": "Express"
+                    },
+                    {
+                      "key": "Access-Control-Allow-Origin",
+                      "value": "http://localhost:5173"
+                    },
+                    {
+                      "key": "Vary",
+                      "value": "Origin"
+                    },
+                    {
+                      "key": "Access-Control-Allow-Credentials",
+                      "value": "true"
+                    },
+                    {
+                      "key": "Content-Type",
+                      "value": "application/json; charset=utf-8"
+                    },
+                    {
+                      "key": "Content-Length",
+                      "value": "136"
+                    },
+                    {
+                      "key": "ETag",
+                      "value": "W/\"88-lxbejTHy3+dL/xMOxI/sQ1/MpRI\""
+                    },
+                    {
+                      "key": "Date",
+                      "value": "Mon, 13 Apr 2026 07:27:13 GMT"
+                    },
+                    {
+                      "key": "Connection",
+                      "value": "keep-alive"
+                    },
+                    {
+                      "key": "Keep-Alive",
+                      "value": "timeout=5"
+                    }
+                  ],
+                  "cookie": [],
+                  "body": "{\n    \"message\": [\n        \"status must be one of the following values: pending, verified, correction, denied\"\n    ],\n    \"error\": \"Bad Request\",\n    \"statusCode\": 400\n}"
+                }
+              ]
             },
             {
               "name": "Get Investor",
@@ -566,12 +2502,309 @@
                   "variable": [
                     {
                       "key": "supplierId",
-                      "value": "4149f748-64e8-4db9-9c59-630e4995f304"
+                      "value": "9db86302-05a2-472b-84f0-91e449273f11"
                     }
                   ]
                 }
               },
-              "response": []
+              "response": [
+                {
+                  "name": "200 OK (administrator)",
+                  "originalRequest": {
+                    "method": "GET",
+                    "header": [],
+                    "body": {
+                      "mode": "formdata",
+                      "formdata": []
+                    },
+                    "url": {
+                      "raw": "{{url}}/investors/:supplierId",
+                      "host": [
+                        "{{url}}"
+                      ],
+                      "path": [
+                        "investors",
+                        ":supplierId"
+                      ],
+                      "variable": [
+                        {
+                          "key": "supplierId",
+                          "value": "95f683ff-72cb-4ee9-add0-a35cb9fc6e0d"
+                        }
+                      ]
+                    }
+                  },
+                  "status": "OK",
+                  "code": 200,
+                  "_postman_previewlanguage": null,
+                  "header": [
+                    {
+                      "key": "X-Powered-By",
+                      "value": "Express"
+                    },
+                    {
+                      "key": "Access-Control-Allow-Origin",
+                      "value": "http://localhost:5173"
+                    },
+                    {
+                      "key": "Vary",
+                      "value": "Origin"
+                    },
+                    {
+                      "key": "Access-Control-Allow-Credentials",
+                      "value": "true"
+                    },
+                    {
+                      "key": "Content-Type",
+                      "value": "application/json; charset=utf-8"
+                    },
+                    {
+                      "key": "Content-Length",
+                      "value": "803"
+                    },
+                    {
+                      "key": "ETag",
+                      "value": "W/\"323-7E6mAmAOENpmE6HTtA/hPWuYUHk\""
+                    },
+                    {
+                      "key": "Date",
+                      "value": "Mon, 13 Apr 2026 07:03:22 GMT"
+                    },
+                    {
+                      "key": "Connection",
+                      "value": "keep-alive"
+                    },
+                    {
+                      "key": "Keep-Alive",
+                      "value": "timeout=5"
+                    }
+                  ],
+                  "cookie": [],
+                  "body": "{\n    \"status\": \"success\",\n    \"data\": {\n        \"id\": \"95f683ff-72cb-4ee9-add0-a35cb9fc6e0d\",\n        \"email\": \"seller2@globaltrade.com\",\n        \"name\": \"Sarah Global\",\n        \"createdAt\": \"2026-04-13T07:00:16.514Z\",\n        \"updatedAt\": \"2026-04-13T07:00:16.514Z\",\n        \"deletedAt\": null,\n        \"type\": \"investor\",\n        \"phoneNumber\": \"34923456789\",\n        \"companyName\": \"GlobalTrade Industries\",\n        \"taxId\": \"23456780T\",\n        \"investorType\": \"individual\",\n        \"status\": \"pending\",\n        \"lastCommunication\": null,\n        \"isOptedInNotificationsEmail\": true,\n        \"isOptedInNotificationsSMS\": true,\n        \"documents\": [\n            {\n                \"id\": \"a74557c7-4951-450a-9156-5a06dffc57f7\",\n                \"title\": \"GlobalTrade Industries NIF/CIF Document\",\n                \"filename\": \"dni.jpg\",\n                \"value\": \"23456780T\",\n                \"type\": \"identification\",\n                \"createdAt\": \"2026-04-13T07:00:16.514Z\",\n                \"updatedAt\": \"2026-04-13T07:00:16.514Z\"\n            }\n        ],\n        \"bankAccount\": {\n            \"id\": \"e5694ac4-8d67-41a7-9714-e4516bf765b1\",\n            \"balance\": \"75000.00\"\n        }\n    }\n}"
+                },
+                {
+                  "name": "200 OK (investor)",
+                  "originalRequest": {
+                    "method": "GET",
+                    "header": [],
+                    "body": {
+                      "mode": "formdata",
+                      "formdata": []
+                    },
+                    "url": {
+                      "raw": "{{url}}/investors/:supplierId",
+                      "host": [
+                        "{{url}}"
+                      ],
+                      "path": [
+                        "investors",
+                        ":supplierId"
+                      ],
+                      "variable": [
+                        {
+                          "key": "supplierId",
+                          "value": "95f683ff-72cb-4ee9-add0-a35cb9fc6e0d"
+                        }
+                      ]
+                    }
+                  },
+                  "status": "OK",
+                  "code": 200,
+                  "_postman_previewlanguage": null,
+                  "header": [
+                    {
+                      "key": "X-Powered-By",
+                      "value": "Express"
+                    },
+                    {
+                      "key": "Access-Control-Allow-Origin",
+                      "value": "http://localhost:5173"
+                    },
+                    {
+                      "key": "Vary",
+                      "value": "Origin"
+                    },
+                    {
+                      "key": "Access-Control-Allow-Credentials",
+                      "value": "true"
+                    },
+                    {
+                      "key": "Content-Type",
+                      "value": "application/json; charset=utf-8"
+                    },
+                    {
+                      "key": "Content-Length",
+                      "value": "224"
+                    },
+                    {
+                      "key": "ETag",
+                      "value": "W/\"e0-pwnkpzShVAuXU8cDo+aI4B7UtuU\""
+                    },
+                    {
+                      "key": "Date",
+                      "value": "Mon, 13 Apr 2026 07:13:06 GMT"
+                    },
+                    {
+                      "key": "Connection",
+                      "value": "keep-alive"
+                    },
+                    {
+                      "key": "Keep-Alive",
+                      "value": "timeout=5"
+                    }
+                  ],
+                  "cookie": [],
+                  "body": "{\n    \"status\": \"success\",\n    \"data\": {\n        \"id\": \"95f683ff-72cb-4ee9-add0-a35cb9fc6e0d\",\n        \"email\": \"seller2@globaltrade.com\",\n        \"name\": \"Sarah Global\",\n        \"phoneNumber\": \"34923456789\",\n        \"companyName\": \"GlobalTrade Industries\",\n        \"investorType\": \"individual\"\n    }\n}"
+                },
+                {
+                  "name": "400 Bad Request",
+                  "originalRequest": {
+                    "method": "GET",
+                    "header": [],
+                    "body": {
+                      "mode": "formdata",
+                      "formdata": []
+                    },
+                    "url": {
+                      "raw": "{{url}}/investors/:supplierId",
+                      "host": [
+                        "{{url}}"
+                      ],
+                      "path": [
+                        "investors",
+                        ":supplierId"
+                      ],
+                      "variable": [
+                        {
+                          "key": "supplierId",
+                          "value": "95f683ff-72cb-4ee9-add0-a35cb9fc6e0"
+                        }
+                      ]
+                    }
+                  },
+                  "status": "Bad Request",
+                  "code": 400,
+                  "_postman_previewlanguage": null,
+                  "header": [
+                    {
+                      "key": "X-Powered-By",
+                      "value": "Express"
+                    },
+                    {
+                      "key": "Access-Control-Allow-Origin",
+                      "value": "http://localhost:5173"
+                    },
+                    {
+                      "key": "Vary",
+                      "value": "Origin"
+                    },
+                    {
+                      "key": "Access-Control-Allow-Credentials",
+                      "value": "true"
+                    },
+                    {
+                      "key": "Content-Type",
+                      "value": "application/json; charset=utf-8"
+                    },
+                    {
+                      "key": "Content-Length",
+                      "value": "89"
+                    },
+                    {
+                      "key": "ETag",
+                      "value": "W/\"59-kArN5xCcYXjUJs5yv8pQBq+GJsU\""
+                    },
+                    {
+                      "key": "Date",
+                      "value": "Mon, 13 Apr 2026 07:27:48 GMT"
+                    },
+                    {
+                      "key": "Connection",
+                      "value": "keep-alive"
+                    },
+                    {
+                      "key": "Keep-Alive",
+                      "value": "timeout=5"
+                    }
+                  ],
+                  "cookie": [],
+                  "body": "{\n    \"message\": \"Validation failed (uuid is expected)\",\n    \"error\": \"Bad Request\",\n    \"statusCode\": 400\n}"
+                },
+                {
+                  "name": "404 Not Found",
+                  "originalRequest": {
+                    "method": "GET",
+                    "header": [],
+                    "body": {
+                      "mode": "formdata",
+                      "formdata": []
+                    },
+                    "url": {
+                      "raw": "{{url}}/investors/:supplierId",
+                      "host": [
+                        "{{url}}"
+                      ],
+                      "path": [
+                        "investors",
+                        ":supplierId"
+                      ],
+                      "variable": [
+                        {
+                          "key": "supplierId",
+                          "value": "95f683ff-72cb-4ee9-add0-a35cb9fc6e0a"
+                        }
+                      ]
+                    }
+                  },
+                  "status": "Not Found",
+                  "code": 404,
+                  "_postman_previewlanguage": null,
+                  "header": [
+                    {
+                      "key": "X-Powered-By",
+                      "value": "Express"
+                    },
+                    {
+                      "key": "Access-Control-Allow-Origin",
+                      "value": "http://localhost:5173"
+                    },
+                    {
+                      "key": "Vary",
+                      "value": "Origin"
+                    },
+                    {
+                      "key": "Access-Control-Allow-Credentials",
+                      "value": "true"
+                    },
+                    {
+                      "key": "Content-Type",
+                      "value": "application/json; charset=utf-8"
+                    },
+                    {
+                      "key": "Content-Length",
+                      "value": "116"
+                    },
+                    {
+                      "key": "ETag",
+                      "value": "W/\"74-SbmnTsY/f7mFcaUmD4BpbIJF1uc\""
+                    },
+                    {
+                      "key": "Date",
+                      "value": "Mon, 13 Apr 2026 07:28:00 GMT"
+                    },
+                    {
+                      "key": "Connection",
+                      "value": "keep-alive"
+                    },
+                    {
+                      "key": "Keep-Alive",
+                      "value": "timeout=5"
+                    }
+                  ],
+                  "cookie": [],
+                  "body": "{\n    \"message\": \"Investor with ID '95f683ff-72cb-4ee9-add0-a35cb9fc6e0a' not found\",\n    \"error\": \"Not Found\",\n    \"statusCode\": 404\n}"
+                }
+              ]
             },
             {
               "name": "Update Investor",
@@ -1119,7 +3352,111 @@
               ]
             }
           },
-          "response": []
+          "response": [
+            {
+              "name": "403 Forbidden",
+              "originalRequest": {
+                "method": "POST",
+                "header": [
+                  {
+                    "key": "x-activate-account",
+                    "value": "true",
+                    "type": "text",
+                    "disabled": true
+                  }
+                ],
+                "body": {
+                  "mode": "formdata",
+                  "formdata": [
+                    {
+                      "key": "debtorId",
+                      "value": "906aab53-8149-4a11-9940-44adb25d3ca3",
+                      "description": "UUID",
+                      "type": "text",
+                      "uuid": "91c53911-584c-4240-bc89-5b8387d937b0"
+                    },
+                    {
+                      "key": "amount",
+                      "value": "100",
+                      "description": "XXXXXXXXXXXX.YYY",
+                      "type": "text",
+                      "uuid": "d0c64abb-d538-4d85-8462-18d1be580c75"
+                    },
+                    {
+                      "key": "dueDate",
+                      "value": "2026-02-12",
+                      "description": "yyyy-mm-dd",
+                      "type": "text",
+                      "uuid": "24ef3ced-d53b-4664-9e45-0cb5a9386c76"
+                    },
+                    {
+                      "key": "file",
+                      "description": "PDF, JPG or PNG",
+                      "type": "file",
+                      "uuid": "f0b06a4d-ca5c-40cb-a5cf-a62bee9276d1",
+                      "src": "/C:/Users/joelm/Git/Invobid/invobid-api/test/sample_files/nif.jpg"
+                    }
+                  ]
+                },
+                "url": {
+                  "raw": "{{url}}/invoices",
+                  "host": [
+                    "{{url}}"
+                  ],
+                  "path": [
+                    "invoices"
+                  ]
+                }
+              },
+              "status": "Forbidden",
+              "code": 403,
+              "_postman_previewlanguage": null,
+              "header": [
+                {
+                  "key": "X-Powered-By",
+                  "value": "Express"
+                },
+                {
+                  "key": "Access-Control-Allow-Origin",
+                  "value": "http://localhost:5173"
+                },
+                {
+                  "key": "Vary",
+                  "value": "Origin"
+                },
+                {
+                  "key": "Access-Control-Allow-Credentials",
+                  "value": "true"
+                },
+                {
+                  "key": "Content-Type",
+                  "value": "application/json; charset=utf-8"
+                },
+                {
+                  "key": "Content-Length",
+                  "value": "100"
+                },
+                {
+                  "key": "ETag",
+                  "value": "W/\"64-O3ZUf/MLySEOmRH05A6BAmfyOr4\""
+                },
+                {
+                  "key": "Date",
+                  "value": "Sat, 11 Apr 2026 16:26:19 GMT"
+                },
+                {
+                  "key": "Connection",
+                  "value": "keep-alive"
+                },
+                {
+                  "key": "Keep-Alive",
+                  "value": "timeout=5"
+                }
+              ],
+              "cookie": [],
+              "body": "{\n    \"message\": \"You don't have permissions to perform this action\",\n    \"error\": \"Forbidden\",\n    \"statusCode\": 403\n}"
+            }
+          ]
         },
         {
           "name": "Get All Invoices",
@@ -1411,12 +3748,12 @@
               "formdata": []
             },
             "url": {
-              "raw": "{{url}}/bids?auctionId={{auctionId}}&page=1&limit=1",
+              "raw": "{{url}}/bid?auctionId={{auctionId}}&page=1&limit=1",
               "host": [
                 "{{url}}"
               ],
               "path": [
-                "bids"
+                "bid"
               ],
               "query": [
                 {
@@ -1456,12 +3793,12 @@
               "formdata": []
             },
             "url": {
-              "raw": "{{url}}/bids/:bidId",
+              "raw": "{{url}}/bid/:bidId",
               "host": [
                 "{{url}}"
               ],
               "path": [
-                "bids",
+                "bid",
                 ":bidId"
               ],
               "variable": [
@@ -1504,6 +3841,14 @@
   "variable": [
     {
       "key": "url-local",
+      "value": ""
+    },
+    {
+      "key": "url-local-2",
+      "value": ""
+    },
+    {
+      "key": "url-test",
       "value": ""
     }
   ]

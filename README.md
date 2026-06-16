@@ -66,7 +66,7 @@ pgAdmin: [`http://localhost:8080`](http://localhost:8080)
 - Email: `admin@mail.com`
 - Password: `1234`
 
-> On the VPS, pgAdmin is only accessible via SSH port forwarding:
+> On the VPS, pgAdmin and Minio is only accessible via SSH port forwarding:
 > ```sh
 > ssh -L 8080:localhost:8080 user@invobid.com
 > ```
