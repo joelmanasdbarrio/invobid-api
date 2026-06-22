@@ -25,12 +25,14 @@ export function makeInvoiceDto(
   overrides: Partial<CreateInvoiceDto> = {},
 ): CreateInvoiceDto {
   invoiceCounter++;
+  const issueDate = new Date();
   const futureDate = new Date();
   futureDate.setMonth(futureDate.getMonth() + 6);
   return {
     debtorId,
     amount: 5000 + invoiceCounter * 100,
     dueDate: futureDate.toISOString().split('T')[0],
+    issueDate: issueDate.toISOString().split('T')[0],
     svc: `B12345678-F001-${String(invoiceCounter).padStart(8, '0')}-${formatDate(new Date())}-A9K3`,
     ...overrides,
   } as CreateInvoiceDto;

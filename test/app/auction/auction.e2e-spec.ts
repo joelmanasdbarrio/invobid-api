@@ -37,6 +37,7 @@ async function createVerifiedInvoice(
     .field('debtorId', dto.debtorId)
     .field('amount', dto.amount)
     .field('dueDate', dto.dueDate)
+    .field('issueDate', dto.issueDate)
     .field('svc', dto.svc)
     .attach('file', INVOICE_FILE);
 
@@ -217,6 +218,7 @@ describe('Auction (e2e)', () => {
         .field('debtorId', dto.debtorId)
         .field('amount', dto.amount)
         .field('dueDate', dto.dueDate)
+        .field('issueDate', dto.issueDate)
         .field('svc', dto.svc)
         .attach('file', INVOICE_FILE);
 

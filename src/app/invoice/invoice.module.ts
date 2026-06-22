@@ -7,11 +7,12 @@ import { InvoiceLookupController } from './invoice-lookup.controller';
 import { InvoiceLookupService } from './invoice-lookup.service';
 import { InvoiceController } from './invoice.controller';
 import { InvoiceService } from './invoice.service';
+import { RatingService } from 'src/app/invoice/services/rating.service';
 
 @Module({
   imports: [TypeOrmModule.forFeature([Invoice]), DocumentModule, DebtorModule],
   controllers: [InvoiceController, InvoiceLookupController],
-  providers: [InvoiceService, InvoiceLookupService],
+  providers: [InvoiceService, InvoiceLookupService, RatingService],
   exports: [InvoiceService],
 })
 export class InvoiceModule {}

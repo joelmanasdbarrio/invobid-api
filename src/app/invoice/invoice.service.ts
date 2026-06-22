@@ -21,6 +21,7 @@ import { User } from '../user/common/entities/user.entity';
 import { Investor } from '../user/investor/entities/investor.entity';
 import { CreateInvoiceDto } from './dto/create-invoice.dto';
 import { UpdateInvoiceDto } from './dto/update-invoice.dto';
+import { RatingService } from 'src/app/invoice/services/rating.service';
 
 @Injectable()
 export class InvoiceService {
@@ -29,6 +30,7 @@ export class InvoiceService {
     private readonly invoiceRepository: Repository<Invoice>,
     private readonly documentService: DocumentService,
     private readonly debtorService: DebtorService,
+    private readonly ratingService: RatingService, // TODO: apply invoice rating
   ) {}
 
   async create(
@@ -54,6 +56,13 @@ export class InvoiceService {
       );
     }
 
+    // await this.ratingService.eval({
+    //   companyId: debtor.companyName,
+    //   invoiceDueDate: createInvoiceDto.dueDate,
+    //   invoiceIssueDate: createInvoiceDto.issueDate,
+    //   invoiceAmount: createInvoiceDto.amount,
+    // });
+
     const minDueDate = new Date();
     minDueDate.setUTCHours(0, 0, 0, 0);
     minDueDate.setUTCMonth(minDueDate.getUTCMonth() + 1);
@@ -63,6 +72,12 @@ export class InvoiceService {
       throw new BadRequestException(
         `Due date must be at least 5 weeks from today`,
       );
+    }
+
+    if (
+      new Date(createInvoiceDto.issueDate) >= new Date(createInvoiceDto.dueDate)
+    ) {
+      throw new BadRequestException(`Issue date must be before the due date`);
     }
 
     const buyerPercentage: number = parseFloat(

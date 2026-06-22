@@ -83,6 +83,9 @@ export class Invoice {
   @Column('date', { nullable: false })
   dueDate: Date;
 
+  @Column('date', { nullable: false })
+  issueDate: Date;
+
   @Column(() => TransactionFee)
   transactionFee: TransactionFee;
 

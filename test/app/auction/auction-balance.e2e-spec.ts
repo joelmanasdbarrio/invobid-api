@@ -137,6 +137,7 @@ describe('Auction Balance Lifecycle (e2e)', () => {
       .field('debtorId', invoiceDto.debtorId)
       .field('amount', invoiceDto.amount)
       .field('dueDate', invoiceDto.dueDate)
+      .field('issueDate', invoiceDto.issueDate)
       .field('svc', invoiceDto.svc)
       .attach('file', INVOICE_FILE);
     await request(server)

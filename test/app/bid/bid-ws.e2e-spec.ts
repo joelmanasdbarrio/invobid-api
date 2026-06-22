@@ -136,6 +136,7 @@ describe('Bid WebSocket (e2e)', () => {
       .field('debtorId', invoiceDto.debtorId)
       .field('amount', invoiceDto.amount)
       .field('dueDate', invoiceDto.dueDate)
+      .field('issueDate', invoiceDto.issueDate)
       .field('svc', invoiceDto.svc)
       .attach('file', INVOICE_FILE);
     const invoiceId = invoiceRes.body.data.id;
@@ -328,6 +329,7 @@ describe('Bid WebSocket (e2e)', () => {
         .field('debtorId', invoiceDto.debtorId)
         .field('amount', invoiceDto.amount)
         .field('dueDate', invoiceDto.dueDate)
+        .field('issueDate', invoiceDto.issueDate)
         .field('svc', invoiceDto.svc)
         .attach('file', INVOICE_FILE);
       const testInvoiceId = invoiceRes.body.data.id;
@@ -502,6 +504,7 @@ describe('Bid WebSocket (e2e)', () => {
         .field('debtorId', invoiceDto.debtorId)
         .field('amount', invoiceDto.amount)
         .field('dueDate', invoiceDto.dueDate)
+        .field('issueDate', invoiceDto.issueDate)
         .field('svc', invoiceDto.svc)
         .attach('file', INVOICE_FILE);
       await request(server)
@@ -544,6 +547,7 @@ describe('Bid WebSocket (e2e)', () => {
         .field('debtorId', invoiceDto.debtorId)
         .field('amount', invoiceDto.amount)
         .field('dueDate', invoiceDto.dueDate)
+        .field('issueDate', invoiceDto.issueDate)
         .field('svc', invoiceDto.svc)
         .attach('file', INVOICE_FILE);
       await request(server)
@@ -657,6 +661,7 @@ describe('Bid WebSocket (e2e)', () => {
         .field('debtorId', invoiceDto.debtorId)
         .field('amount', invoiceDto.amount)
         .field('dueDate', invoiceDto.dueDate)
+        .field('issueDate', invoiceDto.issueDate)
         .field('svc', invoiceDto.svc)
         .attach('file', INVOICE_FILE);
       await request(server)
@@ -971,6 +976,7 @@ describe('Bid WebSocket (e2e)', () => {
         .field('debtorId', invoiceDto.debtorId)
         .field('amount', invoiceDto.amount)
         .field('dueDate', invoiceDto.dueDate)
+        .field('issueDate', invoiceDto.issueDate)
         .field('svc', invoiceDto.svc)
         .attach('file', INVOICE_FILE);
       await request(server)
@@ -1057,13 +1063,15 @@ describe('Bid WebSocket (e2e)', () => {
         .set(authHeader(adminToken))
         .send({ status: 'verified' });
 
+      const invoiceDto = makeInvoiceDto(debtorRes.body.data.id);
       const invoiceRes = await request(server)
         .post(`${API}/invoices`)
         .set(authHeader(sellerToken))
         .field('debtorId', debtorRes.body.data.id)
         .field('amount', invoiceAmount)
-        .field('dueDate', makeInvoiceDto(debtorRes.body.data.id).dueDate)
-        .field('svc', makeInvoiceDto(debtorRes.body.data.id).svc)
+        .field('dueDate', invoiceDto.dueDate)
+        .field('issueDate', invoiceDto.issueDate)
+        .field('svc', invoiceDto.svc)
         .attach('file', INVOICE_FILE);
       await request(server)
         .patch(`${API}/invoices/${invoiceRes.body.data.id}`)

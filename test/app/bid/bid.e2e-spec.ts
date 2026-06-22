@@ -80,6 +80,7 @@ describe('Bid REST (e2e)', () => {
       .field('debtorId', invoiceDto.debtorId)
       .field('amount', invoiceDto.amount)
       .field('dueDate', invoiceDto.dueDate)
+      .field('issueDate', invoiceDto.issueDate)
       .field('svc', invoiceDto.svc)
       .attach('file', INVOICE_FILE);
     const invoiceId = invoiceRes.body.data.id;
@@ -228,6 +229,7 @@ describe('Bid REST (e2e)', () => {
         .field('debtorId', invoiceDto.debtorId)
         .field('amount', invoiceDto.amount)
         .field('dueDate', invoiceDto.dueDate)
+        .field('issueDate', invoiceDto.issueDate)
         .field('svc', invoiceDto.svc)
         .attach('file', INVOICE_FILE);
       await request(server)
@@ -266,6 +268,7 @@ describe('Bid REST (e2e)', () => {
         .field('debtorId', invoiceDto.debtorId)
         .field('amount', invoiceDto.amount)
         .field('dueDate', invoiceDto.dueDate)
+        .field('issueDate', invoiceDto.issueDate)
         .field('svc', invoiceDto.svc)
         .attach('file', INVOICE_FILE);
       await request(server)
@@ -370,6 +373,7 @@ describe('Bid REST (e2e)', () => {
         .field('debtorId', invoiceDto.debtorId)
         .field('amount', invoiceDto.amount)
         .field('dueDate', invoiceDto.dueDate)
+        .field('issueDate', invoiceDto.issueDate)
         .field('svc', invoiceDto.svc)
         .attach('file', INVOICE_FILE);
       await request(server)

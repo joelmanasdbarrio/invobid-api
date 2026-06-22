@@ -70,6 +70,7 @@ describe('Invoice (e2e)', () => {
         .field('debtorId', dto.debtorId)
         .field('amount', dto.amount)
         .field('dueDate', dto.dueDate)
+        .field('issueDate', dto.issueDate)
         .field('svc', dto.svc)
         .attach('file', INVOICE_FILE);
 
@@ -109,6 +110,7 @@ describe('Invoice (e2e)', () => {
         .field('debtorId', dto.debtorId)
         .field('amount', dto.amount)
         .field('dueDate', dto.dueDate)
+        .field('issueDate', dto.issueDate)
         .field('svc', dto.svc)
         .attach('file', INVOICE_FILE);
 
@@ -123,6 +125,7 @@ describe('Invoice (e2e)', () => {
         .field('debtorId', dto.debtorId)
         .field('amount', dto.amount)
         .field('dueDate', dto.dueDate)
+        .field('issueDate', dto.issueDate)
         .field('svc', dto.svc)
         .attach('file', INVOICE_FILE);
 
@@ -136,6 +139,7 @@ describe('Invoice (e2e)', () => {
         .field('debtorId', 'not-a-uuid')
         .field('amount', 'not-a-number')
         .field('dueDate', 'not-a-date')
+        .field('issueDate', 'not-a-date')
         .field('svc', 'SVC001')
         .attach('file', INVOICE_FILE);
 
@@ -157,6 +161,7 @@ describe('Invoice (e2e)', () => {
         .field('debtorId', dto.debtorId)
         .field('amount', dto.amount)
         .field('dueDate', dto.dueDate)
+        .field('issueDate', dto.issueDate)
         .field('svc', dto.svc)
         .attach('file', INVOICE_FILE);
 
@@ -184,6 +189,7 @@ describe('Invoice (e2e)', () => {
         .field('debtorId', dto.debtorId)
         .field('amount', dto.amount)
         .field('dueDate', dto.dueDate)
+        .field('issueDate', dto.issueDate)
         .field('svc', dto.svc)
         .attach('file', INVOICE_FILE);
 
@@ -198,6 +204,7 @@ describe('Invoice (e2e)', () => {
         .field('debtorId', dto.debtorId)
         .field('amount', dto.amount)
         .field('dueDate', dto.dueDate)
+        .field('issueDate', dto.issueDate)
         .field('svc', dto.svc)
         .attach('file', INVOICE_FILE);
 
@@ -291,6 +298,7 @@ describe('Invoice (e2e)', () => {
         .field('debtorId', dto.debtorId)
         .field('amount', dto.amount)
         .field('dueDate', dto.dueDate)
+        .field('issueDate', dto.issueDate)
         .field('svc', dto.svc)
         .attach('file', INVOICE_FILE);
       await request(server)
@@ -319,6 +327,7 @@ describe('Invoice (e2e)', () => {
         .field('debtorId', dto.debtorId)
         .field('amount', dto.amount)
         .field('dueDate', dto.dueDate)
+        .field('issueDate', dto.issueDate)
         .field('svc', dto.svc)
         .attach('file', INVOICE_FILE);
       invoiceId = res.body.data.id;
@@ -367,6 +376,7 @@ describe('Invoice (e2e)', () => {
         .field('debtorId', dto.debtorId)
         .field('amount', dto.amount)
         .field('dueDate', dto.dueDate)
+        .field('issueDate', dto.issueDate)
         .field('svc', dto.svc)
         .attach('file', INVOICE_FILE);
 
@@ -394,6 +404,7 @@ describe('Invoice (e2e)', () => {
         .field('debtorId', dto.debtorId)
         .field('amount', dto.amount)
         .field('dueDate', dto.dueDate)
+        .field('issueDate', dto.issueDate)
         .field('svc', dto.svc)
         .attach('file', INVOICE_FILE);
       invoiceId = res.body.data.id;
@@ -503,6 +514,7 @@ describe('Invoice (e2e)', () => {
         .field('debtorId', dto.debtorId)
         .field('amount', dto.amount)
         .field('dueDate', dto.dueDate)
+        .field('issueDate', dto.issueDate)
         .field('svc', dto.svc)
         .attach('file', INVOICE_FILE);
 
@@ -521,6 +533,7 @@ describe('Invoice (e2e)', () => {
         .field('debtorId', dto.debtorId)
         .field('amount', dto.amount)
         .field('dueDate', dto.dueDate)
+        .field('issueDate', dto.issueDate)
         .field('svc', dto.svc)
         .attach('file', INVOICE_FILE);
 

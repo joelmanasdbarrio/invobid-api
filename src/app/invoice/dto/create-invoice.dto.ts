@@ -24,6 +24,9 @@ export class CreateInvoiceDto {
   @IsDateString()
   dueDate: string;
 
+  @IsDateString()
+  issueDate: string;
+
   /**
    * Identificador del Registro de Facturación:
    * NIF/CIF/DNI del emisor + Serie + Número factura + Fecha + Código de verificación

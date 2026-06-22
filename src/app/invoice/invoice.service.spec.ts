@@ -86,10 +86,13 @@ const makeCreateDto = (): CreateInvoiceDto => {
   const futureDate = new Date();
   futureDate.setMonth(futureDate.getMonth() + 6);
   const dueDateString = futureDate.toISOString().split('T')[0];
+  futureDate.setMonth(futureDate.getMonth() + 12);
+  const issueDateString = futureDate.toISOString().split('T')[0];
   return {
     debtorId: 'debtor-id',
     amount: 5000,
     dueDate: dueDateString,
+    issueDate: issueDateString,
     svc: 'B12345678-F001-00001234-20260216-A9K3',
   };
 };
@@ -566,7 +569,7 @@ describe('InvoiceService', () => {
       type: UserType.INVESTOR,
     } as unknown as Investor;
 
-    it('persists dueDate as a "yyyy-MM-dd" string (no time/timezone component)', async () => {
+    it('persists dueDate/issueDate as a "yyyy-MM-dd" string (no time/timezone component)', async () => {
       const debtor = makeDebtor();
       const invoice = makeInvoice({ id: 'new-invoice-id' });
       const document = { id: 'doc-id', filename: 'file.pdf' };
@@ -586,9 +589,10 @@ describe('InvoiceService', () => {
         mockInvoiceRepository.save.mock.calls[0] as unknown[]
       )[0] as Record<string, unknown>;
       expect(savedPayload.dueDate).toBe(dto.dueDate);
+      expect(savedPayload.issueDate).toBe(dto.issueDate);
     });
 
-    it('dueDate value from DTO is not converted to a Date object before saving', async () => {
+    it('dueDate/issueDate value from DTO is not converted to a Date object before saving', async () => {
       const debtor = makeDebtor();
       const invoice = makeInvoice({ id: 'new-invoice-id' });
       const document = { id: 'doc-id', filename: 'file.pdf' };
@@ -607,6 +611,7 @@ describe('InvoiceService', () => {
       // Must be a string, not a Date object — TypeORM handles DATE columns
       // by accepting plain date strings and storing them without timezone conversion
       expect(typeof savedPayload.dueDate).toBe('string');
+      expect(typeof savedPayload.issueDate).toBe('string');
     });
 
     it('passes dueDateFrom filter string directly to query builder without conversion', async () => {
