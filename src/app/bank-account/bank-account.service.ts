@@ -10,6 +10,7 @@ import { Investor } from '../user/investor/entities/investor.entity';
 import { CreateBankAccountDto } from './dto/create-bank-account.dto';
 import { UpdateBankAccountDto } from './dto/update-bank-account.dto';
 import { BankAccount } from './entities/bank-account.entity';
+import { User } from 'src/app/user/common/entities/user.entity';
 
 @Injectable()
 export class BankAccountService {

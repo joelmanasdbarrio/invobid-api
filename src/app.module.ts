@@ -14,6 +14,7 @@ import { UsersModule } from './app/user/common/users.module';
 import { InvestorModule } from './app/user/investor/investor.module';
 import { EnvConfiguration } from './config/env.config';
 import { EnvConfigSchema } from './config/env.schema';
+import { MetricModule } from './app/metric/metric.module';
 
 @Module({
   imports: [
@@ -42,6 +43,7 @@ import { EnvConfigSchema } from './config/env.schema';
     BidModule,
     BankAccountModule,
     AuthModule,
+    MetricModule,
   ],
 })
 export class AppModule {}
