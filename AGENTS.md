@@ -5,7 +5,7 @@ This file helps AI coding agents understand the invobid-api codebase and be imme
 ## Quick Navigation
 
 - **Setup & Environment**: See [README.md](README.md#local-development-guidelines)
-- **Complete API Contract**: See [test/e2e-spec.md](test/e2e-spec.md) (essential reading)
+- **Complete API Contract**: See [test/definition/e2e-spec.md](test/definition/e2e-spec.md) (essential reading)
 - **Build/Test Commands**: See section below
 
 ## Essential Build & Test Commands
@@ -32,7 +32,7 @@ npm run format                # Prettier format
 npm run build                 # TypeScript compilation
 ```
 
-**E2E Tests Critical**: Run with `--runInBand --forceExit` flags (configured in [jest-e2e.json](jest-e2e.json))
+**E2E Tests Critical**: Run with `--runInBand --forceExit` flags (configured in `test:e2e` script in [package.json](package.json))
 
 ## Architecture Principles
 
@@ -42,6 +42,7 @@ npm run build                 # TypeScript compilation
 - Controllers use `@Auth()` decorator for role-based protection
 - Services encapsulate business logic; inject repositories
 - Use `forwardRef()` for circular imports (AuctionModule ↔ BidModule)
+- Auction state progression includes a scheduler (`@nestjs/schedule`) that transitions overdue auctions from `PUBLISHED` to `TRANSITIONING` every minute. See [src/app/auction/auction-scheduler.service.ts](src/app/auction/auction-scheduler.service.ts)
 - All entities support soft deletes: query with `{ withDeleted: true }` when needed
 
 **Response Format**:
@@ -67,9 +68,10 @@ src/app/{module}/
 
 **Authentication**: 
 ```typescript
-@Auth(roles: UserType[], status?: InvestorStatus[])
+@Auth(roles: (UserType | InvestorType)[], status?: InvestorStatus[])
 // Applies: AuthGuard('jwt') + UserRoleGuard
-// Empty roles = all authenticated users allowed
+// Default status filter is VERIFIED investors
+// Pass [] for status to disable status filtering when needed
 ```
 
 **File Uploads**: Use `FileTypePipe` (allows: pdf, jpeg, jpg, png)
@@ -141,13 +143,13 @@ See: [src/app/auction/auction.service.ts](src/app/auction/auction.service.ts) (u
 | Issue | Solution |
 |-------|----------|
 | E2E test fails intermittently | Must use `--runInBand --forceExit` (sequential execution) |
-| JWT auth returns 500 instead of 401 | JWT strategy throws `ServiceUnavailableException` for DB errors (by design) |
+| JWT auth returns 503 instead of 401/423 | JWT strategy catches and rethrows as `ServiceUnavailableException` in `validate()` (by design) |
 | Soft-deleted user can still authenticate | Always add `withDeleted: true` in JWT strategy user lookup |
 | TypeORM circular import error | Add `forwardRef(() => Module)` in imports |
 | Extra request fields not rejected | DTO validation has `forbidNonWhitelisted: false` (warns but allows) |
 | File upload MIME type mismatch | FileTypePipe only allows: pdf, jpeg, jpg, png |
 | MinIO not found | MinioStorageService only works in `NODE_ENV=local` |
-| Role guard silently fails | Empty roles array = all authenticated users allowed (intentional) |
+| Investor blocked despite empty roles in `@Auth()` | `@Auth()` defaults status to `VERIFIED`; pass second arg `[]` to allow all investor statuses |
 
 ## Database
 
@@ -174,7 +176,8 @@ price: AuctionPrice;  // DB: price_start, price_end
 | [src/main.ts](src/main.ts) | Bootstrap, global ValidationPipe setup |
 | [src/app/user/auth/strategies/jwt.strategy.ts](src/app/user/auth/strategies/jwt.strategy.ts) | JWT validation, user extraction |
 | [src/app/user/auth/decorators/auth.decorator.ts](src/app/user/auth/decorators/auth.decorator.ts) | Role-based access control decorator |
-| [test/e2e-spec.md](test/e2e-spec.md) | **Complete API contract (BDD format)** |
+| [src/app/auction/auction-scheduler.service.ts](src/app/auction/auction-scheduler.service.ts) | Cron transition from `PUBLISHED` to `TRANSITIONING` |
+| [test/definition/e2e-spec.md](test/definition/e2e-spec.md) | **Complete API contract (BDD format)** |
 | [test/helpers/test-app.helper.ts](test/helpers/test-app.helper.ts) | Test app factory |
 | [src/validations/is-nif-cif.validator.ts](src/validations/is-nif-cif.validator.ts) | Spanish tax ID validation |
 
@@ -183,7 +186,7 @@ price: AuctionPrice;  // DB: price_start, price_end
 1. [README.md](README.md) - Setup & environment
 2. [src/app.module.ts](src/app.module.ts) - Module structure
 3. [src/main.ts](src/main.ts) - Bootstrap & validation
-4. [test/e2e-spec.md](test/e2e-spec.md) - **API contract (must read)**
+4. [test/definition/e2e-spec.md](test/definition/e2e-spec.md) - **API contract (must read)**
 5. Example module: [src/app/auction/auction.module.ts](src/app/auction/auction.module.ts)
 6. JWT strategy: [src/app/user/auth/strategies/jwt.strategy.ts](src/app/user/auth/strategies/jwt.strategy.ts)
 
@@ -227,7 +230,3 @@ Expected response includes `access_token` and `user` data.
 - **Real-time**: Socket.io
 - **Testing**: Jest + Supertest
 - **Node.js**: 22+
-
----
-
-**Last Updated**: April 2026 | **Version**: 1.0

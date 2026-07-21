@@ -254,10 +254,11 @@ export class InvoiceService {
       .leftJoinAndSelect('invoice.buyerInvestor', 'buyerInvestor')
       .leftJoinAndSelect('invoice.auctions', 'auctions')
       .leftJoinAndSelect('invoice.debtor', 'debtor')
-      .where('invoice.id = :id', { id })
-      .withDeleted();
+      .where('invoice.id = :id', { id });
 
-    if (user.type !== UserType.ADMIN) {
+    if (user.type === UserType.ADMIN) {
+      queryBuilder.leftJoinAndSelect('invoice.documents', 'documents');
+    } else {
       queryBuilder.andWhere(
         '(invoice.sellerInvestorId = :investorId OR (invoice.status = :verifiedStatusInvoice AND debtor.status = :verifiedStatusDebtor))',
         {
@@ -266,11 +267,6 @@ export class InvoiceService {
           verifiedStatusDebtor: DebtorStatus.VERIFIED,
         },
       );
-    }
-
-    if (user.type === UserType.ADMIN) {
-      queryBuilder.leftJoinAndSelect('invoice.documents', 'documents');
-    } else {
       queryBuilder.leftJoinAndSelect(
         'invoice.documents',
         'documents',

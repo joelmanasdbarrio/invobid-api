@@ -1,0 +1,267 @@
+## Investor
+
+_Use case_: Register as an investor
+- **Given that**: I'm a new user who wants to register as an investor
+  - **When**: I fill out the registration form with valid information (`CreateInvestorDto`) and submit it
+    - **Then**:
+      - [ ] It should create a new investor user profile, ignoring fields not specified in `CreateInvestorDto`
+      - [ ] It should create a new bank account related to the investor user profile
+      - [ ] It should create a new ID document related to the investor user profile
+      - [ ] It should return a 201 Created response with a valid access token and my user information in the response body
+  - **When**: I fill out the registration form with missing one or more required fields from `CreateInvestorDto` and submit it
+    - **Then**: 
+      - [ ] It should not create a new investor user profile
+      - [ ] It should not create a new bank account
+      - [ ] It should not create a new ID document
+      - [ ] It should return a 400 Bad Request response with an error message listing which fields are missing
+  - **When**: I fill out the registration form with an email, companyName, phoneNumber, and/or taxId that is already registered and submit it
+    - **Then**:
+      - [ ] It should not create a new investor user profile
+      - [ ] It should not create a new bank account
+      - [ ] It should not create a new ID document
+      - [ ] It should return a 400 Bad Request response with an error message indicating that the email, companyName, phoneNumber, or taxId is already in use
+  - **When**: I fill out the registration form with a password and passwordRepeat that do not match and submit it
+    - **Then**:
+      - [ ] It should not create a new investor user profile
+      - [ ] It should not create a new bank account
+      - [ ] It should not create a new ID document
+      - [ ] It should return a 400 Bad Request response with an error message indicating that the passwords do not match
+  - **When**: I fill out the registration form with invalid values for one or more fields in `CreateInvestorDto` in the request body
+    - **Then**:
+      - [ ] It should not create a new investor user profile
+      - [ ] It should not create a new bank account
+      - [ ] It should not create a new ID document
+      - [ ] It should return a 400 Bad Request response with an error message list indicating which fields are invalid
+  - **When**: I fill out the registration form with an invalid file for the ID document and submit it
+    - **Then**:
+      - [ ] It should not create a new investor user profile
+      - [ ] It should not create a new bank account
+      - [ ] It should not create a new ID document
+      - [ ] It should return a 400 Bad Request response with an error message indicating that the file is invalid
+  - **When**: I fill out the registration form with valid information and submit it while the external document service is down
+    - **Then**:
+      - [ ] It should create a new investor user profile
+      - [ ] It should create a new bank account related to the investor user profile
+      - [ ] It should fail to create a new ID document related to the investor user profile
+      - [ ] It should call to remove the created investor user profile and bank account, ensuring that no incomplete investor user profile is left in the system
+      - [ ] It should return a 503 Service Unavailable response with an error message indicating that a service is currently unavailable
+
+_Use case_: Call type-protected (`InvestorType`) endpoint as an investor
+- **Given that**: I'm an existing investor user of the platform who wants to access a type-protected (`InvestorType`) endpoint
+  - **When**: I make a request to a type-protected (`InvestorType`) endpoint that does not include my current type with a valid access token
+    - **Then**:
+      - [ ] It should not authorize my access
+      - [ ] It should return a 403 Forbidden response with an error message indicating that I do not have the necessary permissions to perform this action
+  - **When**: I make a request to a type-protected (`InvestorType`) endpoint that includes my current type with a valid access token
+    - **Then**:
+      - [ ] It should authorize my access
+      - [ ] It should proceed to call next expected action for that endpoint successfully
+
+_Use case_: Call status-protected (`InvestorStatus`) endpoint as an investor
+- **Given that**: I'm an existing investor user of the platform who wants to access a status-protected (`InvestorStatus`) endpoint
+  - **When**: I make a request to a status-protected (`InvestorStatus`) endpoint that does not include my current status with a valid access token
+    - **Then**:
+      - [ ] It should not authorize my access
+      - [ ] It should return a 403 Forbidden response with an error message indicating that I do not have the necessary permissions to perform this action
+  - **When**: I make a request to a status-protected (`InvestorStatus`) endpoint that includes my current status with a valid access token
+    - **Then**:
+      - [ ] It should authorize my access
+      - [ ] It should proceed to call next expected action for that endpoint successfully
+
+_Use case_: Call type and status-protected (`InvestorType` and `InvestorStatus`) endpoint as an investor
+- **Given that**: I'm an existing investor user of the platform who wants to access a type and status-protected (`InvestorType` and `InvestorStatus`) endpoint
+  - **When**: I make a request to a type and status-protected (`InvestorType` and `InvestorStatus`) endpoint that does not include my current type and/or status with a valid access token
+    - **Then**:
+      - [ ] It should not authorize my access
+      - [ ] It should return a 403 Forbidden response with an error message indicating that I do not have the necessary permissions to perform this action
+  - **When**: I make a request to a type and status-protected (`InvestorType` and `InvestorStatus`) endpoint that includes my current type and status with a valid access token
+    - **Then**:
+      - [ ] It should authorize my access
+      - [ ] It should proceed to call next expected action for that endpoint successfully
+
+_Use case_: Call GET `/investors` endpoint
+- **Given that**: I'm an existing user of the platform (admin or verified investor) who wants to access the GET `/investors` endpoint
+  - **When**: I make a request to the GET `/investors` endpoint with a valid access token and I query with `GetInvestorsDto` parameters using wrong type values to filter the results
+    - **Then**:
+      - [ ] It should authorize my access
+      - [ ] It should fail type validation for the provided filters in `GetInvestorsDto`
+      - [ ] It should return a 400 Bad Request response with an error message list indicating that the provided filters are invalid
+- **Given that**: I'm an existing verified investor user of the platform who wants to access the GET `/investors` endpoint
+  - **When**: I make a request to the GET `/investors` endpoint with a valid access token while there are 1 or more investor users in the system
+    - **Then**:
+      - [ ] It should authorize my access
+      - [ ] It should query the database ONLY for verified investor users (`InvestorStatus.VERIFIED`) including only non-sensitive properties (id, email, companyName, phoneNumber, investorType)
+      - [ ] It should return a 200 OK response with a paginated list of all found investor users in the system
+  - **When**: I make a request to the GET `/investors` endpoint with a valid access token and there are no verified investor users in the system
+    - **Then**:
+      - [ ] It should authorize my access
+      - [ ] It should query the database for verified investor users (`InvestorStatus.VERIFIED`) and find none
+      - [ ] It should return a 200 OK response with an empty paginated list of investor users
+  - **When**: I make a request to the GET `/investors` endpoint with a valid access token and I query with `GetInvestorsDto` parameters to filter the results while there are 1 or more investor users in the system
+    - **Then**:
+      - [ ] It should authorize my access
+      - [ ] It should query the database for verified investor users (`InvestorStatus.VERIFIED`) that match the provided filters in `GetInvestorsDto`, ignoring fields not specified in `GetInvestorsDto`
+      - [ ] It should include only non-sensitive properties (id, email, companyName, phoneNumber, investorType)
+      - [ ] It should return a 200 OK response with a paginated list of all found investor users in the system that match the provided filters
+  - **When**: I make a request to the GET `/investors` endpoint with a valid access token and I query using parameters not specified in `GetInvestorsDto` to filter the results while there are 1 or more investor users in the system
+    - **Then**:
+      - [ ] It should authorize my access
+      - [ ] It should ignore the invalid filters and return results based only on the valid filters provided in `GetInvestorsDto`
+      - [ ] It should query the database for verified investor users (`InvestorStatus.VERIFIED`) that match the provided filters in `GetInvestorsDto`, ignoring fields not specified in `GetInvestorsDto`
+      - [ ] It should include only non-sensitive properties (id, email, companyName, phoneNumber, investorType)
+      - [ ] It should return a 200 OK response with a paginated list of all found investor users in the system that match the provided filters
+- **Given that**: I'm an existing administrator user of the platform who wants to access the GET `/investors` endpoint
+  - **When**: I make a request to the GET `/investors` endpoint with a valid access token while there are 1 or more investor users in the system
+    - **Then**:
+      - [ ] It should authorize my access
+      - [ ] It should query the database for all investor users and return all user properties (except the password), excluding related entities
+      - [ ] It should return a 200 OK response with a paginated list of all found investor users in the system
+  - **When**: I make a request to the GET `/investors` endpoint with a valid access token and there are no investor users in the system
+    - **Then**:
+      - [ ] It should authorize my access
+      - [ ] It should query the database for all investor users and find none
+      - [ ] It should return a 200 OK response with an empty paginated list of investor users
+  - **When**: I make a request to the GET `/investors` endpoint with a valid access token and I query with `GetInvestorsDto` parameters to filter the results while there are 1 or more investor users in the system
+    - **Then**:
+      - [ ] It should authorize my access
+      - [ ] It should query the database for all investor users that match the provided filters in `GetInvestorsDto`, ignoring fields not specified in `GetInvestorsDto`, and return all user properties (except the password), excluding related entities
+      - [ ] It should return a 200 OK response with a paginated list of all found investor users in the system that match the provided filters
+  - **When**: I make a request to the GET `/investors` endpoint with a valid access token and I query using parameters not specified in `GetInvestorsDto` to filter the results while there are 1 or more investor users in the system
+    - **Then**:
+      - [ ] It should authorize my access
+      - [ ] It should ignore the invalid filters and return results based only on the valid filters provided in `GetInvestorsDto`
+      - [ ] It should query the database for all investor users that match the provided filters in `GetInvestorsDto`, ignoring fields not specified in `GetInvestorsDto`, and return all user properties (except the password), excluding related entities
+      - [ ] It should return a 200 OK response with a paginated list of all found investor users in the system that match the provided filters
+  - **When**: I make a request to the GET `/investors` endpoint with a valid access token and I include `includeDeleted=1` in the query parameters to include soft deleted users in the results while there are soft deleted users in the system
+    - **Then**:
+      - [ ] It should authorize my access
+      - [ ] It should query the database for all investor users, including soft deleted users, that match the provided filters in `GetInvestorsDto` and return all user properties (except the password), excluding related entities
+      - [ ] It should return a 200 OK response with a paginated list of all found investor users in the system that match the provided filters, including soft deleted users
+
+_Use case_: Call GET `/investors/:id` endpoint
+- **Given that**: I'm an existing verified investor user of the platform who wants to access the GET `/investors/:id` endpoint
+  - **When**: I make a request to the GET `/investors/:id` endpoint with a valid access token and a valid investor user ID that matches my own ID
+    - **Then**:
+      - [ ] It should authorize my access
+      - [ ] It should query the database for the specified investor user by ID and return all user properties (except the password), excluding related entities (except the bank account)
+      - [ ] It should return a 200 OK response with the information of the specified investor user
+  - **When**: I make a request to the GET `/investors/:id` endpoint with a valid access token and a valid investor user ID that does not match my own ID
+    - **Then**:
+      - [ ] It should authorize my access
+      - [ ] It should query the database for the specified investor user by ID including only non-sensitive properties (id, email, companyName, phoneNumber, investorType)
+  - **When**: I make a request to the GET `/investors/:id` endpoint with a valid access token and an invalid ID
+    - **Then**:
+      - [ ] It should authorize my access
+      - [ ] It should return a 400 Bad Request response with an error message indicating that the specified ID is malformed
+  - **When**: I make a request to the GET `/investors/:id` endpoint with a valid access token and a non-existent investor user ID
+    - **Then**:
+      - [ ] It should authorize my access
+      - [ ] It should return a 404 Not Found response with an error message indicating that the specified investor user was not found
+- **Given that**: I'm an existing administrator user of the platform who wants to access the GET `/investors/:id` endpoint
+  - **When**: I make a request to the GET `/investors/:id` endpoint with a valid access token and a valid investor user ID
+    - **Then**:
+      - [ ] It should authorize my access
+      - [ ] It should query the database for the specified investor user by ID and return all user properties (except the password), excluding related entities
+      - [ ] It should return a 200 OK response with the information of the specified investor user
+  - **When**: I make a request to the GET `/investors/:id` endpoint with a valid access token and an invalid ID
+    - **Then**:
+      - [ ] It should authorize my access
+      - [ ] It should return a 400 Bad Request response with an error message indicating that the specified ID is malformed
+  - **When**: I make a request to the GET `/investors/:id` endpoint with a valid access token and a non-existent investor user ID
+    - **Then**:
+      - [ ] It should authorize my access
+      - [ ] It should return a 404 Not Found response with an error message indicating that the specified investor user was not found
+
+_Use case_: Call PATCH `/investors/:id` endpoint
+- **Given that**: I'm an existing user of the platform (admin or verified investor) who wants to access the PATCH `/investors/:id` endpoint
+  - **When**: I make a request to the PATCH `/investors/:id` endpoint with a valid access token, an invalid ID, and valid updated information in the request body (`UpdateInvestorDto`)
+    - **Then**:
+      - [ ] It should authorize my access
+      - [ ] It should return a 400 Bad Request response with an error message indicating that the specified ID is malformed
+  - **When**: I make a request to the PATCH `/investors/:id` endpoint with a valid access token, a valid investor user ID, using wrong type values for one or more fields in `UpdateInvestorDto` in the request body
+    - **Then**:
+      - [ ] It should authorize my access
+      - [ ] It should return a 400 Bad Request response with an error message list indicating which fields are invalid
+  - **When**: I make a request to the PATCH `/investors/:id` endpoint with a valid access token, a valid investor user ID that does not match my own ID, and valid updated information in the request body (`UpdateInvestorDto`)
+    - **Then**:
+      - [ ] It should authorize my access
+      - [ ] It should return a 403 Forbidden response with an error message indicating that I don't have permission to perform this action
+  - **When**: I make a request to the PATCH `/investors/:id` endpoint with a valid access token, a non-existent investor user ID, and valid updated information in the request body (`UpdateInvestorDto`)
+    - **Then**:
+      - [ ] It should authorize my access
+      - [ ] It should return a 404 Not Found response with an error message indicating that the specified investor user was not found
+- **Given that**: I'm an existing investor user of the platform - verified - who wants to access the PATCH `/investors/:id` endpoint
+  - **When**: I make a request to the PATCH `/investors/:id` endpoint with a valid access token, a valid investor user ID that matches my own ID, and valid updated information in the request body (`UpdateInvestorDto`)
+    - **Then**:
+      - [ ] It should authorize my access
+      - [ ] It should update the specified investor user's profile information with the provided data, ignoring fields not specified in `UpdateInvestorDto`
+      - [ ] It should ignore sensitive fields not allowed to be updated by the user once verified (name, companyName, investorType, taxId, related document)
+      - [ ] It should return a 200 OK response with the updated information of the specified investor user
+  - **When**: I make a request to the PATCH `/investors/:id` endpoint with a valid access token, a valid investor user ID that matches my own ID, and an email, companyName, phoneNumber, and/or taxId that is already registered by another user in the request body (`UpdateInvestorDto`)
+    - **Then**:
+      - [ ] It should authorize my access
+      - [ ] It should return a 400 Bad Request response with an error message indicating that the email, companyName, phoneNumber, or taxId is already in use
+  - **When**: I make a request to the PATCH `/investors/:id` endpoint with a valid access token, a valid investor user ID, and valid updated information in the request body (`UpdateInvestorDto`) while the external document service is down
+    - **Then**:
+      - [ ] It should authorize my access
+      - [ ] It should update the specified investor user's profile information with the provided data, ignoring fields not specified in `UpdateInvestorDto`
+      - [ ] It should fail to update the related document if included in the update data
+      - [ ] It should return a 503 Service Unavailable response with an error message indicating that a service is currently unavailable
+- **Given that**: I'm an existing investor user of the platform - flagged for correction - who wants to access the PATCH `/investors/:id` endpoint
+  - **When**: I make a request to the PATCH `/investors/:id` endpoint with a valid access token, a valid investor user ID that matches my own ID, and valid updated information in the request body (`UpdateInvestorDto`)
+    - **Then**:
+      - [ ] It should authorize my access
+      - [ ] It should update all specified investor user's profile information with the provided data, ignoring fields not specified in `UpdateInvestorDto`
+      - [ ] It should return a 200 OK response with the updated information of the specified investor user
+  - **When**: I make a request to the PATCH `/investors/:id` endpoint with a valid access token, a valid investor user ID that matches my own ID, and an email, companyName, phoneNumber, and/or taxId that is already registered by another user in the request body (`UpdateInvestorDto`)
+    - **Then**:
+      - [ ] It should authorize my access
+      - [ ] It should return a 400 Bad Request response with an error message indicating that the email, companyName, phoneNumber, or taxId is already in use
+- **Given that**: I'm an existing investor user of the platform - flagged pending or denied - who wants to access the PATCH `/investors/:id` endpoint
+  - **When**: I make a request to the PATCH `/investors/:id` endpoint with a valid access token, a valid investor user ID that matches my own ID, and valid updated information in the request body (`UpdateInvestorDto`)
+    - **Then**:
+      - [ ] It should authorize my access
+      - [ ] It should return a 403 Forbidden response with an error message indicating that I don't have permission to perform this action
+- **Given that**: I'm an existing administrator user of the platform who wants to access the PATCH `/investors/:id` endpoint
+  - **When**: I make a request to the PATCH `/investors/:id` endpoint with a valid access token, a valid investor user ID, and valid updated information in the request body (`UpdateInvestorDto`)
+    - **Then**:
+      - [ ] It should authorize my access
+      - [ ] It should update the specified investor user's status and lastCommunication properties with the provided data
+      - [ ] It should ignore all other fields not allowed to be updated by the administrator
+      - [ ] It should return a 200 OK response with the updated information of the specified investor user
+
+_Use case_: Call DELETE `/investors/:id` endpoint
+- **Given that**: I'm an existing investor user of the platform who wants to access the DELETE `/investors/:id` endpoint
+  - **When**: I make a request to the DELETE `/investors/:id` endpoint with a valid access token and a valid investor user ID that matches my own ID
+    - **Then**:
+      - [ ] It should authorize my access
+      - [ ] It should soft delete the specified investor user profile
+      - [ ] It should return a 200 OK response indicating that the investor user was deleted
+  - **When**: I make a request to the DELETE `/investors/:id` endpoint with a valid access token and an invalid ID
+    - **Then**:
+      - [ ] It should authorize my access
+      - [ ] It should return a 400 Bad Request response with an error message indicating that the specified ID is malformed
+  - **When**: I make a request to the DELETE `/investors/:id` endpoint with a valid access token and a valid investor user ID that does not match my own ID
+    - **Then**:
+      - [ ] It should authorize my access
+      - [ ] It should return a 403 Forbidden response with an error message indicating that I don't have permission to perform this action
+  - **When**: I make a request to the DELETE `/investors/:id` endpoint with a valid access token and a non-existent investor user ID
+    - **Then**:
+      - [ ] It should authorize my access
+      - [ ] It should return a 404 Not Found response with an error message indicating that the specified investor user was not found
+
+- **Given that**: I'm an existing administrator user of the platform who wants to access the DELETE `/investors/:id` endpoint
+  - **When**: I make a request to the DELETE `/investors/:id` endpoint with a valid access token and an invalid ID
+    - **Then**:
+      - [ ] It should authorize my access
+      - [ ] It should return a 400 Bad Request response with an error message indicating that the specified ID is malformed
+  - **When**: I make a request to the DELETE `/investors/:id` endpoint with a valid access token and a valid investor user ID
+    - **Then**:
+      - [ ] It should authorize my access
+      - [ ] It should return a 403 Forbidden response with an error message indicating that I don't have permission to perform this action
+  - **When**: I make a request to the DELETE `/investors/:id` endpoint with a valid access token and a non-existent investor user ID
+    - **Then**:
+      - [ ] It should authorize my access
+      - [ ] It should return a 404 Not Found response with an error message indicating that the specified investor user was not found
+
+> _TODO_: `GET /investors/lookup/count` endpoint test cases are not covered in this document.

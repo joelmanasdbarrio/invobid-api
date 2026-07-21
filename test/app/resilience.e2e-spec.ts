@@ -20,6 +20,7 @@ import {
   verifyInvestor,
 } from '../helpers/auth.helper';
 import { cleanDatabase } from '../helpers/db.helper';
+import { createTestApp } from '../helpers/test-app.helper';
 
 const API = '/api/v1';
 const NIF_FILE = path.join(__dirname, '../sample_files/nif.jpg');
@@ -121,7 +122,6 @@ describe('Resilience / 503 (e2e)', () => {
 
     beforeAll(async () => {
       // First create investor with normal app
-      const { createTestApp } = require('../helpers/test-app.helper');
       normalApp = await createTestApp();
       normalServer = normalApp.getHttpServer() as App;
       dataSource = normalApp.get(DataSource);
@@ -182,7 +182,6 @@ describe('Resilience / 503 (e2e)', () => {
 
     beforeAll(async () => {
       // Setup with normal app
-      const { createTestApp } = require('../helpers/test-app.helper');
       normalApp = await createTestApp();
       normalServer = normalApp.getHttpServer() as App;
       dataSource = normalApp.get(DataSource);

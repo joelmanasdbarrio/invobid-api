@@ -6,19 +6,31 @@ import {
   forwardRef,
 } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-import { Repository } from 'typeorm';
+import { DataSource, Repository } from 'typeorm';
 import {
   computeDiscount,
   computeProfitability,
 } from '../auction/auction-metrics.util';
 import { AuctionService } from '../auction/auction.service';
 import { AuctionStatus } from '../auction/enums/auction-status.enum';
+import { BankAccountService } from '../bank-account/bank-account.service';
 import { User } from '../user/common/entities/user.entity';
 import { UserType } from '../user/common/enums/user-type.enum';
 import { Investor } from '../user/investor/entities/investor.entity';
 import { CreateBidDto } from './dto/create-bid.dto';
 import { GetBidsDto } from './dto/get-bids.dto';
 import { Bid } from './entities/bid.entity';
+
+export interface BidBalanceUpdate {
+  investorId: string;
+  reservedBalance: number;
+}
+
+export interface CreateBidResult {
+  bid: Bid;
+  balanceUpdates: BidBalanceUpdate[];
+  reachedMaxPrice: boolean;
+}
 
 @Injectable()
 export class BidService {
@@ -27,9 +39,14 @@ export class BidService {
     private readonly bidRepository: Repository<Bid>,
     @Inject(forwardRef(() => AuctionService))
     private readonly auctionService: AuctionService,
+    private readonly bankAccountService: BankAccountService,
+    private readonly dataSource: DataSource,
   ) {}
 
-  async create(createBidDto: CreateBidDto, user: User): Promise<Bid> {
+  async create(
+    createBidDto: CreateBidDto,
+    user: Investor,
+  ): Promise<CreateBidResult> {
     const auction = await this.auctionService.findOne(
       createBidDto.auctionId,
       user,
@@ -56,42 +73,103 @@ export class BidService {
     const latestBid = await this.bidRepository
       .createQueryBuilder('bid')
       .innerJoin('bid.auction', 'auction')
+      .leftJoinAndSelect('bid.investor', 'investor')
+      .leftJoinAndSelect('investor.bankAccount', 'bankAccount')
       .where('auction.id = :auctionId', { auctionId: createBidDto.auctionId })
       .orderBy('bid.createdAt', 'DESC')
       .getOne();
 
-    const latestBidAmount = latestBid ? latestBid.amount : auction.price.start;
-
-    if (
-      createBidDto.amount <
-      latestBidAmount *
-        (1 + Number(process.env.SMALLEST_BID_INCREMENT_PERCENTAGE) / 100)
-    ) {
+    if (latestBid && latestBid.investor.id === user.id) {
       throw new BadRequestException(
-        `Bid amount must be at least ${Number(process.env.SMALLEST_BID_INCREMENT_PERCENTAGE)}% greater than the current highest bid of ${latestBidAmount}`,
+        'You already have the highest bid on this auction',
       );
     }
 
-    const bid = this.bidRepository.create({
-      auction,
-      investor: user as Investor,
-      amount: createBidDto.amount,
-      discount: computeDiscount(auction.invoice.amount, createBidDto.amount),
-      profitability: computeProfitability(
-        auction.invoice.amount,
-        auction.invoice.transactionFee.buyerPercentage,
-        createBidDto.amount,
-      ),
-    });
+    const latestBidObject = latestBid;
+    const buyerFeePercentage = auction.invoice.transactionFee.buyerPercentage;
 
-    return await this.bidRepository.save(bid);
+    // Start with the base latest bid amount (or starting price if no bids)
+    const latestBidBaseAmount = latestBidObject
+      ? latestBidObject.amount / (1 + buyerFeePercentage / 100)
+      : auction.price.start;
+
+    // Calculate the minimum bid amount (base), then add fee for total
+    const minimumBidBase =
+      latestBidBaseAmount *
+      (1 + Number(process.env.SMALLEST_BID_INCREMENT_PERCENTAGE) / 100);
+    const minimumBidTotal =
+      minimumBidBase + (minimumBidBase * buyerFeePercentage) / 100;
+
+    const buyerFee = (createBidDto.amount * buyerFeePercentage) / 100;
+    const newBidAmount = createBidDto.amount + buyerFee;
+
+    if (newBidAmount < minimumBidTotal) {
+      throw new BadRequestException(
+        `Bid amount must be at least ${Number(process.env.SMALLEST_BID_INCREMENT_PERCENTAGE)}% greater than the current highest bid of ${latestBidObject?.amount ?? auction.price.start}`,
+      );
+    }
+
+    const maxBidAmount = Number(auction.invoice.amount);
+    const nextMinBidTotal =
+      newBidAmount *
+      (1 + Number(process.env.SMALLEST_BID_INCREMENT_PERCENTAGE) / 100);
+    const reachedMaxPrice = nextMinBidTotal > maxBidAmount;
+
+    const transactionResult = await this.dataSource.transaction(
+      async (manager) => {
+        const balanceUpdates: BidBalanceUpdate[] = [];
+
+        if (latestBid) {
+          const prevBankAccountId = latestBid.investor?.bankAccount?.id;
+          if (prevBankAccountId) {
+            const released = await this.bankAccountService.releaseBalance(
+              prevBankAccountId,
+              latestBid.amount,
+              manager,
+            );
+            balanceUpdates.push({
+              investorId: latestBid.investor.id,
+              reservedBalance: Number(released.reservedBalance),
+            });
+          }
+        }
+
+        const reserved = await this.bankAccountService.reserveBalance(
+          user.bankAccount.id,
+          newBidAmount,
+          manager,
+        );
+        balanceUpdates.push({
+          investorId: user.id,
+          reservedBalance: Number(reserved.reservedBalance),
+        });
+
+        const bid = manager.create(Bid, {
+          auction,
+          investor: user,
+          amount: newBidAmount,
+          discount: computeDiscount(auction.invoice.amount, newBidAmount),
+          profitability: computeProfitability(
+            auction.invoice.amount,
+            auction.invoice.transactionFee.buyerPercentage,
+            newBidAmount,
+          ),
+        });
+
+        const savedBid = await manager.save(bid);
+        return { bid: savedBid, balanceUpdates };
+      },
+    );
+
+    return { ...transactionResult, reachedMaxPrice };
   }
 
   async findAll(query: GetBidsDto, user: User) {
     const queryBuilder = this.bidRepository.createQueryBuilder('bid');
 
     queryBuilder
-      .leftJoin('bid.auction', 'auction')
+      .leftJoinAndSelect('bid.auction', 'auction')
+      .leftJoinAndSelect('auction.invoice', 'invoice')
       .orderBy('bid.createdAt', 'DESC');
 
     if (!query.auctionId && !query.investorId) {
@@ -151,7 +229,10 @@ export class BidService {
 
     queryBuilder
       .leftJoinAndSelect('bid.auction', 'auction')
-      .leftJoinAndSelect('bid.investor', 'investor')
+      .leftJoinAndSelect('auction.invoice', 'invoice')
+      .leftJoinAndSelect('bid.investor', 'investor', 'investor.id = :userId', {
+        userId: user.id,
+      })
       .where('bid.id = :id', { id });
 
     if (user.type !== UserType.ADMIN) {

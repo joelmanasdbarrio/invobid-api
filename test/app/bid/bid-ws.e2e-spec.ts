@@ -111,6 +111,13 @@ describe('Bid WebSocket (e2e)', () => {
     buyerId = buyer.user.id;
     await verifyInvestor(server, adminToken, buyerId);
 
+    // Fund the buyer's bank account so bid placement works
+    await dataSource.query(
+      `UPDATE bank_accounts SET balance = $1, "reservedBalance" = 0
+       WHERE id = (SELECT "bankAccountId" FROM users WHERE id = $2)`,
+      [10000000, buyerId],
+    );
+
     // debtor → verify → invoice → verify → auction → publish
     const debtorRes = await request(server)
       .post(`${API}/debtors`)
@@ -144,10 +151,12 @@ describe('Bid WebSocket (e2e)', () => {
       .set(authHeader(sellerToken))
       .send(auctionDto);
     auctionId = auctionRes.body.data.id;
+    const publishDate = new Date();
+    publishDate.setDate(publishDate.getDate() + 10);
     await request(server)
       .patch(`${API}/auctions/${auctionId}`)
       .set(authHeader(sellerToken))
-      .send({ status: 'published' });
+      .send({ status: 'published', auctionDateEnd: publishDate.toISOString() });
   });
 
   afterEach(() => {
@@ -295,7 +304,10 @@ describe('Bid WebSocket (e2e)', () => {
 
       expect(result.success).toBe(true);
       const bid = await newBidPromise;
-      expect(Number(bid.amount)).toBeCloseTo(minBid, 1);
+      const bidFeePercentage =
+        Number(process.env.BUYER_TRANSFER_FEE_PERCENTAGE) || 0;
+      const expectedBidAmount = minBid * (1 + bidFeePercentage / 100);
+      expect(Number(bid.amount)).toBeCloseTo(expectedBidAmount, 1);
     });
 
     it('should extend auction end time when bid placed with <=10min remaining', async () => {
@@ -329,10 +341,15 @@ describe('Bid WebSocket (e2e)', () => {
         .set(authHeader(sellerToken))
         .send(makeAuctionDto(testInvoiceId));
       const nearExpiryAuctionId = nearExpiryAuctionRes.body.data.id;
+      const nearExpiryPublishDate = new Date();
+      nearExpiryPublishDate.setDate(nearExpiryPublishDate.getDate() + 10);
       await request(server)
         .patch(`${API}/auctions/${nearExpiryAuctionId}`)
         .set(authHeader(sellerToken))
-        .send({ status: 'published' });
+        .send({
+          status: 'published',
+          auctionDateEnd: nearExpiryPublishDate.toISOString(),
+        });
 
       // Directly set auction end time to 5 min from now (within the 10 min extension window)
       const nearEndTime = new Date(Date.now() + 5 * 60 * 1000);
@@ -371,7 +388,11 @@ describe('Bid WebSocket (e2e)', () => {
 
       // It should emit a new-bid event to all users in the auction room
       const newBid = await newBidPromise2;
-      expect(Number(newBid.amount)).toBeCloseTo(minBid, 1);
+      const extendBidFeePercentage =
+        Number(process.env.BUYER_TRANSFER_FEE_PERCENTAGE) || 0;
+      const expectedExtendBidAmount =
+        minBid * (1 + extendBidFeePercentage / 100);
+      expect(Number(newBid.amount)).toBeCloseTo(expectedExtendBidAmount, 1);
 
       // It should emit an auction-bid-update event to all connected clients
       const bidUpdate = await auctionBidUpdatePromise;
@@ -409,7 +430,14 @@ describe('Bid WebSocket (e2e)', () => {
     });
 
     it('should reject bid below minimum increment', async () => {
-      const socket = trackSocket(connectSocket(port, buyerToken));
+      // Register a fresh buyer who hasn't bid on this auction yet
+      const freshBuyer = await registerInvestor(
+        server,
+        makeCompanyInvestorDto(),
+      );
+      await verifyInvestor(server, adminToken, freshBuyer.user.id);
+
+      const socket = trackSocket(connectSocket(port, freshBuyer.accessToken));
       await new Promise<void>((resolve) => socket.on('connect', resolve));
 
       // Bid with very small amount (below start price)
@@ -526,10 +554,15 @@ describe('Bid WebSocket (e2e)', () => {
         .post(`${API}/auctions`)
         .set(authHeader(sellerToken))
         .send(makeAuctionDto(invoiceRes.body.data.id));
+      const exactMinPublishDate = new Date();
+      exactMinPublishDate.setDate(exactMinPublishDate.getDate() + 10);
       await request(server)
         .patch(`${API}/auctions/${freshAuction.body.data.id}`)
         .set(authHeader(sellerToken))
-        .send({ status: 'published' });
+        .send({
+          status: 'published',
+          auctionDateEnd: exactMinPublishDate.toISOString(),
+        });
 
       const increment =
         Number(process.env.SMALLEST_BID_INCREMENT_PERCENTAGE) || 1;
@@ -573,6 +606,603 @@ describe('Bid WebSocket (e2e)', () => {
         },
       );
       expect(result2.success).toBe(false);
+    });
+  });
+
+  describe('place-bid — balance lifecycle', () => {
+    async function fundBankAccount(
+      investorId: string,
+      amount: number,
+    ): Promise<void> {
+      await dataSource.query(
+        `UPDATE bank_accounts SET balance = $1, "reservedBalance" = 0
+         WHERE id = (SELECT "bankAccountId" FROM users WHERE id = $2)`,
+        [amount, investorId],
+      );
+    }
+
+    async function getInvestorBalance(
+      investorId: string,
+      token: string,
+    ): Promise<{ balance: number; availableBalance: number }> {
+      const res = await request(server)
+        .get(`${API}/investors/${investorId}`)
+        .set(authHeader(token));
+      const balance = Number(res.body.data.bankAccount.balance);
+      const reservedBalance = Number(res.body.data.bankAccount.reservedBalance);
+      return {
+        balance,
+        availableBalance: balance - reservedBalance,
+      };
+    }
+
+    /** Creates a fresh published auction and returns its id + start price. */
+    async function createPublishedAuction(): Promise<{
+      auctionId: string;
+      startPrice: number;
+    }> {
+      const debtorRes = await request(server)
+        .post(`${API}/debtors`)
+        .set(authHeader(sellerToken))
+        .send(makeDebtorDto());
+      await request(server)
+        .patch(`${API}/debtors/${debtorRes.body.data.id}`)
+        .set(authHeader(adminToken))
+        .send({ status: 'verified' });
+
+      const invoiceDto = makeInvoiceDto(debtorRes.body.data.id);
+      const invoiceRes = await request(server)
+        .post(`${API}/invoices`)
+        .set(authHeader(sellerToken))
+        .field('debtorId', invoiceDto.debtorId)
+        .field('amount', invoiceDto.amount)
+        .field('dueDate', invoiceDto.dueDate)
+        .field('svc', invoiceDto.svc)
+        .attach('file', INVOICE_FILE);
+      await request(server)
+        .patch(`${API}/invoices/${invoiceRes.body.data.id}`)
+        .set(authHeader(adminToken))
+        .send({ status: 'verified' });
+
+      const auctionDto = makeAuctionDto(invoiceRes.body.data.id);
+      const auctionRes = await request(server)
+        .post(`${API}/auctions`)
+        .set(authHeader(sellerToken))
+        .send(auctionDto);
+      const helperPublishDate = new Date();
+      helperPublishDate.setDate(helperPublishDate.getDate() + 10);
+      await request(server)
+        .patch(`${API}/auctions/${auctionRes.body.data.id}`)
+        .set(authHeader(sellerToken))
+        .send({
+          status: 'published',
+          auctionDateEnd: helperPublishDate.toISOString(),
+        });
+
+      return {
+        auctionId: auctionRes.body.data.id,
+        startPrice: auctionDto.startingPrice,
+      };
+    }
+
+    it('should reject bid when amount exceeds availableBalance', async () => {
+      const { auctionId: freshAuctionId, startPrice } =
+        await createPublishedAuction();
+      const poorBuyer = await registerInvestor(
+        server,
+        makeCompanyInvestorDto(),
+      );
+      await verifyInvestor(server, adminToken, poorBuyer.user.id);
+      await fundBankAccount(poorBuyer.user.id, 100);
+
+      const increment =
+        Number(process.env.SMALLEST_BID_INCREMENT_PERCENTAGE) || 1;
+      const bidAmount = startPrice * (1 + increment / 100);
+
+      const socket = trackSocket(connectSocket(port, poorBuyer.accessToken));
+      await new Promise<void>((resolve) => socket.on('connect', resolve));
+
+      const result = await emitWithAck<{ success: boolean; message?: string }>(
+        socket,
+        'place-bid',
+        { auctionId: freshAuctionId, amount: bidAmount },
+      );
+      expect(result.success).toBe(false);
+      expect(result.message).toMatch(/[Ii]nsufficient funds/);
+    });
+
+    it('should decrement availableBalance after successful bid', async () => {
+      const { auctionId: freshAuctionId, startPrice } =
+        await createPublishedAuction();
+
+      const fundAmount = 100000;
+      await fundBankAccount(buyerId, fundAmount);
+
+      const increment =
+        Number(process.env.SMALLEST_BID_INCREMENT_PERCENTAGE) || 1;
+      const bidAmount = startPrice * (1 + increment / 100);
+
+      const socket = trackSocket(connectSocket(port, buyerToken));
+      await new Promise<void>((resolve) => socket.on('connect', resolve));
+
+      const result = await emitWithAck<{ success: boolean }>(
+        socket,
+        'place-bid',
+        { auctionId: freshAuctionId, amount: bidAmount },
+      );
+      expect(result.success).toBe(true);
+
+      // Use admin token to check buyer's balance
+      const buyerFeePercentage =
+        Number(process.env.BUYER_TRANSFER_FEE_PERCENTAGE) || 0;
+      const totalReserved = bidAmount * (1 + buyerFeePercentage / 100);
+      const { balance, availableBalance } = await getInvestorBalance(
+        buyerId,
+        adminToken,
+      );
+      expect(balance).toBe(fundAmount); // balance unchanged
+      expect(availableBalance).toBeCloseTo(fundAmount - totalReserved, 1);
+    });
+
+    it('should emit balance-update only to the bidder, not to other investors', async () => {
+      const { auctionId: freshAuctionId, startPrice } =
+        await createPublishedAuction();
+
+      const fundAmount = 100000;
+      await fundBankAccount(buyerId, fundAmount);
+
+      // Register a second investor (observer)
+      const observer = await registerInvestor(server, makeCompanyInvestorDto());
+      await verifyInvestor(server, adminToken, observer.user.id);
+
+      const increment =
+        Number(process.env.SMALLEST_BID_INCREMENT_PERCENTAGE) || 1;
+      const bidAmount = startPrice * (1 + increment / 100);
+
+      // Connect both sockets and join the auction room
+      const buyerSocket = trackSocket(connectSocket(port, buyerToken));
+      const observerSocket = trackSocket(
+        connectSocket(port, observer.accessToken),
+      );
+      await Promise.all([
+        new Promise<void>((resolve) => buyerSocket.on('connect', resolve)),
+        new Promise<void>((resolve) => observerSocket.on('connect', resolve)),
+      ]);
+
+      buyerSocket.emit('join-auction', { auctionId: freshAuctionId });
+      await waitForEvent<number>(buyerSocket, 'viewer-count');
+      observerSocket.emit('join-auction', { auctionId: freshAuctionId });
+      await waitForEvent<number>(observerSocket, 'viewer-count');
+
+      // Set up listeners before placing bid
+      const buyerBalancePromise = waitForEvent<any>(
+        buyerSocket,
+        'balance-update',
+        5000,
+      );
+      const observerBalancePromise = waitForEvent<any>(
+        observerSocket,
+        'balance-update',
+        3000,
+      ).catch(() => 'no-event');
+
+      const result = await emitWithAck<{ success: boolean }>(
+        buyerSocket,
+        'place-bid',
+        { auctionId: freshAuctionId, amount: bidAmount },
+      );
+      expect(result.success).toBe(true);
+
+      // Bidder should receive balance-update
+      const buyerBalance = await buyerBalancePromise;
+      expect(buyerBalance).toHaveProperty('reservedBalance');
+
+      // Observer should NOT receive balance-update
+      const observerResult = await observerBalancePromise;
+      expect(observerResult).toBe('no-event');
+    });
+
+    it('should restore previous bidder availableBalance when outbid', async () => {
+      const { auctionId: freshAuctionId, startPrice } =
+        await createPublishedAuction();
+
+      const fundAmount = 100000;
+      await fundBankAccount(buyerId, fundAmount);
+
+      // Register buyer2
+      const buyer2 = await registerInvestor(server, makeCompanyInvestorDto());
+      await verifyInvestor(server, adminToken, buyer2.user.id);
+      await fundBankAccount(buyer2.user.id, fundAmount);
+
+      const increment =
+        Number(process.env.SMALLEST_BID_INCREMENT_PERCENTAGE) || 1;
+      const bid1Amount = startPrice * (1 + increment / 100);
+      const bid2Amount =
+        Math.ceil(bid1Amount * (1 + increment / 100) * 100) / 100;
+
+      // buyer1 places first bid
+      const socket1 = trackSocket(connectSocket(port, buyerToken));
+      await new Promise<void>((resolve) => socket1.on('connect', resolve));
+      socket1.emit('join-auction', { auctionId: freshAuctionId });
+      await waitForEvent<number>(socket1, 'viewer-count');
+
+      const r1 = await emitWithAck<{ success: boolean }>(socket1, 'place-bid', {
+        auctionId: freshAuctionId,
+        amount: bid1Amount,
+      });
+      expect(r1.success).toBe(true);
+
+      // buyer2 outbids buyer1
+      const socket2 = trackSocket(connectSocket(port, buyer2.accessToken));
+      await new Promise<void>((resolve) => socket2.on('connect', resolve));
+      socket2.emit('join-auction', { auctionId: freshAuctionId });
+      await waitForEvent<number>(socket2, 'viewer-count');
+
+      const r2 = await emitWithAck<{ success: boolean; message?: string }>(
+        socket2,
+        'place-bid',
+        { auctionId: freshAuctionId, amount: bid2Amount },
+      );
+      expect(r2.success).toBe(true);
+
+      // Check buyer1's balance is restored
+      const buyer1Balance = await getInvestorBalance(buyerId, adminToken);
+      expect(buyer1Balance.balance).toBe(fundAmount);
+      expect(buyer1Balance.availableBalance).toBeCloseTo(fundAmount, 1);
+
+      // Check buyer2's balance is decremented
+      const buyer2Balance = await getInvestorBalance(
+        buyer2.user.id,
+        adminToken,
+      );
+      const buyerFeePercentage =
+        Number(process.env.BUYER_TRANSFER_FEE_PERCENTAGE) || 0;
+      const bid2Reserved = bid2Amount * (1 + buyerFeePercentage / 100);
+      expect(buyer2Balance.balance).toBe(fundAmount);
+      expect(buyer2Balance.availableBalance).toBeCloseTo(
+        fundAmount - bid2Reserved,
+        1,
+      );
+    });
+
+    it('should emit balance-update to previous bidder when outbid', async () => {
+      const { auctionId: freshAuctionId, startPrice } =
+        await createPublishedAuction();
+
+      const fundAmount = 100000;
+      await fundBankAccount(buyerId, fundAmount);
+
+      const buyer2 = await registerInvestor(server, makeCompanyInvestorDto());
+      await verifyInvestor(server, adminToken, buyer2.user.id);
+      await fundBankAccount(buyer2.user.id, fundAmount);
+
+      const increment =
+        Number(process.env.SMALLEST_BID_INCREMENT_PERCENTAGE) || 1;
+      const bid1Amount = startPrice * (1 + increment / 100);
+      const bid2Amount =
+        Math.ceil(bid1Amount * (1 + increment / 100) * 100) / 100;
+
+      // buyer1 places first bid
+      const socket1 = trackSocket(connectSocket(port, buyerToken));
+      await new Promise<void>((resolve) => socket1.on('connect', resolve));
+      socket1.emit('join-auction', { auctionId: freshAuctionId });
+      await waitForEvent<number>(socket1, 'viewer-count');
+
+      const r1 = await emitWithAck<{ success: boolean }>(socket1, 'place-bid', {
+        auctionId: freshAuctionId,
+        amount: bid1Amount,
+      });
+      expect(r1.success).toBe(true);
+
+      // buyer1 listens for balance-update before buyer2 outbids
+      const buyer1BalancePromise = waitForEvent<any>(
+        socket1,
+        'balance-update',
+        5000,
+      );
+
+      // buyer2 outbids
+      const socket2 = trackSocket(connectSocket(port, buyer2.accessToken));
+      await new Promise<void>((resolve) => socket2.on('connect', resolve));
+      socket2.emit('join-auction', { auctionId: freshAuctionId });
+      await waitForEvent<number>(socket2, 'viewer-count');
+
+      const r2 = await emitWithAck<{ success: boolean }>(socket2, 'place-bid', {
+        auctionId: freshAuctionId,
+        amount: bid2Amount,
+      });
+      expect(r2.success).toBe(true);
+
+      // buyer1 should receive balance-update with restored reserved balance (0)
+      const update = await buyer1BalancePromise;
+      expect(update).toHaveProperty('reservedBalance');
+      expect(update.reservedBalance).toBeCloseTo(0, 1);
+    });
+  });
+
+  describe('join-balance', () => {
+    it('should reject unauthenticated socket on join-balance', async () => {
+      const socket = trackSocket(
+        io(`http://localhost:${port}/auctions`, {
+          transports: ['websocket'],
+          forceNew: true,
+        }),
+      );
+      await new Promise<void>((resolve) => socket.on('connect', resolve));
+
+      const exceptionPromise = waitForEvent<any>(
+        socket,
+        'exception',
+        5000,
+      ).catch(() => 'timeout');
+      socket.emit('join-balance');
+      const result = await exceptionPromise;
+      expect(result).toBeDefined();
+    });
+
+    it('should reject invalid token on join-balance', async () => {
+      const socket = trackSocket(connectSocket(port, 'invalid-token'));
+      await new Promise<void>((resolve) => socket.on('connect', resolve));
+
+      const exceptionPromise = waitForEvent<any>(
+        socket,
+        'exception',
+        5000,
+      ).catch(() => 'timeout');
+      socket.emit('join-balance');
+      const result = await exceptionPromise;
+      expect(result).toBeDefined();
+    });
+
+    it('should register the investor and deliver balance-update on a balance-only socket', async () => {
+      // Create a fresh auction so bid history is clean
+      const debtorRes = await request(server)
+        .post(`${API}/debtors`)
+        .set(authHeader(sellerToken))
+        .send(makeDebtorDto());
+      await request(server)
+        .patch(`${API}/debtors/${debtorRes.body.data.id}`)
+        .set(authHeader(adminToken))
+        .send({ status: 'verified' });
+      const invoiceDto = makeInvoiceDto(debtorRes.body.data.id);
+      const invoiceRes = await request(server)
+        .post(`${API}/invoices`)
+        .set(authHeader(sellerToken))
+        .field('debtorId', invoiceDto.debtorId)
+        .field('amount', invoiceDto.amount)
+        .field('dueDate', invoiceDto.dueDate)
+        .field('svc', invoiceDto.svc)
+        .attach('file', INVOICE_FILE);
+      await request(server)
+        .patch(`${API}/invoices/${invoiceRes.body.data.id}`)
+        .set(authHeader(adminToken))
+        .send({ status: 'verified' });
+      const freshAuctionRes = await request(server)
+        .post(`${API}/auctions`)
+        .set(authHeader(sellerToken))
+        .send(makeAuctionDto(invoiceRes.body.data.id));
+      const freshAuctionId = freshAuctionRes.body.data.id;
+      const freshStartPrice = makeAuctionDto(
+        invoiceRes.body.data.id,
+      ).startingPrice;
+      const joinBalPublishDate = new Date();
+      joinBalPublishDate.setDate(joinBalPublishDate.getDate() + 10);
+      await request(server)
+        .patch(`${API}/auctions/${freshAuctionId}`)
+        .set(authHeader(sellerToken))
+        .send({
+          status: 'published',
+          auctionDateEnd: joinBalPublishDate.toISOString(),
+        });
+
+      const fundAmount = 100000;
+      await dataSource.query(
+        `UPDATE bank_accounts SET balance = $1, "reservedBalance" = 0
+         WHERE id = (SELECT "bankAccountId" FROM users WHERE id = $2)`,
+        [fundAmount, buyerId],
+      );
+
+      // Balance-only socket: emits join-balance but NOT join-auction
+      const balanceSocket = trackSocket(connectSocket(port, buyerToken));
+      await new Promise<void>((resolve) =>
+        balanceSocket.on('connect', resolve),
+      );
+      balanceSocket.emit('join-balance');
+
+      // Give the server a tick to process join-balance before the bid
+      await new Promise<void>((resolve) => setTimeout(resolve, 100));
+
+      // Separate auction socket used only to place the bid
+      const bidSocket = trackSocket(connectSocket(port, buyerToken));
+      await new Promise<void>((resolve) => bidSocket.on('connect', resolve));
+      bidSocket.emit('join-auction', { auctionId: freshAuctionId });
+      await waitForEvent<number>(bidSocket, 'viewer-count');
+
+      const balanceUpdatePromise = waitForEvent<any>(
+        balanceSocket,
+        'balance-update',
+        5000,
+      );
+
+      const increment =
+        Number(process.env.SMALLEST_BID_INCREMENT_PERCENTAGE) || 1;
+      const bidAmount = freshStartPrice * (1 + increment / 100);
+      const result = await emitWithAck<{ success: boolean }>(
+        bidSocket,
+        'place-bid',
+        { auctionId: freshAuctionId, amount: bidAmount },
+      );
+      expect(result.success).toBe(true);
+
+      const update = await balanceUpdatePromise;
+      expect(update).toHaveProperty('reservedBalance');
+      const joinBalFeePercentage =
+        Number(process.env.BUYER_TRANSFER_FEE_PERCENTAGE) || 0;
+      const joinBalTotalReserved = bidAmount * (1 + joinBalFeePercentage / 100);
+      expect(update.reservedBalance).toBeCloseTo(joinBalTotalReserved, 1);
+    });
+  });
+
+  describe('place-bid — max price auto-transition', () => {
+    /** Creates a fresh published auction with a specific invoice amount. */
+    async function createAuctionWithInvoiceAmount(
+      invoiceAmount: number,
+    ): Promise<string> {
+      const debtorRes = await request(server)
+        .post(`${API}/debtors`)
+        .set(authHeader(sellerToken))
+        .send(makeDebtorDto());
+      await request(server)
+        .patch(`${API}/debtors/${debtorRes.body.data.id}`)
+        .set(authHeader(adminToken))
+        .send({ status: 'verified' });
+
+      const invoiceRes = await request(server)
+        .post(`${API}/invoices`)
+        .set(authHeader(sellerToken))
+        .field('debtorId', debtorRes.body.data.id)
+        .field('amount', invoiceAmount)
+        .field('dueDate', makeInvoiceDto(debtorRes.body.data.id).dueDate)
+        .field('svc', makeInvoiceDto(debtorRes.body.data.id).svc)
+        .attach('file', INVOICE_FILE);
+      await request(server)
+        .patch(`${API}/invoices/${invoiceRes.body.data.id}`)
+        .set(authHeader(adminToken))
+        .send({ status: 'verified' });
+
+      const auctionRes = await request(server)
+        .post(`${API}/auctions`)
+        .set(authHeader(sellerToken))
+        .send(makeAuctionDto(invoiceRes.body.data.id));
+      const testAuctionId = auctionRes.body.data.id;
+      const maxPricePublishDate = new Date();
+      maxPricePublishDate.setDate(maxPricePublishDate.getDate() + 10);
+      await request(server)
+        .patch(`${API}/auctions/${testAuctionId}`)
+        .set(authHeader(sellerToken))
+        .send({
+          status: 'published',
+          auctionDateEnd: maxPricePublishDate.toISOString(),
+        });
+
+      return testAuctionId;
+    }
+
+    it('should auto-transition to TRANSITIONING when bid equals max price (0% discount)', async () => {
+      const invoiceAmount = 10000;
+      const testAuctionId = await createAuctionWithInvoiceAmount(invoiceAmount);
+
+      const buyerFeePercentage =
+        Number(process.env.BUYER_TRANSFER_FEE_PERCENTAGE) || 0.2;
+
+      // Bid at exactly the ceiling: newBidAmount = invoiceAmount → 0% discount
+      const ceilingBidAmount = invoiceAmount / (1 + buyerFeePercentage / 100);
+
+      await dataSource.query(
+        `UPDATE bank_accounts SET balance = $1, "reservedBalance" = 0
+         WHERE id = (SELECT "bankAccountId" FROM users WHERE id = $2)`,
+        [invoiceAmount * 10, buyerId],
+      );
+
+      const socket = trackSocket(connectSocket(port, buyerToken));
+      await new Promise<void>((resolve) => socket.on('connect', resolve));
+      socket.emit('join-auction', { auctionId: testAuctionId });
+      await waitForEvent<number>(socket, 'viewer-count');
+
+      const newBidPromise = waitForEvent<any>(socket, 'new-bid');
+      const auctionBidUpdatePromise = waitForEvent<any>(
+        socket,
+        'auction-bid-update',
+      );
+
+      const result = await emitWithAck<{ success: boolean }>(
+        socket,
+        'place-bid',
+        { auctionId: testAuctionId, amount: ceilingBidAmount },
+      );
+
+      expect(result.success).toBe(true);
+
+      // Should emit new-bid to room
+      await newBidPromise;
+
+      // Should emit auction-bid-update with newStatus: 'transitioning'
+      const bidUpdate = await auctionBidUpdatePromise;
+      expect(bidUpdate.auctionId).toBe(testAuctionId);
+      expect(bidUpdate.newStatus).toBe('transitioning');
+
+      // Auction status in DB should be TRANSITIONING
+      const auctionAfter = await request(server)
+        .get(`${API}/auctions/${testAuctionId}`)
+        .set(authHeader(adminToken));
+      expect(auctionAfter.body.data.status).toBe('transitioning');
+    });
+
+    it('should auto-transition to TRANSITIONING when next minimum bid would exceed max price', async () => {
+      const invoiceAmount = 10000;
+      const testAuctionId = await createAuctionWithInvoiceAmount(invoiceAmount);
+
+      const buyerFeePercentage =
+        Number(process.env.BUYER_TRANSFER_FEE_PERCENTAGE) || 0.2;
+      const incrementPercentage =
+        Number(process.env.SMALLEST_BID_INCREMENT_PERCENTAGE) || 0.1;
+
+      // Bid below ceiling but where nextMin = bidAmount * (1 + increment/100) > invoiceAmount
+      // Pick midpoint between threshold and ceiling
+      const threshold = invoiceAmount / (1 + incrementPercentage / 100);
+      const midpointNewBid = (threshold + invoiceAmount) / 2;
+      const caseBAmount = midpointNewBid / (1 + buyerFeePercentage / 100);
+
+      await dataSource.query(
+        `UPDATE bank_accounts SET balance = $1, "reservedBalance" = 0
+         WHERE id = (SELECT "bankAccountId" FROM users WHERE id = $2)`,
+        [invoiceAmount * 10, buyerId],
+      );
+
+      const socket = trackSocket(connectSocket(port, buyerToken));
+      await new Promise<void>((resolve) => socket.on('connect', resolve));
+      socket.emit('join-auction', { auctionId: testAuctionId });
+      await waitForEvent<number>(socket, 'viewer-count');
+
+      const newBidPromise = waitForEvent<any>(socket, 'new-bid');
+      const auctionBidUpdatePromise = waitForEvent<any>(
+        socket,
+        'auction-bid-update',
+      );
+
+      const result = await emitWithAck<{ success: boolean }>(
+        socket,
+        'place-bid',
+        { auctionId: testAuctionId, amount: caseBAmount },
+      );
+
+      expect(result.success).toBe(true);
+
+      // Should emit new-bid to room
+      await newBidPromise;
+
+      // Should emit auction-bid-update with newStatus: 'transitioning'
+      const bidUpdate = await auctionBidUpdatePromise;
+      expect(bidUpdate.auctionId).toBe(testAuctionId);
+      expect(bidUpdate.newStatus).toBe('transitioning');
+
+      // Auction status in DB should be TRANSITIONING
+      const auctionAfter = await request(server)
+        .get(`${API}/auctions/${testAuctionId}`)
+        .set(authHeader(adminToken));
+      expect(auctionAfter.body.data.status).toBe('transitioning');
+
+      // Subsequent bid should be rejected (auction is no longer PUBLISHED)
+      const socket2 = trackSocket(connectSocket(port, buyerToken));
+      await new Promise<void>((resolve) => socket2.on('connect', resolve));
+      const rejectResult = await emitWithAck<{
+        success: boolean;
+        message?: string;
+      }>(socket2, 'place-bid', {
+        auctionId: testAuctionId,
+        amount: caseBAmount,
+      });
+      expect(rejectResult.success).toBe(false);
     });
   });
 });

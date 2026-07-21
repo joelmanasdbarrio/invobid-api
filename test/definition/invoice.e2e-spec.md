@@ -1,0 +1,197 @@
+# Invoice
+
+_Use case_: Call POST `/invoices` endpoint
+- **Given that**: I'm an existing verified company investor user of the platform who wants to create an invoice by accessing the POST `/invoices` endpoint
+  - **When**: I make a request to the POST `/invoices` endpoint with a valid access token and valid information in the request body (`CreateInvoiceDto`) using a verified debtor ID that belongs to my investor user profile
+    - **Then**:
+      - [ ] It should authorize my access
+      - [ ] It should create a new invoice related to a debtor of my investor user profile with the provided information, ignoring fields not specified in `CreateInvoiceDto`
+      - [ ] It should return a 201 Created response with the created invoice's information in the response body
+  - **When**: I make a request to the POST `/invoices` endpoint with a valid access token and missing one or more required fields from `CreateInvoiceDto` in the request body
+    - **Then**:
+      - [ ] It should authorize my access
+      - [ ] It should not create a new invoice
+      - [ ] It should return a 400 Bad Request response with an error message listing which fields are missing
+  - **When**: I make a request to the POST `/invoices` endpoint with a valid access token using wrong type values for one or more fields in `CreateInvoiceDto` in the request body
+    - **Then**:
+      - [ ] It should authorize my access
+      - [ ] It should fail validation for the provided fields in `CreateInvoiceDto`
+      - [ ] It should return a 400 Bad Request response with an error message list indicating which fields are invalid
+  - **When**: I make a request to the POST `/invoices` endpoint with a valid access token and a non-verified debtor ID in the request body (`CreateInvoiceDto`)
+    - **Then**:
+      - [ ] It should authorize my access
+      - [ ] It should return a 400 Bad Request response with an error message indicating that the specified debtor is not verified
+  - **When**: I make a request to the POST `/invoices` endpoint with a valid access token and a debtor ID in the request body (`CreateInvoiceDto`) that does not belong to my investor user profile
+    - **Then**:
+      - [ ] It should authorize my access
+      - [ ] It should return a 404 Not Found response with an error message indicating that the specified debtor was not found
+  - **When**: I make a request to the POST `/invoices` endpoint with a valid access token and a non-existent debtor ID in the request body (`CreateInvoiceDto`)
+    - **Then**:
+      - [ ] It should authorize my access
+      - [ ] It should return a 404 Not Found response with an error message indicating that the specified debtor was not found
+  - **When**: I make a request to the POST `/invoices` endpoint with a valid access token and valid information in the request body (`CreateInvoiceDto`) while the external document service is down
+    - **Then**:
+      - [ ] It should authorize my access
+      - [ ] It should create a new invoice related to a debtor of my investor user profile with the provided information, ignoring fields not specified in `CreateInvoiceDto`
+      - [ ] It should fail to create the related document for the invoice
+      - [ ] It should call to remove the created invoice, ensuring that no incomplete invoice is left in the system
+      - [ ] It should return a 503 Service Unavailable response with an error message indicating that a service is currently unavailable
+
+_Use case_: Call GET `/invoices` endpoint
+- **Given that**: I'm an existing user of the platform (admin or verified investor) who wants to access the GET `/invoices` endpoint
+- **When**: I make a request to the GET `/invoices` endpoint with a valid access token and I query with `GetInvoicesDto` parameters using wrong type values to filter the results while there are 1 or more invoices in the system
+    - **Then**:
+      - [ ] It should authorize my access
+      - [ ] It should fail type validation for the provided filters in `GetInvoicesDto`
+      - [ ] It should return a 400 Bad Request response with an error message list indicating that the provided filters are invalid
+  - **When**: I make a request to the GET `/invoices` endpoint with a valid access token and there are no invoices in the system
+    - **Then**:
+      - [ ] It should authorize my access
+      - [ ] It should query the database for all verified invoices and find none
+      - [ ] It should return a 200 OK response with an empty paginated list of invoices
+- **Given that**: I'm an existing verified investor user of the platform who wants to access the GET `/invoices` endpoint
+  - **When**: I make a request to the GET `/invoices` endpoint with a valid access token while there are 1 or more invoices in the system
+    - **Then**:
+      - [ ] It should authorize my access
+      - [ ] It should query the database for all verified invoices, including my own no matter the status, returning all properties including related debtor, investor, transferor, and/or documents
+      - [ ] It should return a 200 OK response with a paginated list of all found invoices in the system
+  - **When**: I make a request to the GET `/invoices` endpoint with a valid access token and I query with `GetInvoicesDto` parameters to filter the results while there are 1 or more invoices in the system
+    - **Then**:
+      - [ ] It should authorize my access
+      - [ ] It should query the database for verified invoices that match the provided filters in `GetInvoicesDto`, including my own no matter the status, ignoring fields not specified in `GetInvoicesDto`, returning all properties including related debtor, investor, transferor, and/or documents
+      - [ ] It should return a 200 OK response with a paginated list of all found invoices in the system that match the provided filters
+  - **When**: I make a request to the GET `/invoices` endpoint with a valid access token and I query using parameters not specified in `GetInvoicesDto` to filter the results while there are 1 or more invoices in the system
+    - **Then**:
+      - [ ] It should authorize my access
+      - [ ] It should ignore the invalid filters and return results based only on the valid filters provided in `GetInvoicesDto`
+      - [ ] It should query the database for verified invoices that match the provided filters in `GetInvoicesDto`, including my own no matter the status, ignoring fields not specified in `GetInvoicesDto`, returning all properties including related debtor, investor, transferor, and/or documents
+      - [ ] It should return a 200 OK response with a paginated list of all found invoices in the system that match the provided filters
+- **Given that**: I'm an existing administrator user of the platform who wants to access the GET `/invoices` endpoint
+  - **When**: I make a request to the GET `/invoices` endpoint with a valid access token while there are 1 or more invoices in the system
+    - **Then**:
+      - [ ] It should authorize my access
+      - [ ] It should query the database for all invoices, returning all properties including related debtor, investor, transferor, and/or documents
+      - [ ] It should return a 200 OK response with a paginated list of all found invoices in the system
+  - **When**: I make a request to the GET `/invoices` endpoint with a valid access token and I query with `GetInvoicesDto` parameters to filter the results while there are 1 or more invoices in the system
+    - **Then**:
+      - [ ] It should authorize my access
+      - [ ] It should query the database for all invoices that match the provided filters in `GetInvoicesDto`, ignoring fields not specified in `GetInvoicesDto`, returning all properties including related debtor, investor, transferor, and/or documents
+      - [ ] It should return a 200 OK response with a paginated list of all found invoices in the system that match the provided filters
+  - **When**: I make a request to the GET `/invoices` endpoint with a valid access token and I query using parameters not specified in `GetInvoicesDto` to filter the results while there are 1 or more invoices in the system
+    - **Then**:
+      - [ ] It should authorize my access
+      - [ ] It should ignore the invalid filters and return results based only on the valid filters provided in `GetInvoicesDto`
+      - [ ] It should query the database for all invoices that match the provided filters in `GetInvoicesDto`, ignoring fields not specified in `GetInvoicesDto`, returning all properties including related debtor, investor, transferor, and/or documents
+      - [ ] It should return a 200 OK response with a paginated list of all found invoices in the system that match the provided filters
+  - **When**: I make a request to the GET `/invoices` endpoint with a valid access token and I include `includeDeleted=1` in the query parameters to include soft deleted invoices in the results while there are soft deleted invoices in the system
+    - **Then**:
+      - [ ] It should authorize my access
+      - [ ] It should query the database for all invoices, including soft deleted invoices, that match the provided filters in `GetInvoicesDto`, ignoring fields not specified in `GetInvoicesDto`, returning all properties including related debtor, investor, transferor, and/or documents
+      - [ ] It should return a 200 OK response with a paginated list of all found invoices in the system that match the provided filters, including soft deleted invoices
+
+_Use case_: Call GET `/invoices/:id` endpoint
+- **Given that**: I'm an existing user of the platform (admin or verified investor) who wants to access the GET `/invoices/:id` endpoint
+  - **When**: I make a request to the GET `/invoices/:id` endpoint with a valid access token and an invalid ID
+    - **Then**:
+      - [ ] It should authorize my access
+      - [ ] It should return a 400 Bad Request response with an error message indicating that the specified ID is malformed
+  - **When**: I make a request to the GET `/invoices/:id` endpoint with a valid access token and a non-existent invoice ID
+    - **Then**:
+      - [ ] It should authorize my access
+      - [ ] It should return a 404 Not Found response with an error message indicating that the specified invoice was not found
+- **Given that**: I'm an existing verified investor user of the platform who wants to access the GET `/invoices/:id` endpoint
+  - **When**: I make a request to the GET `/invoices/:id` endpoint with a valid access token and a valid invoice ID that belongs to my investor profile (buy or sell)
+    - **Then**:
+      - [ ] It should authorize my access
+      - [ ] It should query the database for the specified invoice by ID, returning all properties including related debtor, investor, transferor, and/or documents
+      - [ ] It should return a 200 OK response with the information of the specified invoice
+  - **When**: I make a request to the GET `/invoices/:id` endpoint with a valid access token and a valid invoice ID that does not belong to my investor profile
+    - **Then**:
+      - [ ] It should authorize my access
+      - [ ] It should return a 404 Not Found response with an error message indicating that the specified invoice was not found
+- **Given that**: I'm an existing administrator user of the platform who wants to access the GET `/invoices/:id` endpoint
+  - **When**: I make a request to the GET `/invoices/:id` endpoint with a valid access token and a valid invoice ID
+    - **Then**:
+      - [ ] It should authorize my access
+      - [ ] It should query the database for the specified invoice by ID, returning all properties including related debtor, investor, transferor, and/or documents
+      - [ ] It should return a 200 OK response with the information of the specified invoice
+
+_Use case_: Call PATCH `/invoices/:id` endpoint
+- **Given that**: I'm an existing user of the platform (admin or verified company investor) who wants to access the PATCH `/invoices/:id` endpoint
+  - **When**: I make a request to the PATCH `/invoices/:id` endpoint with a valid access token, an invalid ID, and valid updated information in the request body (`UpdateInvoiceDto`)
+    - **Then**:
+      - [ ] It should authorize my access
+      - [ ] It should return a 400 Bad Request response with an error message indicating that the specified ID is malformed
+  - **When**: I make a request to the PATCH `/invoices/:id` endpoint with a valid access token, a valid invoice ID, using wrong type values for one or more fields in `UpdateInvoiceDto` in the request body
+    - **Then**:
+      - [ ] It should authorize my access
+      - [ ] It should fail validation for the provided fields in `UpdateInvoiceDto`
+      - [ ] It should return a 400 Bad Request response with an error message list indicating which fields are invalid
+  - **When**: I make a request to the PATCH `/invoices/:id` endpoint with a valid access token, a valid invoice ID that has already been sold, and valid updated information in the request body (`UpdateInvoiceDto`)
+    - **Then**:
+      - [ ] It should authorize my access
+      - [ ] It should return a 403 Forbidden response with an error message indicating that the specified invoice has already been sold and cannot be updated
+  - **When**: I make a request to the PATCH `/invoices/:id` endpoint with a valid access token, a non-existent invoice ID, and valid updated information in the request body (`UpdateInvoiceDto`)
+    - **Then**:
+      - [ ] It should authorize my access
+      - [ ] It should return a 404 Not Found response with an error message indicating that the specified invoice was not found
+- **Given that**: I'm an existing verified company investor user of the platform who wants to access the PATCH `/invoices/:id` endpoint
+  - **When**: I make a request to the PATCH `/invoices/:id` endpoint with a valid access token, a valid invoice ID that belongs to my investor profile, and valid updated information in the request body (`UpdateInvoiceDto`) using a verified debtor ID that belongs to my investor user profile
+    - **Then**:
+      - [ ] It should authorize my access
+      - [ ] It should update the specified invoice's information with the provided data, ignoring fields not specified in `UpdateInvoiceDto`
+      - [ ] It should return a 200 OK response with the updated information of the specified invoice
+  - **When**: I make a request to the PATCH `/invoices/:id` endpoint with a valid access token, a valid invoice ID, using a non-verified debtor ID in the request body (`UpdateInvoiceDto`)
+    - **Then**:
+      - [ ] It should authorize my access
+      - [ ] It should return a 400 Bad Request response with an error message indicating that the specified debtor is not verified
+  - **When**: I make a request to the PATCH `/invoices/:id` endpoint with a valid access token, a valid invoice ID that belongs to my investor profile, and a debtor ID in the request body (`UpdateInvoiceDto`) that does not belong to my investor user profile
+    - **Then**:
+      - [ ] It should authorize my access
+      - [ ] It should return a 404 Not Found response with an error message indicating that the specified invoice was not found
+  - **When**: I make a request to the PATCH `/invoices/:id` endpoint with a valid access token, a valid invoice ID, using a non-existent debtor ID in the request body (`UpdateInvoiceDto`)
+    - **Then**:
+      - [ ] It should authorize my access
+      - [ ] It should return a 404 Not Found response with an error message indicating that the specified debtor was not found
+  - **When**: I make a request to the PATCH `/invoices/:id` endpoint with a valid access token, a valid invoice ID that does not belong to a debtor of my investor user profile, and valid updated information in the request body (`UpdateInvoiceDto`)
+    - **Then**:
+      - [ ] It should authorize my access
+      - [ ] It should return a 403 Forbidden response with an error message indicating that I don't have permission to perform this action
+  - **When**: I make a request to the PATCH `/invoices/:id` endpoint with a valid access token, a valid invoice ID that belongs to my investor profile, and valid updated information in the request body (`UpdateInvoiceDto`) while the external document service is down
+    - **Then**:
+      - [ ] It should authorize my access
+      - [ ] It should update the specified invoice's information with the provided data, ignoring fields not specified in `UpdateInvoiceDto`
+      - [ ] It should fail to update the related document for the invoice
+      - [ ] It should return a 503 Service Unavailable response with an error message indicating that a service is currently unavailable
+- **Given that**: I'm an existing administrator user of the platform who wants to access the PATCH `/invoices/:id` endpoint
+  - **When**: I make a request to the PATCH `/invoices/:id` endpoint with a valid access token, a valid invoice ID, and valid updated information in the request body (`UpdateInvoiceDto`)
+    - **Then**:
+      - [ ] It should authorize my access
+      - [ ] It should update the specified invoice's information with the provided data, ignoring fields not specified in `UpdateInvoiceDto` and documents
+      - [ ] It should return a 200 OK response with the updated information of the specified invoice
+
+_Use case_: Call DELETE `/invoices/:id` endpoint
+- **Given that**: I'm an existing verified company investor user of the platform who wants to access the DELETE `/invoices/:id` endpoint
+  - **When**: I make a request to the DELETE `/invoices/:id` endpoint with a valid access token and a valid invoice ID that belongs to a debtor of my investor user profile
+    - **Then**:
+      - [ ] It should authorize my access
+      - [ ] It should soft delete the specified invoice
+      - [ ] It should return a 200 OK response indicating that the invoice was deleted
+  - **When**: I make a request to the DELETE `/invoices/:id` endpoint with a valid access token and an invalid ID
+    - **Then**:
+      - [ ] It should authorize my access
+      - [ ] It should return a 400 Bad Request response with an error message indicating that the specified ID is malformed
+  - **When**: I make a request to the DELETE `/invoices/:id` endpoint with a valid access token and a valid invoice ID that does not belong to a debtor of my investor user profile
+    - **Then**:
+      - [ ] It should authorize my access
+      - [ ] It should return a 403 Forbidden response with an error message indicating that I don't have permission to perform this action
+  - **When**: I make a request to the DELETE `/invoices/:id` endpoint with a valid access token and a valid invoice ID that belongs to a debtor of my investor user profile but has already been sold
+    - **Then**:
+      - [ ] It should authorize my access
+      - [ ] It should return a 403 Forbidden response with an error message indicating that the specified invoice has already been sold and cannot be deleted
+  - **When**: I make a request to the DELETE `/invoices/:id` endpoint with a valid access token and a non-existent invoice ID
+    - **Then**:
+      - [ ] It should authorize my access
+      - [ ] It should return a 404 Not Found response with an error message indicating that the specified invoice was not found
+
+> _TODO_: `GET /invoices/lookup/count` endpoint test cases are not covered in this document.

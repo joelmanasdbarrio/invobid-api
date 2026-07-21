@@ -11,6 +11,10 @@ on:
     tags:
       - 'v*.*.*'
 
+concurrency:
+  group: ${{ github.workflow }}-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: ${{ github.ref != 'refs/heads/main' && !startsWith(github.ref, 'refs/tags/') }}
+
 permissions:
   contents: read
   packages: write
@@ -107,6 +111,7 @@ jobs:
           SELLER_TRANSFER_FEE_PERCENTAGE: ${{ vars.SELLER_TRANSFER_FEE_PERCENTAGE }}
           SMALLEST_BID_INCREMENT_PERCENTAGE: ${{ vars.SMALLEST_BID_INCREMENT_PERCENTAGE }}
           AUCTION_EXTENSION_MINUTES: ${{ vars.AUCTION_EXTENSION_MINUTES }}
+          MINIMUM_INVOICE_DISCOUNT: ${{ vars.MINIMUM_INVOICE_DISCOUNT }}
 
       - name: Stop services
         if: always()

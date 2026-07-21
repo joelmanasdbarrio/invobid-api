@@ -136,6 +136,7 @@ export class AuthService {
         investorType: investor.investorType,
         status: investor.status,
         lastCommunication: investor.lastCommunication,
+        bankAccount: investor.bankAccount,
       },
       access_token,
     };

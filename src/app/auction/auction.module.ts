@@ -1,5 +1,7 @@
 import { Module, forwardRef } from '@nestjs/common';
+import { ConfigModule } from '@nestjs/config';
 import { TypeOrmModule } from '@nestjs/typeorm';
+import { BankAccountModule } from '../bank-account/bank-account.module';
 import { BidModule } from '../bid/bid.module';
 import { Bid } from '../bid/entities/bid.entity';
 import { Invoice } from '../invoice/entities/invoice.entity';
@@ -14,10 +16,12 @@ import { Auction } from './entities/auction.entity';
 
 @Module({
   imports: [
+    ConfigModule,
     TypeOrmModule.forFeature([Auction, Bid, Invoice]),
     InvoiceModule,
     forwardRef(() => BidModule),
     InvestorModule,
+    BankAccountModule,
   ],
   controllers: [AuctionController, AuctionLookupController],
   providers: [AuctionService, AuctionLookupService, AuctionSchedulerService],

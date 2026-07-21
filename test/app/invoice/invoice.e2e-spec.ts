@@ -163,7 +163,7 @@ describe('Invoice (e2e)', () => {
       expect(res.status).toBe(400);
     });
 
-    it('should return 404 for debtor that does not belong to investor', async () => {
+    it('should return 400 for debtor that does not belong to investor', async () => {
       // Create another investor with their own debtor
       const other = await registerInvestor(server, makeCompanyInvestorDto());
       await verifyInvestor(server, adminToken, other.user.id);

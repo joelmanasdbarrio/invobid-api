@@ -64,6 +64,9 @@ describe('Auction (e2e)', () => {
     server = app.getHttpServer() as App;
     dataSource = app.get(DataSource);
     await cleanDatabase(dataSource);
+    await dataSource.query(
+      `INSERT INTO bank_accounts (balance, "reservedBalance", platform) VALUES (0, 0, true)`,
+    );
 
     const admin = await registerAdmin(server, makeAdminDto());
     adminToken = admin.accessToken;
@@ -264,6 +267,53 @@ describe('Auction (e2e)', () => {
       // But the ownership check (sellerInvestor.id !== user.id) catches it → 400
       expect(res.status).toBe(400);
     });
+
+    it('should return 400 when starting price exceeds maximum based on MINIMUM_INVOICE_DISCOUNT', async () => {
+      const { invoiceId, invoiceSvc } = await createVerifiedInvoice(
+        server,
+        companyToken,
+        adminToken,
+        debtorId,
+      );
+
+      // Retrieve the invoice to get fee percentages
+      const invoiceRes = await request(server)
+        .get(`${API}/invoices/${invoiceId}`)
+        .set(authHeader(companyToken));
+
+      const invoice = invoiceRes.body.data;
+      const invoiceAmount = parseFloat(invoice.amount);
+      const buyerPercentage = parseFloat(
+        invoice.transactionFee.buyerPercentage,
+      );
+      const sellerPercentage = parseFloat(
+        invoice.transactionFee.sellerPercentage,
+      );
+      const minimumDiscount = 10; // Default MINIMUM_INVOICE_DISCOUNT
+
+      // Calculate max allowed price
+      const totalFeePercentage = buyerPercentage + sellerPercentage;
+      const totalFeeAmount = (invoiceAmount * totalFeePercentage) / 100;
+      const invoiceWithFees = invoiceAmount + totalFeeAmount;
+      const maxAllowedPrice = invoiceWithFees * (1 - minimumDiscount / 100);
+
+      // Test with price exceeding the maximum
+      const excessivePrice = maxAllowedPrice + 100;
+
+      const res = await request(server)
+        .post(`${API}/auctions`)
+        .set(authHeader(companyToken))
+        .send({
+          svc: invoiceId,
+          startingPrice: excessivePrice,
+          auctionDateEnd: new Date(Date.now() + 30 * 86400000)
+            .toISOString()
+            .split('T')[0],
+        });
+
+      expect(res.status).toBe(400);
+      expect(res.body.message).toContain('Starting price is too high');
+    });
   });
 
   // GET /auctions
@@ -386,10 +436,15 @@ describe('Auction (e2e)', () => {
       auctionId = res.body.data.id;
 
       // Publish so it's visible
+      const publishDate = new Date();
+      publishDate.setDate(publishDate.getDate() + 10);
       await request(server)
         .patch(`${API}/auctions/${auctionId}`)
         .set(authHeader(companyToken))
-        .send({ status: 'published' });
+        .send({
+          status: 'published',
+          auctionDateEnd: publishDate.toISOString(),
+        });
     });
 
     it('should return 200 for admin', async () => {
@@ -469,10 +524,15 @@ describe('Auction (e2e)', () => {
         .set(authHeader(companyToken))
         .send(dto);
 
+      const publishDate = new Date();
+      publishDate.setDate(publishDate.getDate() + 10);
       const res = await request(server)
         .patch(`${API}/auctions/${created.body.data.id}`)
         .set(authHeader(companyToken))
-        .send({ status: 'published' });
+        .send({
+          status: 'published',
+          auctionDateEnd: publishDate.toISOString(),
+        });
 
       expect(res.status).toBe(200);
 
@@ -496,10 +556,15 @@ describe('Auction (e2e)', () => {
         .set(authHeader(companyToken))
         .send(dto);
 
+      const publishDate2 = new Date();
+      publishDate2.setDate(publishDate2.getDate() + 10);
       await request(server)
         .patch(`${API}/auctions/${created.body.data.id}`)
         .set(authHeader(companyToken))
-        .send({ status: 'published' });
+        .send({
+          status: 'published',
+          auctionDateEnd: publishDate2.toISOString(),
+        });
 
       const res = await request(server)
         .patch(`${API}/auctions/${created.body.data.id}`)
@@ -756,10 +821,15 @@ describe('Auction (e2e)', () => {
         .send(dto);
 
       // Publish it (not transitioning)
+      const publishDate3 = new Date();
+      publishDate3.setDate(publishDate3.getDate() + 10);
       await request(server)
         .patch(`${API}/auctions/${created.body.data.id}`)
         .set(authHeader(companyToken))
-        .send({ status: 'published' });
+        .send({
+          status: 'published',
+          auctionDateEnd: publishDate3.toISOString(),
+        });
 
       const res = await request(server)
         .patch(`${API}/auctions/${created.body.data.id}`)
