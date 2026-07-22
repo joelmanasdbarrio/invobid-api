@@ -22,6 +22,4 @@ export const EnvConfigSchema = Joi.object({
   MINIO_SECRET_KEY: Joi.string().required(),
   MINIO_ENDPOINT: Joi.string().default('localhost'),
   MINIO_PORT: Joi.number().default(9000),
-  MINIO_DOCS_BUCKET_NAME: Joi.string(),
-  MINIO_PUBLIC_BUCKET_NAME: Joi.string(),
 });

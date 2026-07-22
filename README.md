@@ -1,18 +1,18 @@
 ## Local development guidelines
 
-> **📋 Full API Specification**: See [test/e2e-spec.md](test/e2e-spec.md) for comprehensive endpoint documentation and expected behavior across all use cases.
+> **📋 Full API Specification**: See [test/definition/e2e-spec.md](test/definition/e2e-spec.md) for comprehensive endpoint documentation and expected behavior across all use cases.
 
 ### Prerequisites
 
 - [Node.js 22+](https://nodejs.org/)
-- [Docker Desktop](https://www.docker.com/products/docker-desktop/) (for infrastructure services)
+- [Docker](https://www.docker.com/) (for infrastructure services)
 
 ### Setup
 
 1. Install dependencies:
 
 ```sh
-npm install
+npm ci
 ```
 
 2. Copy the environment template and fill in the missing values:
@@ -27,10 +27,40 @@ cp .env.template .env
 npm run init-local-dependencies
 ```
 
+Seed the database with test data (optional):
+
+```sh
+npm run seed
+```
+
+Clear the database (optional):
+
+```sh
+npm run seed:clear
+```
+
+
 4. Start the development server with hot-reload:
 
 ```sh
 npm run start:dev
+```
+
+Open a JavaScript debug terminal in VSCode and run the process for debugging:
+
+```sh
+npm run start:debug
+```
+
+### Build and test
+
+```sh
+npm run build          # Compile Nest application
+npm run lint           # ESLint with --fix
+npm run test           # Unit tests (Jest)
+npm run test:watch     # Unit tests in watch mode
+npm run test:cov       # Unit tests with coverage
+npm run test:e2e       # E2E tests against local profile
 ```
 
 Base API URL: `http://localhost:3000/api/v1`
@@ -42,7 +72,7 @@ Base API URL: `http://localhost:3000/api/v1`
 | `NODE_ENV` | No | `development` | Runtime environment (`local`, `development`, `production`) |
 | `PORT` | No | `3000` | HTTP port |
 | `JWT_SECRET` | **Yes** | — | Secret key for JWT signing |
-| `CORS_ORIGIN` | No | `http://localhost:5173` | Allowed CORS origin (HTTP and WebSocket) |
+| `CORS_ORIGIN` | No | `http://localhost:5173, http://192.168.0.10:5173` | Allowed CORS origins (HTTP and WebSocket), comma-separated for multiple values |
 | `DB_HOST` | **Yes** | — | PostgreSQL host |
 | `DB_PORT` | **Yes** | — | PostgreSQL port |
 | `DB_NAME` | **Yes** | — | Database name |
@@ -54,17 +84,18 @@ Base API URL: `http://localhost:3000/api/v1`
 | `MINIO_PWD` | **Yes** | — | MinIO root password |
 | `MINIO_ACCESS_KEY` | **Yes** | — | MinIO access key |
 | `MINIO_SECRET_KEY` | **Yes** | — | MinIO secret key |
-| `MINIO_DOCS_BUCKET_NAME` | No | — | MinIO bucket for documents |
-| `MINIO_PUBLIC_BUCKET_NAME` | No | — | MinIO bucket for public files |
+| `MINIO_BUCKET` | **Yes** | — | MinIO bucket name |
 | `BUYER_TRANSFER_FEE_PERCENTAGE` | **Yes** | — | Fee percentage charged to buyers |
 | `SELLER_TRANSFER_FEE_PERCENTAGE` | **Yes** | — | Fee percentage charged to sellers |
 | `SMALLEST_BID_INCREMENT_PERCENTAGE` | **Yes** | — | Minimum bid increment percentage |
+| `MINIMUM_INVOICE_DISCOUNT` | **Yes** | — | Minimum discount percentage allowed on invoices |
+| `AUCTION_EXTENSION_MINUTES` | **Yes** | — | Minutes to extend an auction when a late bid arrives |
 
 ### Database
 
 pgAdmin: [`http://localhost:8080`](http://localhost:8080)
-- Email: `admin@mail.com`
-- Password: `1234`
+- Email: [PGADMIN_DEFAULT_EMAIL](docker/docker-compose.yml#PGADMIN_DEFAULT_EMAIL)
+- Password: [PGADMIN_DEFAULT_PASSWORD](docker/docker-compose.yml#PGADMIN_DEFAULT_PASSWORD)
 
 > On the VPS, pgAdmin is only accessible via SSH port forwarding:
 > ```sh
@@ -72,7 +103,91 @@ pgAdmin: [`http://localhost:8080`](http://localhost:8080)
 > ```
 > Then open `http://localhost:8080` in your local browser.
 
----
+### Code structure
+
+#### Folder directory layout
+
+```
+.github/
+  ├─ ISSUE_TEMPLATE/                  # GitHub issue templates for bug reports and feature requests
+  ├─ skills/                          # GitHub Copilot skills for AI-assisted code generation
+  └─ workflows/                       # CI/CD pipelines for testing and publishing
+docker/
+  ├─ docker-compose.yml               # Local development compose file
+  ├─ docker-compose.prod.yml          # Production compose file
+  └─ init-ssl.sh                      # Script to generate SSL certs with Certbot
+Dockerfile                            # API image build definition used by CI publish job (GHCR)
+postman/
+  ├─ env/                             # Postman environment variables
+  └─ Invobid-REST.postman_collection.json    # Postman collection for manual API testing
+src/
+  ├─ app/                             # Feature modules grouped by domain
+  │  ├─ auction/
+  │  ├─ bank-account/
+  │  ├─ bid/
+  │  ├─ debtor/
+  │  ├─ document/
+  │  │  ├─ interfaces/                # Agnostic document upload/download service interfaces
+  │  │  └─ services/                  # Concrete document upload/download service implementations (e.g., MinIO, AWS S3, Cloudflare R2, etc.)
+  │  ├─ invoice/
+  │  ├─ metric/
+  │  └─ user/
+  │     ├─ admin/
+  │     ├─ auth/                      # Authentication module (decorators, guards, strategies)
+  │     ├─ common/
+  │     └─ investor/
+  ├─ config/                          # Environment variables and configuration
+  ├─ dto/                             # Global shared DTOs
+  ├─ pipes/                           # Reusable validation/transformation pipes
+  ├─ seed/                            # Database seeding module and service
+  ├─ utils/                           # Utility functions and helpers
+  ├─ validations/                     # Custom class-validator constraints/decorators
+  ├─ app.module.ts                    # Root NestJS module
+  ├─ main.ts                          # Application bootstrap entry point
+  └─ seed.ts                          # Seed CLI entry point
+test/                                 # End-to-end tests and supporting assets
+  ├─ app/                             # Executable E2E suites grouped by feature/domain
+  ├─ definition/                      # Living API contract in Markdown
+  ├─ fixtures/                        # Factory helpers for valid test payloads
+  ├─ helpers/                         # Test app bootstrap, auth, and DB helpers
+  ├─ sample_files/                    # Uploaded file fixtures used by multipart tests
+  ├─ app.e2e-spec.ts                  # Minimal smoke test for base API routing
+  └─ setup-env.ts                     # Forces local env settings for E2E execution
+```
+
+1. `src/`: contains the main application source code.
+    1. `app/`: contains all application actors divided into modules — this structure promotes DDD environment. Each module contains its own:
+        - DTOs: Data Transfer Objects (request/response schemas). They are validated and transformed using `class-validator` and `class-transformer` so any malformed request is rejected with clear error messages before reaching the business logic.
+        - Entities: Database models representing the application's data structure.
+        - Enums: Enumerations used throughout the application like type and status discriminators.
+        - Controllers: Handle incoming HTTP requests and return responses. Can be surrounded by decorators like:
+          - [Auth](src/app/user/auth/decorators/auth.decorator.ts) guard, to enforce authentication and authorization. It accepts a list of allowed [user](src/app/user/common/enums/user-type.enum.ts) and/or [investor](src/app/user/investor/enums/investor-type.enum.ts) types as first parameter (e.g., `['admin']` or `['company', 'admin']`) and [investor status](src/app/user/investor/enums/investor-status.enum.ts) as second parameter (e.g., `InvestorStatus.VERIFIED`).
+          - [GetUser](src/app/user/auth/decorators/get-user.decorator.ts) parameter, to extract the authenticated user from the request and inject it into the controller method.
+        - Services: Contain the business logic of the application. Can inject other services, repositories, and external dependencies.
+        - Spec files: contain unit tests for the module's services and controllers. They use Jest and Supertest to mock dependencies and test the module in isolation.
+    2. `config/`: contains configuration files and environment variable validation schemas.
+    3. `dto/`: contains global DTOs that are shared across modules:
+        - [PaginationDto](src/dto/pagination.dto.ts): defines the structure for paginated responses.
+    4. `pipes/`: contains reusable validation and transformation pipes:
+        - [FileType](src/pipes/file-type.pipe.ts): validates the type of uploaded files based on `allowedExtensions` list.
+        - [MetricType](src/pipes/metric-type.pipe.ts): validates the metric type against the `MetricType` enum.
+    5. `seed/`: contains the database seeding module and service, which can be invoked via CLI to populate the database with initial data.
+    6. `utils/`: contains utility functions and helpers that can be used across the application.
+        - [ObjectExtension](src/utils/object.extensions.ts): provides methods to extend objects with additional properties or methods.
+    7. `validations/`: contains custom `class-validator` constraints and decorators for advanced DTO validation scenarios:
+        - [IsNifCifConstraint](src/validations/is-nif-cif.validator.ts): validates Spanish CIF/NIF numbers.
+2. `test/`: contains end-to-end tests and supporting assets.
+    1. `app/`: groups the executable specs by feature area (`auction`, `bid`, `debtor`, `invoice`, `user`) plus cross-cutting coverage such as [resilience.e2e-spec.ts](test/app/resilience.e2e-spec.ts).
+    2. `definition/`: acts as the living API contract. Each Markdown file documents expected request/response behavior for a domain, with [e2e-spec.md](test/definition/e2e-spec.md) as the umbrella reference.
+    3. `fixtures/`: provides factory functions that generate valid, unique DTO payloads for admins, investors, debtors, invoices, auctions, and bids. This keeps tests focused on behavior instead of hand-building request bodies.
+    4. `helpers/`: centralizes E2E infrastructure:
+        - [test-app.helper.ts](test/helpers/test-app.helper.ts): boots a Nest test application with the same global prefix, cookie parser, and `ValidationPipe` configuration used at runtime.
+        - [auth.helper.ts](test/helpers/auth.helper.ts): wraps common registration, login, verification, and bearer-token setup flows.
+        - [db.helper.ts](test/helpers/db.helper.ts): truncates every table with `CASCADE` when a spec needs a clean database state.
+    5. `sample_files/`: stores reusable upload fixtures such as NIF/DNI images and invoice PDFs for multipart/form-data tests.
+    6. `app.e2e-spec.ts`: is the smallest smoke test in the suite, validating that the base API route responds as expected for a non-existent endpoint.
+    7. `setup-env.ts`: forces `NODE_ENV=local` before Jest boots the E2E app so the suite uses the local configuration profile.
+3. `Dockerfile`: defines the multi-stage API image build used by the CI publish workflow to create `ghcr.io/joelmanasdbarrio/invobid-api` images, which are then consumed by the `api` service in `docker/docker-compose.prod.yml`.
 
 ## Production deployment
 
