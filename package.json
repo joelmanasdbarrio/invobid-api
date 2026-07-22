@@ -10,7 +10,7 @@
     "start": "nest start",
     "start:dev": "cross-env NODE_ENV=local nest start --watch",
     "start:debug": "cross-env NODE_ENV=local nest start --debug --watch",
-    "start:prod": "node NODE_ENV=production dist/main",
+    "start:prod": "cross-env NODE_ENV=production node dist/main",
     "seed": "docker-compose -f docker/docker-compose.yml down -v && docker-compose -f docker/docker-compose.yml up -d && ts-node -r tsconfig-paths/register src/seed.ts",
     "seed:clear": "docker-compose -f docker/docker-compose.yml down -v && docker-compose -f docker/docker-compose.yml up -d",
     "init-local-dependencies": "docker-compose -f docker/docker-compose.yml up -d",

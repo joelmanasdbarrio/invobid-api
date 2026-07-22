@@ -1,232 +1,103 @@
 # AI Agent Guidelines for Invobid API
 
-This file helps AI coding agents understand the invobid-api codebase and be immediately productive.
+NestJS + TypeScript backend for the Invobid invoice bidding platform.
 
 ## Quick Navigation
 
-- **Setup & Environment**: See [README.md](README.md#local-development-guidelines)
-- **Complete API Contract**: See [test/definition/e2e-spec.md](test/definition/e2e-spec.md) (essential reading)
-- **Build/Test Commands**: See section below
+- **Setup and environment**: See [README.md](README.md)
+- **Living API contract**: See [test/definition/e2e-spec.md](test/definition/e2e-spec.md)
+- **Feature-specific endpoint specs**: See `test/definition/*.e2e-spec.md`
 
-## Essential Build & Test Commands
+## Build and Test Commands
 
 ```bash
-# Development
-npm run start:dev              # Watch mode (NODE_ENV=local)
-npm run start:debug           # Debug on port 9229
-
-# Testing
-npm run test                  # All unit tests
-npm run test:e2e              # All E2E tests (requires Docker)
-npm run test:watch            # Unit tests watch mode
-npm run test:cov              # Coverage report
-
-# Database
-npm run init-local-dependencies    # Start Docker (Postgres, MinIO, pgAdmin)
-npm run seed                       # Full reset + seed database
-npm run test:e2e -- --detectOpenHandles  # Debug open handles in E2E
-
-# Code quality
-npm run lint                  # ESLint with auto-fix
-npm run format                # Prettier format
-npm run build                 # TypeScript compilation
+npm ci                         # Install dependencies
+npm run start:dev             # Dev server with watch mode (NODE_ENV=local)
+npm run start:debug           # Debuggable watch mode
+npm run build                 # Compile Nest application
+npm run test                  # Unit tests
+npm run test:e2e              # E2E tests against local profile, run in-band
+npm run lint                  # ESLint with --fix
+npm run init-local-dependencies  # Start PostgreSQL, MinIO, pgAdmin
+npm run stop-local-dependencies  # Stop local infrastructure
+npm run seed                  # Recreate local infra and seed test data
+npm run seed:clear            # Recreate local infra without seeding
 ```
 
-**E2E Tests Critical**: Run with `--runInBand --forceExit` flags (configured in `test:e2e` script in [package.json](package.json))
+Requires Node.js 22+, Docker, and `.env` copied from `.env.template`.
 
-## Architecture Principles
+Important env vars for business logic: `JWT_SECRET`, `DB_*`, `MINIO_*`, `BUYER_TRANSFER_FEE_PERCENTAGE`, `SELLER_TRANSFER_FEE_PERCENTAGE`, `SMALLEST_BID_INCREMENT_PERCENTAGE`, `MINIMUM_INVOICE_DISCOUNT`, `AUCTION_EXTENSION_MINUTES`.
 
-**Module Organization**: Feature-based in `src/app/` → `user`, `auction`, `bid`, `invoice`, `debtor`, `document`, `bank-account`
+## Architecture
 
-**Pattern Examples**:
-- Controllers use `@Auth()` decorator for role-based protection
-- Services encapsulate business logic; inject repositories
-- Use `forwardRef()` for circular imports (AuctionModule ↔ BidModule)
-- Auction state progression includes a scheduler (`@nestjs/schedule`) that transitions overdue auctions from `PUBLISHED` to `TRANSITIONING` every minute. See [src/app/auction/auction-scheduler.service.ts](src/app/auction/auction-scheduler.service.ts)
-- All entities support soft deletes: query with `{ withDeleted: true }` when needed
-
-**Response Format**:
-```typescript
-{ status: 'success', data: {...}, _metadata: { total, length, page, limit } }
+```text
+src/
+├── app/
+│   ├── auction/        # Auction lifecycle, metrics, scheduler-driven transitions
+│   ├── bank-account/   # Reserve/release/finalize money movements
+│   ├── bid/            # Bid validation, reservations, outbid behavior
+│   ├── debtor/         # Debtor CRUD, ownership-aware filtering, lookup counts
+│   ├── document/       # Upload/download abstraction with swappable storage providers
+│   ├── invoice/        # Invoice creation and fee capture
+│   ├── metric/         # Aggregated reporting queries
+│   └── user/           # Admin, investor, auth, guards, decorators
+├── config/             # Env loading and Joi schema
+├── dto/                # Shared DTOs like PaginationDto
+├── pipes/              # Reusable request pipes
+├── seed/               # Seed CLI module
+└── validations/        # Custom class-validator constraints
 ```
 
-## Core Development Patterns
+Each domain module follows the Nest pattern: controller, service, DTOs, entities, enums, and tests. Prefer extending the existing module instead of creating parallel abstractions.
 
-### 1. Creating Endpoints
+## Core Conventions
 
-**File Structure**:
-```
-src/app/{module}/
-├── dto/           # Create{Entity}Dto, Update{Entity}Dto
-├── entities/      # TypeORM entities
-├── controllers/   # Route handlers
-├── services/      # Business logic
-└── {module}.module.ts
-```
+### HTTP and validation
 
-**DTO Validation**: Use `class-validator` decorators. Global `ValidationPipe` enforces whitelist, transform, implicit conversion. Ref: [PaginationDto](src/dto/pagination.dto.ts)
+- Global prefix is `api/v1`.
+- Runtime and E2E app bootstrap both use `cookie-parser` plus a `ValidationPipe` with `whitelist: true`, `transform: true`, and `enableImplicitConversion: true`.
+- DTO validation belongs in `class-validator` decorators. Reuse the patterns in [.github/skills/validation-patterns/SKILL.md](.github/skills/validation-patterns/SKILL.md) before inventing ad hoc checks.
 
-**Authentication**: 
-```typescript
-@Auth(roles: (UserType | InvestorType)[], status?: InvestorStatus[])
-// Applies: AuthGuard('jwt') + UserRoleGuard
-// Default status filter is VERIFIED investors
-// Pass [] for status to disable status filtering when needed
-```
+### Auth and access control
 
-**File Uploads**: Use `FileTypePipe` (allows: pdf, jpeg, jpg, png)
-```typescript
-@Post('upload')
-@UseInterceptors(FileInterceptor('file'))
-uploadDocument(@UploadedFile(FileTypePipe) file) { }
-```
+- Use `@Auth(...)` on protected routes; it layers JWT auth with `UserRoleGuard`.
+- Default `@Auth()` behavior is not public access: with no explicit args it still enforces JWT auth, allows admins, and requires verified status for investors.
+- `@GetUser()` is the standard way to pass the authenticated user into controller methods.
 
-### 2. Custom Validators
+### API response shape
 
-Location: `src/validations/`
+- Success responses are wrapped as `{ status: 'success', data }`.
+- Paginated list responses also return `_metadata` with `total`, `length`, `page`, and `limit`.
+- Keep pagination defaults in the controller layer via `query.page || 1` and `query.limit || 10` before delegating to services.
 
-**Example**: `IsCifNifValidator` validates Spanish tax IDs (NIF, NIE, CIF)
-```typescript
-@IsCifNif() // Use decorator on DTO property
-taxId: string;
-```
+### Data and money rules
 
-### 3. Testing
+- `invoice.transactionFee` stores buyer and seller percentages at invoice creation time. Those values are captured from env config and should be treated as immutable per invoice.
+- Auction ending fields such as `price.end`, `discount.end`, and `profitability.end` stay null until the auction reaches `FINISHED`.
+- Bid and settlement logic is fee-sensitive. Preserve the distinction between reserved totals, winning bid amounts, buyer fee, and seller fee when changing auction, bid, invoice, bank-account, or metric code.
+- Bank account settlement must remain atomic. Follow the locking and transaction pattern already used in `bank-account.service.ts`.
 
-**Unit Tests**: `*.spec.ts` files
+## Testing Patterns
 
-**E2E Tests**: Use `test/helpers/test-app.helper.ts` factory
-```typescript
-const { app, server } = await createTestApp();
-const { accessToken } = await registerAdmin(server, dto);
-
-// Make authenticated requests
-await server
-  .post('/api/v1/auction')
-  .set('Authorization', `Bearer ${accessToken}`)
-  .send(payload);
-```
-
-**Auth Helpers**: [test/helpers/auth.helper.ts](test/helpers/auth.helper.ts) provides:
-- `registerAdmin(server, dto)` → `{ accessToken, user }`
-- `registerInvestor(server, dto, filePath)` → `{ accessToken, user }`
-- `loginUser(server, email, password)` → `{ accessToken }`
-
-### 4. Configuration & Environment
-
-**Validation**: [src/config/env.schema.ts](src/config/env.schema.ts) (Joi schema)
-
-**Required Variables**:
-- `JWT_SECRET`, `DB_*` (5 vars), `MINIO_*` (7 vars)
-- `BUYER_TRANSFER_FEE_PERCENTAGE`, `SELLER_TRANSFER_FEE_PERCENTAGE`, `SMALLEST_BID_INCREMENT_PERCENTAGE`
-
-**Access in Services**:
-```typescript
-constructor(private configService: ConfigService) {}
-const secret = this.configService.get<string>('JWT_SECRET')!;
-```
-
-## Special Business Logic
-
-### Auction Ending Values
-
-**Critical Pattern**: `endingDiscount` and `endingProfitability` are **only persisted when `Auction.status = FINISHED`**
-
-- While TRANSITIONING/PUBLISHED: values remain NULL
-- Frontend infers ending values from latest bid when NULL
-- When transitioning to FINISHED: service sets ending values from winning bid
-
-See: [src/app/auction/auction.service.ts](src/app/auction/auction.service.ts) (update method)
+- Unit tests are Jest specs under `src/**`. The Jest root is `src`, and the `src/*` path alias is configured.
+- E2E tests live under `test/app/**`; supporting helpers are under `test/helpers/**`, fixtures under `test/fixtures/**`, and file upload samples under `test/sample_files/**`.
+- `test/helpers/test-app.helper.ts` mirrors the real app bootstrap. Reuse it instead of building ad hoc E2E setup.
+- `test/definition/*.md` is the living contract. When behavior changes, update the relevant contract doc and the executable E2E coverage together.
 
 ## Common Pitfalls
 
-| Issue | Solution |
-|-------|----------|
-| E2E test fails intermittently | Must use `--runInBand --forceExit` (sequential execution) |
-| JWT auth returns 503 instead of 401/423 | JWT strategy catches and rethrows as `ServiceUnavailableException` in `validate()` (by design) |
-| Soft-deleted user can still authenticate | Always add `withDeleted: true` in JWT strategy user lookup |
-| TypeORM circular import error | Add `forwardRef(() => Module)` in imports |
-| Extra request fields not rejected | DTO validation has `forbidNonWhitelisted: false` (warns but allows) |
-| File upload MIME type mismatch | FileTypePipe only allows: pdf, jpeg, jpg, png |
-| MinIO not found | MinioStorageService only works in `NODE_ENV=local` |
-| Investor blocked despite empty roles in `@Auth()` | `@Auth()` defaults status to `VERIFIED`; pass second arg `[]` to allow all investor statuses |
+- Do not treat auction ending metrics as live fields before `FINISHED`; for non-finished auctions, current display values may need to be inferred from bids rather than persisted state.
+- Do not bypass the stored invoice fee percentages with fresh env reads when computing later bid, settlement, or metric behavior.
+- Do not hand-roll file upload validation; reuse `FileTypePipe`.
+- Be careful with quoted raw SQL identifiers in metric queries. Existing columns use camel-case names and TypeORM-generated quoting rules.
+- Local infrastructure-dependent commands assume Docker services are running; `test:e2e` uses the local profile and can fail for environment reasons before code reasons.
 
-## Database
+## Existing Skills
 
-**ORM**: TypeORM with PostgreSQL
+- [.github/skills/create-endpoint/SKILL.md](.github/skills/create-endpoint/SKILL.md): add a REST endpoint following the repo's DTO → service → controller pattern.
+- [.github/skills/testing-e2e/SKILL.md](.github/skills/testing-e2e/SKILL.md): add or extend backend E2E tests.
+- [.github/skills/validation-patterns/SKILL.md](.github/skills/validation-patterns/SKILL.md): add DTO validators or custom `class-validator` constraints.
 
-**Auto-sync**: Enabled in development/local (creates tables on startup), disabled in production (manual migrations required)
+## Session History Note
 
-**Soft Deletes**: `@DeleteDateColumn()` on all entities. Query with:
-```typescript
-await repo.find({ withDeleted: true });  // Include deleted records
-```
-
-**Embedded Objects**: TypeORM creates prefixed columns
-```typescript
-@Column(() => AuctionPrice)
-price: AuctionPrice;  // DB: price_start, price_end
-```
-
-## Key Files Reference
-
-| File | Purpose |
-|------|---------|
-| [src/app.module.ts](src/app.module.ts) | Module configuration, imports, feature modules |
-| [src/main.ts](src/main.ts) | Bootstrap, global ValidationPipe setup |
-| [src/app/user/auth/strategies/jwt.strategy.ts](src/app/user/auth/strategies/jwt.strategy.ts) | JWT validation, user extraction |
-| [src/app/user/auth/decorators/auth.decorator.ts](src/app/user/auth/decorators/auth.decorator.ts) | Role-based access control decorator |
-| [src/app/auction/auction-scheduler.service.ts](src/app/auction/auction-scheduler.service.ts) | Cron transition from `PUBLISHED` to `TRANSITIONING` |
-| [test/definition/e2e-spec.md](test/definition/e2e-spec.md) | **Complete API contract (BDD format)** |
-| [test/helpers/test-app.helper.ts](test/helpers/test-app.helper.ts) | Test app factory |
-| [src/validations/is-nif-cif.validator.ts](src/validations/is-nif-cif.validator.ts) | Spanish tax ID validation |
-
-## Code Reading Order for New Developers
-
-1. [README.md](README.md) - Setup & environment
-2. [src/app.module.ts](src/app.module.ts) - Module structure
-3. [src/main.ts](src/main.ts) - Bootstrap & validation
-4. [test/definition/e2e-spec.md](test/definition/e2e-spec.md) - **API contract (must read)**
-5. Example module: [src/app/auction/auction.module.ts](src/app/auction/auction.module.ts)
-6. JWT strategy: [src/app/user/auth/strategies/jwt.strategy.ts](src/app/user/auth/strategies/jwt.strategy.ts)
-
-## Health Check
-
-**Verify setup**:
-```bash
-# Terminal 1: Start services
-npm run init-local-dependencies
-npm run seed
-npm run start:dev
-
-# Terminal 2: Test login (admin credentials seeded)
-curl -X POST http://localhost:3000/api/v1/auth/login \
-  -H "Content-Type: application/json" \
-  -d '{"email":"admin1@invobid.com","password":"Admin123!"}'
-```
-
-Expected response includes `access_token` and `user` data.
-
-## When Modifying Code
-
-| Task | Pattern |
-|------|---------|
-| **Add API endpoint** | Create DTO → Add controller method → Inject service → Implement service |
-| **Add DTO validation** | Use `class-validator` decorators (run through global `ValidationPipe`) |
-| **Add custom validation** | Create class in `src/validations/`, implement `ValidatorConstraintInterface` |
-| **Require authentication** | Use `@Auth()` decorator on controller method |
-| **Upload file** | Use `@UseInterceptors(FileInterceptor())` + `FileTypePipe` |
-| **Soft delete entity** | Add `{ withDeleted: true }` when querying if needed |
-| **Write test** | Use helpers from [test/helpers/](test/helpers/), follow E2E test structure in [test/app/](test/app/) |
-| **Modify entity schema** | TypeORM auto-sync handles it in dev; migrations needed for production |
-
-## Stack Summary
-
-- **Framework**: NestJS 11.0+
-- **Language**: TypeScript (strict mode)
-- **Database**: PostgreSQL 14+ with TypeORM 0.3.27
-- **Authentication**: JWT + Passport.js (reads from Authorization header OR cookies)
-- **File Storage**: MinIO
-- **Real-time**: Socket.io
-- **Testing**: Jest + Supertest
-- **Node.js**: 22+
+The local session store currently has little or no invobid-api-specific activity, so these instructions are based on the codebase and existing docs rather than observed backend friction. Use `/chronicle improve` later to refine this file once more invobid-api work has been captured.
